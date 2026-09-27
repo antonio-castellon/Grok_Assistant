@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 
@@ -18,6 +18,8 @@ class Settings:
     volume: int = 70
     local_llm: bool = True
     llm_file: str = ""
+    wake_name: str = "grok"
+    wake_heard: list = field(default_factory=list)
 
     @classmethod
     def load(cls, path: Path) -> "Settings":
@@ -34,6 +36,9 @@ class Settings:
         item.wait_index = max(0, int(item.wait_index))
         item.extra_index = max(0, int(item.extra_index))
         item.voice_index = max(0, int(item.voice_index))
+        item.wake_name = str(item.wake_name or "grok").strip() or "grok"
+        if not isinstance(item.wake_heard, list):
+            item.wake_heard = []
         return item
 
     def save(self, path: Path) -> None:

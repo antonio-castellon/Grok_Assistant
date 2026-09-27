@@ -25,7 +25,8 @@ HELP_TOPICS = (
         "Empezar a hablar",
         "Fuera de una conversación el micrófono oye, pero no manda nada a Grok. "
         "Para abrir la charla di un saludo. Las palabras dichas en el mismo aliento que el saludo no se envían: la pregunta es la frase siguiente. "
-        "También valen oídos cercanos, como hola grop u ok grok.",
+        "El nombre de fábrica es grok. Cambiar nombre pide el nombre y luego lo repites seis veces. "
+        "Cada vez se enseña lo que se entendió, y esas variaciones también abren la charla.",
         "hola grok",
     ),
     (
@@ -36,8 +37,8 @@ HELP_TOPICS = (
     ),
     (
         "Acabar",
-        "Estas frases cierran la charla en casa, sin llamar a la nube. "
-        "gracias se contesta con De nada. vale, adiós, hasta luego o cierra conversación acaban la charla. "
+        "Estas frases cierran la charla en casa, sin llamar a la nube y sin la frase de espera. "
+        "gracias, nada gracias, ok, vale, adiós, cierra y las variaciones que el modelo local reconozca acaban la charla. "
         "No cierran la sesión con nombre ni borran un agente.",
         "gracias",
     ),

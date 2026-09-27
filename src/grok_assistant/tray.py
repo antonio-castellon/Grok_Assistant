@@ -252,6 +252,7 @@ class TrayApp:
         else:
             menu.add_command(label="Activar prueba", command=self._toggle_test)
         menu.add_command(label="Identificar mi voz", command=lambda: self._command("identifica mi voz"))
+        menu.add_command(label="Cambiar nombre…", command=lambda: self._command("cambiar nombre"))
 
     def _fill_voz(self) -> None:
         menu = self.menu_voz
@@ -339,6 +340,7 @@ class TrayApp:
                 ("cmd", "Parar", "music-stop", False),
             ]),
             ("cmd", "Desactivar prueba" if brain.test_mode else "Activar prueba", "test-toggle", brain.test_mode),
+            ("cmd", "Cambiar nombre…", "rename", False),
             ("cmd", "Mercado", "market", False),
             ("cmd", "Acerca de + Ayuda", "about", False),
             ("sep",),
@@ -358,6 +360,8 @@ class TrayApp:
             self._command(f"voz {key.split(':', 1)[1]}")
         elif key == "test-toggle":
             self._toggle_test()
+        elif key == "rename":
+            self._command("cambiar nombre")
         elif key == "install-windows":
             self._install_windows()
         elif key.startswith("ear:"):

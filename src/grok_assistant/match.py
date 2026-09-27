@@ -65,6 +65,7 @@ _FIXED: tuple[tuple[str, tuple[str, ...], bool, bool], ...] = (
     ("ayuda", ("ayuda", "help"), False, False),
     ("prueba", ("prueba", "test"), False, False),
     ("identifica mi voz", ("identifica mi voz",), False, False),
+    ("cambiar nombre", ("cambiar nombre", "cambia el nombre", "cambiar el nombre"), False, False),
     ("lista las personas", ("lista las personas", "listar las personas", "lista personas"), False, True),
     ("apagar", ("apagar", "apaga", "apaga el dispositivo", "apagar el dispositivo"), True, False),
     ("modo administrador", ("modo administrador", "administrador"), False, True),
@@ -110,11 +111,30 @@ def is_yes(norms: list[str]) -> bool:
     return len(norms) == 1 and norms[0] in _YES
 
 
-def is_wake(norms: list[str]) -> bool:
-    if norms == ["hola"]:
-        return True
+def wake_targets(name: str = "grok", extras: tuple[str, ...] | list[str] = ()) -> list[str]:
+    called = normalize(name) or "grok"
+    targets = [
+        f"hola {called}",
+        f"ok {called}",
+        f"despierta {called}",
+        f"estas ahi {called}",
+        f"{called} estas ahi",
+        called,
+    ]
+    if called == "grok":
+        targets.extend(WAKES)
+    for extra in extras:
+        heard = normalize(extra)
+        if heard and heard not in targets:
+            targets.append(heard)
+    return targets
+
+
+def is_wake(norms: list[str], name: str = "grok", extras: tuple[str, ...] | list[str] = ()) -> bool:
+    if not norms:
+        return False
     blob = " ".join(norms)
-    for target in WAKES:
+    for target in wake_targets(name, extras):
         size = len(target.split())
         if len(norms) >= size and loose(" ".join(norms[:size]), target):
             return True
@@ -123,9 +143,10 @@ def is_wake(norms: list[str]) -> bool:
     return False
 
 
-def wake_is_presence(norms: list[str]) -> bool:
-    head = " ".join(norms[:3])
-    return loose(head, "estas ahi grok") or loose(head, "grok estas ahi") or loose(" ".join(norms), "estas ahi grok")
+def wake_is_presence(norms: list[str], name: str = "grok") -> bool:
+    called = normalize(name) or "grok"
+    head = " ".join(norms[:4])
+    return loose(head, f"estas ahi {called}") or loose(head, f"{called} estas ahi") or loose(" ".join(norms), f"estas ahi {called}")
 
 
 def is_test_word(norms: list[str]) -> bool:
@@ -145,6 +166,10 @@ def closer(norms: list[str]) -> str | None:
     if "gracias" in norms:
         return "denada"
     blob = " ".join(norms)
+    if len(norms) <= 3 and (norms[0] in {"ok", "okay", "okey"} or loose(norms[0], "ok")):
+        return "vale"
+    if len(norms) <= 3 and norms[0] in {"cierra", "cerrar", "corta", "cortar", "acaba", "acabar", "termina", "terminar"}:
+        return "adios"
     if norms[0] in {"adios", "chao", "chau"} and len(norms) <= 3:
         return "adios"
     if blob in _ADIOS or any(loose(blob, item) for item in _ADIOS):

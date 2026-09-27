@@ -146,6 +146,7 @@ class Brain:
         self.admin_until = None
         self.pending = None
         self.enroll = None
+        self.naming = None
         self.opener = None
         self.detail_used = False
         self.last_question = ""
@@ -272,9 +273,11 @@ class Brain:
             self._record(heard, "ignorar", False, "otra voz")
             self.last_heard = heard
             return Turn()
+        if self.naming is not None:
+            return self._name_take(heard, norms)
         if self.pending or self.enroll is not None:
             return self._pending(heard, norms, pairs, vector)
-        if unknown_print and not self.speakers.locked and is_wake(norms) and not strip_comando(norms)[0]:
+        if unknown_print and not self.speakers.locked and self._is_wake(norms) and not strip_comando(norms)[0]:
             self.pending = ("new_name", vector)
             self._record(heard, "ignorar", False, "saludo")
             self.last_heard = heard
@@ -286,7 +289,7 @@ class Brain:
         song = song_of(body)
 
         if not self.in_conversation:
-            if not is_cmd and is_wake(norms):
+            if not is_cmd and self._is_wake(norms):
                 return self._wake(heard, norms, speaker_id)
             if song.too_long:
                 self._record(heard, "ignorar", False, "canción larga")
@@ -310,7 +313,7 @@ class Brain:
             self._touch()
             return self._order(heard, body, len(norms))
 
-        if not is_cmd and is_wake(norms):
+        if not is_cmd and self._is_wake(norms):
             return self._wake(heard, norms, speaker_id)
         kind = closer([norm for _, norm in body] if is_cmd else norms)
         if kind and not (is_cmd and ("sesion" in norms or "agente" in norms)):
@@ -484,6 +487,38 @@ class Brain:
             return False
         return True
 
+    def _is_wake(self, norms: list[str]) -> bool:
+        return is_wake(norms, self.settings.wake_name, self.settings.wake_heard or [])
+
+    def _name_take(self, heard: str, norms: list[str]) -> Turn:
+        self._record(heard, "ignorar", False, "nombre")
+        self.last_heard = heard
+        if norms == ["salir"]:
+            self.naming = None
+            return self._said(["Dejo el nombre como estaba."])
+        stage = self.naming["stage"]
+        if stage == "choose":
+            self.naming["name"] = heard.strip()
+            self.naming["stage"] = "confirm"
+            return self._said([f"He oído: {heard}. Si ese es el nombre, di sí."])
+        if stage == "confirm":
+            if is_yes(norms):
+                self.naming["stage"] = "repeat"
+                self.naming["heard"] = []
+                return self._said([f"Di «{self.naming['name']}» seis veces. Primera."])
+            self.naming["stage"] = "choose"
+            return self._said([f"He oído: {heard}. Dilo otra vez."])
+        self.naming["heard"].append(heard)
+        count = len(self.naming["heard"])
+        if count >= 6:
+            self.settings.wake_name = self.naming["name"]
+            self.settings.wake_heard = list(self.naming["heard"])
+            self.persist()
+            chosen = self.settings.wake_name
+            self.naming = None
+            return self._said([f"He oído: {heard}. 6 de 6. A partir de ahora me llamo {chosen}."])
+        return self._said([f"He oído: {heard}. {count} de 6. Otra vez."])
+
     def _wake(self, heard: str, norms: list[str], speaker_id: str | None) -> Turn:
         self._record(heard, "ignorar", False, "saludo")
         self.last_heard = heard
@@ -494,7 +529,7 @@ class Brain:
             self.opener = speaker_id
             return self._said([self._greet_known(speaker_id)], status="Conversación")
         self.opener = speaker_id
-        if wake_is_presence(norms):
+        if wake_is_presence(norms, self.settings.wake_name):
             return self._said(["Sí, aquí estoy."], status="Conversación")
         return self._said(["Hola."], status="Conversación")
 
@@ -725,6 +760,9 @@ class Brain:
             return self._said(["Cierro el agente."])
         if name == "ayuda":
             return self._said([spoken_help()])
+        if name == "cambiar nombre":
+            self.naming = {"stage": "choose", "name": "", "heard": []}
+            return self._said(["¿Cómo quieres llamarme? Di solo el nombre."])
         if name == "identifica mi voz":
             self.enroll = {"stage": "name", "target": None, "take": 0, "vectors": []}
             return self._said(["¿Cómo te llamas?"], effects=[("enroll", "¿Cómo te llamas?", "")])

@@ -143,6 +143,46 @@ def test_local_command_does_not_spend_a_filler(world):
     assert hub.brain.settings.wait_index == before
 
 
+def test_ok_closes_without_the_waiting_line(world):
+    hub, cli, _clock = world
+    hub.run("hola grok")
+    before = hub.brain.settings.wait_index
+    result = hub.run("ok")
+    assert result.spoken == ["Vale."]
+    assert hub.brain.settings.wait_index == before
+    assert cli.calls == []
+    assert not hub.brain.in_conversation
+
+
+def test_local_model_closes_without_asking_grok(world):
+    hub, cli, _clock = world
+
+    class Close:
+        def interpret(self, phrase, in_conversation):
+            return {"accion": "cierre", "orden": "gracias", "texto": ""}
+
+    hub.mind = Close()
+    hub.run("hola grok")
+    result = hub.run("graxias")
+    assert result.spoken == ["De nada."]
+    assert cli.calls == []
+    assert not any("busque" in line.lower() or "ver" in line.lower() for line in result.spoken)
+
+
+def test_a_trained_name_wakes_from_what_was_heard(world):
+    hub, _cli, _clock = world
+    hub.run("comando cambiar nombre")
+    hub.run("casa")
+    hub.run("sí")
+    for heard in ("casa", "caza", "casaa", "kasa", "casa", "cassa"):
+        hub.run(heard)
+    assert hub.brain.naming is None
+    assert hub.brain.settings.wake_name == "casa"
+    assert "caza" in hub.brain.settings.wake_heard
+    hub.run("caza")
+    assert hub.brain.in_conversation
+
+
 def test_thanks_closes_without_cloud(world):
     hub, cli, _clock = world
     hub.run("hola grok")

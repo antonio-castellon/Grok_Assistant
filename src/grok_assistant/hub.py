@@ -115,9 +115,29 @@ class Hub:
                 self.brain.phase = ""
                 self.brain._log(f"modelo local: comando {hit.strict}")
                 return self.brain.perform(hit)
+        close = self._close_kind(original, data)
+        if close:
+            self.brain.phase = ""
+            self.brain._log("modelo local: cierre")
+            return self.brain._goodbye(close)
         self.brain.phase = ""
         self.brain._log("modelo local: no es un comando. Paso el texto tal cual.")
         return self._pass_through(turn, original)
+
+    def _close_kind(self, original: str, data: dict | None) -> str | None:
+        from grok_assistant.match import closer, tokenize
+
+        heard = closer([norm for _, norm in tokenize(original)])
+        if heard:
+            return heard
+        if not data or data.get("accion") != "cierre":
+            return None
+        orden = str(data.get("orden") or "").lower()
+        if "gracias" in orden:
+            return "denada"
+        if orden in {"vale", "ok"}:
+            return "vale"
+        return "adios"
 
     def _pass_through(self, turn: Turn, original: str) -> None:
         self.brain.in_conversation = True
