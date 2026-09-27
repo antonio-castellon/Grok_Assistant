@@ -328,6 +328,15 @@ def test_stop_music_is_not_pause_music(world):
     assert hub.run("comando pausa la musica").spoken == ["Pauso."]
 
 
+def test_log_names_the_mode_between_the_time_and_the_text(world):
+    hub, _cli, _clock = world
+    hub.run("hola")
+    assert any(line.split("  ")[1:3] == ["modo escucha", "oí"] for line in hub.brain.logs)
+    hub.run("hola grok")
+    hub.run("qué tiempo hará mañana")
+    assert any(line.split("  ")[1] == "modo conversación" for line in hub.brain.logs)
+
+
 def test_windows_recognizer_is_not_rewritten_to_kroko(world):
     hub, cli, _clock = world
     hub.brain.recognizers = ["teclado", "windows", "kroko"]

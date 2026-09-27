@@ -191,16 +191,19 @@ class Brain:
     def is_admin(self) -> bool:
         return self.admin_until is not None and self.clock() < self.admin_until
 
-    def status_label(self) -> str:
+    def mode_label(self) -> str:
         if self.paused:
-            return "En pausa"
+            return "modo pausa"
         if self.test_mode:
-            return "Prueba"
+            return "modo prueba"
         if self.phase:
             return self.phase
         if self.in_conversation:
-            return "Conversación"
-        return "Escuchando"
+            return "modo conversación"
+        return "modo escucha"
+
+    def status_label(self) -> str:
+        return self.mode_label()
 
     def snapshot(self) -> dict:
         session = self.sessions.current()
@@ -817,13 +820,18 @@ class Brain:
             "sent": sent,
             "detail": detail,
         })
-        stamp = time.strftime("%H:%M:%S")
         if heard:
-            self.logs.append(f"{stamp}  oí      {heard}")
-        self.logs.append(f"{stamp}  sigue   {_next_step(decision, sent, detail)}")
+            self._log_line("oí", heard)
+        self._log_line("sigue", _next_step(decision, sent, detail))
         if len(self.logs) > 500:
             self.logs = self.logs[-500:]
 
+    def note(self, line: str) -> None:
+        self._log(line)
+
     def _log(self, line: str) -> None:
+        self._log_line("sigue", line)
+
+    def _log_line(self, kind: str, text: str) -> None:
         stamp = time.strftime("%H:%M:%S")
-        self.logs.append(f"{stamp}  sigue   {line}")
+        self.logs.append(f"{stamp}  {self.mode_label()}  {kind}  {text}")

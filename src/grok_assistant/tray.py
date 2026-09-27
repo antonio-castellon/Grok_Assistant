@@ -141,6 +141,7 @@ class TrayApp:
         )
         self.debug_text.pack(fill="both", expand=True)
         self.debug_text.tag_configure("time", foreground="#667884")
+        self.debug_text.tag_configure("mode", foreground="#d7c4a3")
         self.debug_text.tag_configure("oi", foreground=AMBER)
         self.debug_text.tag_configure("sigue", foreground=TEAL)
         self.debug_text.configure(state="disabled")
@@ -632,8 +633,7 @@ class TrayApp:
             shutdown_machine()
 
     def _note(self, text: str) -> None:
-        import time
-        self.hub.brain.logs.append(f"{time.strftime('%H:%M:%S')}  sigue   {text}")
+        self.hub.brain.note(text)
 
     def _hide(self) -> None:
         if self.tray_ok:
@@ -816,9 +816,17 @@ class TrayApp:
         self.debug_text.see("end")
 
     def _insert_log(self, line: str) -> None:
-        parts = line.split("  ", 2)
-        if len(parts) == 3 and parts[1].strip() in {"oí", "sigue"}:
-            stamp, kind, rest = parts[0], parts[1].strip(), parts[2]
+        parts = line.split("  ", 3)
+        if len(parts) == 4 and parts[2].strip() in {"oí", "sigue"}:
+            stamp, mode, kind, rest = parts[0], parts[1].strip(), parts[2].strip(), parts[3]
+            self.debug_text.insert("end", stamp + "  ", "time")
+            self.debug_text.insert("end", mode.ljust(18), "mode")
+            self.debug_text.insert("end", "  " + kind.ljust(6), "oi" if kind == "oí" else "sigue")
+            self.debug_text.insert("end", rest.strip() + "\n")
+            return
+        older = line.split("  ", 2)
+        if len(older) == 3 and older[1].strip() in {"oí", "sigue"}:
+            stamp, kind, rest = older[0], older[1].strip(), older[2]
             self.debug_text.insert("end", stamp + "  ", "time")
             self.debug_text.insert("end", kind.ljust(6), "oi" if kind == "oí" else "sigue")
             self.debug_text.insert("end", rest.strip() + "\n")
