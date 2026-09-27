@@ -113,6 +113,17 @@ class TrayApp:
         style.configure("TButton", background="#2a3340", foreground=INK, font=FONT, padding=(12, 6), borderwidth=0)
         style.map("TButton", background=[("active", "#3a4656")])
         style.configure("TEntry", fieldbackground=FIELD, foreground=INK, insertcolor=INK, font=FONT)
+        style.configure("Market.TNotebook", background=BG, borderwidth=0)
+        style.configure("Market.TNotebook.Tab", background=PANEL, foreground=INK, padding=(14, 8), font=("Segoe UI", 11))
+        style.map("Market.TNotebook.Tab", background=[("selected", "#3a4656")], foreground=[("selected", INK)])
+        style.configure(
+            "Market.Horizontal.TProgressbar",
+            troughcolor=FIELD,
+            background=TEAL,
+            bordercolor=FIELD,
+            lightcolor=TEAL,
+            darkcolor=TEAL,
+        )
 
     def _build_window(self) -> None:
         self.root.title("Grok Assistant")
@@ -198,9 +209,6 @@ class TrayApp:
         self.menu_agente = tk.Menu(bar, postcommand=self._fill_agente, **kw)
         self.menu_musica = tk.Menu(bar, **kw)
         self.menu_admin = tk.Menu(bar, **kw)
-        self.menu_about = tk.Menu(bar, **kw)
-        self.menu_market = tk.Menu(bar, **kw)
-        self.menu_market.add_command(label="Voces, oídos y modelo local…", command=self._open_market)
         bar.add_cascade(label="Escucha", menu=self.menu_escucha)
         bar.add_cascade(label="Voz", menu=self.menu_voz)
         bar.add_cascade(label="Modelo", menu=self.menu_modelo)
@@ -208,10 +216,8 @@ class TrayApp:
         bar.add_cascade(label="Agente", menu=self.menu_agente)
         bar.add_cascade(label="Música", menu=self.menu_musica)
         bar.add_cascade(label="Administrador", menu=self.menu_admin)
-        bar.add_cascade(label="Mercado", menu=self.menu_market)
-        bar.add_cascade(label="Acerca de + Ayuda", menu=self.menu_about)
-        self.menu_about.add_command(label="Comandos…", command=self._open_help)
-        self.menu_about.add_command(label="Acerca de…", command=self._open_about)
+        bar.add_command(label="Mercado", command=self._open_market)
+        bar.add_command(label="Acerca de + Ayuda", command=self._open_about)
         self.menu_musica.add_command(label="Pausar", command=lambda: self._command("pausa musica"))
         self.menu_musica.add_command(label="Seguir", command=lambda: self._command("seguir musica"))
         self.menu_musica.add_command(label="Parar", command=lambda: self._command("para la musica"))
@@ -333,11 +339,8 @@ class TrayApp:
                 ("cmd", "Parar", "music-stop", False),
             ]),
             ("cmd", "Desactivar prueba" if brain.test_mode else "Activar prueba", "test-toggle", brain.test_mode),
-            ("cmd", "Mercado…", "market", False),
-            ("sub", "Acerca de + Ayuda", [
-                ("cmd", "Comandos…", "help", False),
-                ("cmd", "Acerca de…", "about", False),
-            ]),
+            ("cmd", "Mercado", "market", False),
+            ("cmd", "Acerca de + Ayuda", "about", False),
             ("sep",),
             ("cmd", "Salir", "quit", False),
         ]
@@ -388,7 +391,7 @@ class TrayApp:
         elif key == "market":
             self._open_market()
         elif key == "help":
-            self._open_help()
+            self._open_about()
         elif key == "about":
             self._open_about()
 
@@ -439,13 +442,40 @@ class TrayApp:
         ttk.Label(window, text="Mercado", style="Status.TLabel").pack(anchor="w", padx=16, pady=(14, 2))
         ttk.Label(
             window,
-            text="Elige qué se descarga a este equipo y qué queda en uso. Nada baja solo.",
+            text="Nada baja solo. En el menú entra cuando la descarga llega al 100 %.",
             style="Muted.TLabel",
         ).pack(anchor="w", padx=16, pady=(0, 8))
-        frame = ttk.Frame(window)
-        frame.pack(fill="both", expand=True, padx=12, pady=(0, 12))
-        canvas = tk.Canvas(frame, bg=BG, highlightthickness=0)
-        scroll = ttk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+        status = tk.StringVar(value="")
+        ttk.Label(window, textvariable=status, style="Muted.TLabel").pack(side="bottom", anchor="w", padx=16, pady=(0, 10))
+        book = ttk.Notebook(window, style="Market.TNotebook")
+        book.pack(fill="both", expand=True, padx=12, pady=(0, 8))
+        groups = (
+            ("stt", "Reconocimiento"),
+            ("voice", "Voces"),
+            ("llm", "Modelo local"),
+        )
+        canvases: dict[str, tk.Canvas] = {}
+        catalog = offers()
+        for kind, title in groups:
+            page = ttk.Frame(book)
+            book.add(page, text=title)
+            canvas, inner = self._scroll_page(page)
+            canvases[str(page)] = canvas
+            for offer in catalog:
+                if offer.kind == kind:
+                    self._market_row(inner, offer, status)
+
+        def _wheel(event) -> None:
+            canvas = canvases.get(str(book.select()))
+            if canvas is not None:
+                canvas.yview_scroll(int(-event.delta / 120), "units")
+
+        window.bind("<MouseWheel>", _wheel)
+        window.bind("<Destroy>", lambda event: window.unbind("<MouseWheel>") if event.widget is window else None)
+
+    def _scroll_page(self, page: ttk.Frame) -> tuple[tk.Canvas, ttk.Frame]:
+        canvas = tk.Canvas(page, bg=BG, highlightthickness=0)
+        scroll = ttk.Scrollbar(page, orient="vertical", command=canvas.yview)
         canvas.configure(yscrollcommand=scroll.set)
         scroll.pack(side="right", fill="y")
         canvas.pack(side="left", fill="both", expand=True)
@@ -455,49 +485,81 @@ class TrayApp:
         def _fit(event) -> None:
             canvas.itemconfigure(window_id, width=event.width)
 
-        def _scroll(_event) -> None:
+        def _region(_event) -> None:
             canvas.configure(scrollregion=canvas.bbox("all"))
 
-        def _wheel(event) -> None:
-            canvas.yview_scroll(int(-event.delta / 120), "units")
-
         canvas.bind("<Configure>", _fit)
-        inner.bind("<Configure>", _scroll)
-        window.bind("<MouseWheel>", _wheel)
-        window.bind("<Destroy>", lambda event: window.unbind("<MouseWheel>") if event.widget is window else None)
-        status = tk.StringVar(value="")
-        ttk.Label(window, textvariable=status, style="Muted.TLabel").pack(side="bottom", anchor="w", padx=16, pady=(0, 10))
-        headings = {"voice": "Voces", "stt": "Reconocimiento", "llm": "Modelo local"}
-        last = ""
-        for offer in offers():
-            if offer.kind != last:
-                ttk.Label(inner, text=headings[offer.kind], font=("Segoe UI", 13, "bold")).pack(anchor="w", padx=8, pady=(12, 4))
-                last = offer.kind
-            self._market_row(inner, offer, status)
+        inner.bind("<Configure>", _region)
+        return canvas, inner
 
     def _market_row(self, parent, offer: Offer, status: tk.StringVar) -> None:
         row = ttk.Frame(parent)
-        row.pack(fill="x", padx=8, pady=4)
+        row.pack(fill="x", padx=8, pady=6)
         ready = offer.ready()
-        state = "en este equipo" if ready else "sin descargar"
-        ttk.Label(row, text=f"{offer.title}   {offer.size}   {state}", font=("Segoe UI", 11)).pack(anchor="w")
+        percent = tk.IntVar(value=100 if ready else 0)
+        label = tk.StringVar(value="100 %" if ready else "sin descargar")
+        ttk.Label(row, text=f"{offer.title}   {offer.size}", font=("Segoe UI", 11)).pack(anchor="w")
+        ttk.Label(row, textvariable=label, style="Muted.TLabel").pack(anchor="w")
         ttk.Label(row, text=offer.detail, style="Muted.TLabel").pack(anchor="w")
-        buttons = ttk.Frame(row)
-        buttons.pack(anchor="w", pady=(2, 0))
-        if not ready:
-            ttk.Button(buttons, text="Descargar", command=lambda item=offer: self._download_offer(item, status)).pack(side="left")
+        ttk.Progressbar(
+            row, maximum=100, variable=percent, style="Market.Horizontal.TProgressbar",
+        ).pack(fill="x", pady=(4, 2))
+        button = ttk.Button(row)
+        button.pack(anchor="w", pady=(2, 0))
+        if ready:
+            button.configure(text="Usar", command=lambda item=offer: self._use_offer(item))
         else:
-            ttk.Button(buttons, text="Usar", command=lambda item=offer: self._use_offer(item)).pack(side="left")
+            button.configure(
+                text="Descargar",
+                command=lambda item=offer: self._download_offer(item, status, percent, label, button),
+            )
 
-    def _download_offer(self, offer: Offer, status: tk.StringVar) -> None:
+    def _download_offer(self, offer: Offer, status: tk.StringVar, percent: tk.IntVar, label: tk.StringVar, button: ttk.Button) -> None:
+        def show(value: int) -> None:
+            def apply() -> None:
+                try:
+                    percent.set(value)
+                    label.set(f"{value} %")
+                except tk.TclError:
+                    return
+
+            self.ui.put(apply)
+
         def work() -> None:
             try:
-                download(offer, lambda message: self.ui.put(lambda message=message: status.set(message)))
-                self.ui.put(lambda: status.set(f"{offer.title} listo"))
-                self.ui.put(self._refresh_devices)
-            except Exception as exc:
-                self.ui.put(lambda: status.set(str(exc)[:180]))
+                download(
+                    offer,
+                    lambda message: self.ui.put(lambda message=message: status.set(message)),
+                    show,
+                )
 
+                def done() -> None:
+                    try:
+                        percent.set(100)
+                        label.set("100 %")
+                        button.configure(text="Usar", state="normal", command=lambda item=offer: self._use_offer(item))
+                    except tk.TclError:
+                        pass
+                    status.set(f"{offer.title} listo")
+                    self._refresh_devices()
+
+                self.ui.put(done)
+            except Exception as exc:
+                def fail() -> None:
+                    try:
+                        button.configure(state="normal", text="Descargar")
+                    except tk.TclError:
+                        pass
+                    status.set(str(exc)[:180])
+
+                self.ui.put(fail)
+
+        try:
+            button.configure(state="disabled", text="Descargando")
+            label.set("0 %")
+            percent.set(0)
+        except tk.TclError:
+            return
         status.set(f"descargando {offer.title}…")
         threading.Thread(target=work, daemon=True).start()
 
@@ -562,24 +624,19 @@ class TrayApp:
         self._note("contraseña de administrador guardada. En el disco solo está el hash.")
         self._paint()
 
-    def _open_help(self) -> None:
-        self._open_text(
-            "Comandos",
-            "Cada orden de abajo se puede decir. Casi todas empiezan por comando. "
-            "El ejemplo es una frase completa.\n\n"
-            + "\n\n".join(
-                f"{title}\n{body}\nEjemplo: {example}"
-                for title, body, example in HELP_TOPICS
-            ),
-        )
-
     def _open_about(self) -> None:
         window = tk.Toplevel(self.root)
-        window.title("Acerca de")
+        window.title("Acerca de + Ayuda")
         window.configure(bg=BG)
-        window.geometry("640x460")
+        window.geometry("720x560")
+        book = ttk.Notebook(window, style="Market.TNotebook")
+        book.pack(fill="both", expand=True, padx=12, pady=12)
+        about = ttk.Frame(book)
+        commands = ttk.Frame(book)
+        book.add(about, text="Acerca de")
+        book.add(commands, text="Comandos")
         text = tk.Text(
-            window, wrap="word", bg=FIELD, fg=INK, font=("Segoe UI", 12),
+            about, wrap="word", bg=FIELD, fg=INK, font=("Segoe UI", 12),
             relief="flat", padx=18, pady=16, insertbackground=INK,
         )
         text.pack(fill="both", expand=True)
@@ -602,39 +659,32 @@ class TrayApp:
             "Cerrarla esconde el programa. El icono de Grok en la bandeja lo vuelve a abrir. Salir lo cierra.",
         )
         text.bind("<Key>", lambda _event: "break")
+        self._fill_commands(commands)
         window.protocol("WM_DELETE_WINDOW", window.destroy)
+
+    def _fill_commands(self, parent: ttk.Frame) -> None:
+        text = tk.Text(
+            parent, wrap="word", bg=FIELD, fg=INK, font=("Segoe UI", 12),
+            relief="flat", padx=18, pady=16, insertbackground=INK,
+        )
+        text.pack(fill="both", expand=True)
+        text.tag_configure("title", font=("Segoe UI", 14, "bold"), foreground=AMBER, spacing1=14, spacing3=4)
+        text.tag_configure("example", font=("Consolas", 12), foreground=TEAL, spacing3=8)
+        text.insert(
+            "end",
+            "Cada orden de abajo se puede decir. Casi todas empiezan por comando. El ejemplo es una frase completa.\n",
+        )
+        for title, body, example in HELP_TOPICS:
+            text.insert("end", title + "\n", "title")
+            text.insert("end", body + "\n")
+            text.insert("end", f"Ejemplo: {example}\n", "example")
+        text.configure(state="disabled")
 
     def _link_tag(self, text: tk.Text, tag: str, url: str) -> None:
         text.tag_configure(tag, foreground=TEAL, underline=True)
         text.tag_bind(tag, "<Button-1>", lambda _event, url=url: webbrowser.open(url))
         text.tag_bind(tag, "<Enter>", lambda _event: text.configure(cursor="hand2"))
         text.tag_bind(tag, "<Leave>", lambda _event: text.configure(cursor="arrow"))
-
-    def _open_text(self, title: str, body: str) -> None:
-        window = tk.Toplevel(self.root)
-        window.title(title)
-        window.configure(bg=BG)
-        window.geometry("720x560")
-        text = tk.Text(
-            window, wrap="word", bg=FIELD, fg=INK, font=("Segoe UI", 12),
-            relief="flat", padx=18, pady=16, insertbackground=INK,
-        )
-        text.pack(fill="both", expand=True)
-        text.tag_configure("title", font=("Segoe UI", 14, "bold"), foreground=AMBER, spacing1=14, spacing3=4)
-        text.tag_configure("example", font=("Consolas", 12), foreground=TEAL, spacing3=8)
-        if title == "Comandos":
-            intro, _, rest = body.partition("\n\n")
-            text.insert("end", intro + "\n")
-            for block in rest.split("\n\n"):
-                lines = block.split("\n")
-                text.insert("end", lines[0] + "\n", "title")
-                for line in lines[1:]:
-                    tag = "example" if line.startswith("Ejemplo:") else ""
-                    text.insert("end", line + "\n", tag)
-        else:
-            text.insert("end", body)
-        text.configure(state="disabled")
-        window.protocol("WM_DELETE_WINDOW", window.destroy)
 
     def _confirm_shutdown(self) -> None:
         if messagebox.askyesno("Apagar", "¿Apago el equipo?", parent=self.root):

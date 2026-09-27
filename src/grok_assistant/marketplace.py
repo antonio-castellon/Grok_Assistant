@@ -130,23 +130,49 @@ def offers() -> list[Offer]:
     return items
 
 
-def download(offer: Offer, on_status, root: Path | None = None) -> None:
+def progress_percent(done: int, total: int) -> int:
+    if total <= 0:
+        return 0
+    return max(0, min(100, int(done * 100 / total)))
+
+
+def download(offer: Offer, on_status, on_progress=None, root: Path | None = None) -> None:
     if offer.local == "windows-speech":
         from grok_assistant.listen import install_windows_speech
 
         on_status("instalo el idioma de voz de Windows")
+        _report(on_progress, 0)
         message = install_windows_speech()
         if message != "OK":
             raise RuntimeError(message.removeprefix("ERR:"))
+        _report(on_progress, 100)
         return
     base = root or default_data_dir()
     base.mkdir(parents=True, exist_ok=True)
+    done = 0
+    known = 0
+
+    def account(got: int, total: int, key: str) -> None:
+        nonlocal known
+        if total > 0 and key not in seen:
+            seen[key] = total
+            known = sum(seen.values())
+        current = done + got
+        whole = known or current or 1
+        _report(on_progress, min(99, progress_percent(current, whole)))
+
+    seen: dict[str, int] = {}
     for url, rel in offer.files:
         dest = base / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         if not dest.exists() or dest.stat().st_size < 1000:
             on_status(f"bajo {offer.title}")
-            _fetch(url, dest)
+            _fetch(url, dest, lambda got, total, key=rel: account(got, total, key))
+        size = dest.stat().st_size
+        done += size
+        if rel not in seen:
+            seen[rel] = size
+            known = sum(seen.values())
         if dest.name.endswith(".tar.bz2"):
             on_status(f"abro {dest.name}")
             with tarfile.open(dest, "r:bz2") as packed:
@@ -157,20 +183,40 @@ def download(offer: Offer, on_status, root: Path | None = None) -> None:
                 packed.extractall(dest.parent)
     if offer.kind == "llm":
         on_status("bajo llama.cpp")
-        _ensure_llama(base / "llm", on_status)
+        _ensure_llama(base / "llm", on_status, lambda got, total: account(got, total, "llama.cpp"))
+    _report(on_progress, 100)
 
 
-def _fetch(url: str, dest: Path) -> None:
+def _report(on_progress, value: int) -> None:
+    if on_progress is not None:
+        on_progress(value)
+
+
+def _fetch(url: str, dest: Path, on_bytes=None) -> None:
+    """Write to a side file. The real name appears only when the file is complete."""
     request = urllib.request.Request(url, headers={"User-Agent": "GrokAssistant"})
-    with urllib.request.urlopen(request, timeout=120) as response, dest.open("wb") as handle:
-        while True:
-            chunk = response.read(1024 * 256)
-            if not chunk:
-                break
-            handle.write(chunk)
+    part = dest.with_name(dest.name + ".part")
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response, part.open("wb") as handle:
+            total = int(response.headers.get("Content-Length") or 0)
+            got = 0
+            if on_bytes is not None:
+                on_bytes(0, total)
+            while True:
+                chunk = response.read(1024 * 256)
+                if not chunk:
+                    break
+                handle.write(chunk)
+                got += len(chunk)
+                if on_bytes is not None:
+                    on_bytes(got, total)
+    except Exception:
+        part.unlink(missing_ok=True)
+        raise
+    part.replace(dest)
 
 
-def _ensure_llama(folder: Path, on_status) -> None:
+def _ensure_llama(folder: Path, on_status, on_bytes=None) -> None:
     if _llama_exe(folder):
         return
     import json
@@ -192,7 +238,7 @@ def _ensure_llama(folder: Path, on_status) -> None:
         raise RuntimeError("no encuentro el zip de llama.cpp para Windows")
     archive = folder / "llama-cpp.zip"
     on_status("bajo el motor llama.cpp")
-    _fetch(url, archive)
+    _fetch(url, archive, on_bytes)
     with zipfile.ZipFile(archive) as packed:
         packed.extractall(folder)
 

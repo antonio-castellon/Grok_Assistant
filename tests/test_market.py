@@ -1,6 +1,6 @@
 from grok_assistant.hub import build
 from grok_assistant.local_llm import parse_intent
-from grok_assistant.marketplace import offers
+from grok_assistant.marketplace import offers, progress_percent
 
 
 class Clock:
@@ -38,6 +38,20 @@ def test_menu_ears_are_in_the_market():
     engines = {item.engine_id for item in offers() if item.kind == "stt"}
     assert engines == {"windows", "kroko", "whisper", "base", "canary"}
     assert offers()[0].kind == "stt"
+
+
+def test_progress_percent_stays_inside_the_download():
+    assert progress_percent(0, 0) == 0
+    assert progress_percent(50, 200) == 25
+    assert progress_percent(200, 200) == 100
+
+
+def test_a_partial_file_is_not_ready(tmp_path):
+    item = next(offer for offer in offers() if offer.id == "kroko")
+    dest = tmp_path / item.files[0][1]
+    dest.parent.mkdir(parents=True)
+    dest.with_name(dest.name + ".part").write_bytes(b"x" * 2000)
+    assert item.ready(tmp_path) is False
 
 
 def test_windows_spanish_is_an_installable_ear():
