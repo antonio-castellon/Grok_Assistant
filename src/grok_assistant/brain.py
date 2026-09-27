@@ -910,9 +910,11 @@ class Brain:
             self.enroll["stage"] = "name"
             return self._said(["Di otro nombre."])
         if stage == "takes":
-            if vector:
-                self.enroll["vectors"].append(vector)
+            if not vector:
+                return self._said(["No he cogido la huella. Repite."])
+            self.enroll["vectors"].append(vector)
             self.enroll["take"] += 1
+            self._step(f"huella: {self.enroll['take']} de 12")
             heard_show = heard
             prompt = _ENROLL[(self.enroll["take"] - 1) // 3]
             if self.enroll["take"] >= 12:
@@ -932,14 +934,14 @@ class Brain:
     def _finish_enroll(self, prompt: str, heard_show: str) -> Turn:
         vectors = [item for item in self.enroll["vectors"] if item]
         name = self.enroll["target"] or self.enroll["spoken"]
-        lock = self.embedder_ready and len(vectors) == 12
-        stored = self.speakers.add(name, vectors, lock=lock)
+        if len(vectors) < 12:
+            return self._said([f"Solo tengo {len(vectors)} de 12. Repite."])
+        stored = self.speakers.add(name, vectors, lock=True)
         self.enroll = None
-        if lock:
-            line = f"Listo, {stored}. A partir de ahora te oigo a ti."
-        else:
-            line = f"Te dejo apuntado, {stored}. Sin el modelo de voz no cierro la puerta."
-        return self._said([line], effects=[("enroll", prompt, heard_show)])
+        return self._said(
+            [f"Listo, {stored}. A partir de ahora te oigo a ti."],
+            effects=[("enroll", prompt, heard_show)],
+        )
 
     def _next_wait(self) -> str:
         line = self.waits[self.settings.wait_index % len(self.waits)]

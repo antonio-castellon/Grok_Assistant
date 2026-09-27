@@ -9,7 +9,7 @@ from grok_assistant.auth import AdminAuth
 from grok_assistant.brain import Brain, Turn
 from grok_assistant.grok_cli import GrokCLI, GrokError
 from grok_assistant.local_llm import LocalMind
-from grok_assistant.paths import default_agents_dir, default_data_dir, load_lines
+from grok_assistant.paths import default_agents_dir, default_data_dir, load_lines, speakers_file
 from grok_assistant.settings import Settings
 from grok_assistant.store import AgentBook, SessionStore, SpeakerBook
 
@@ -252,7 +252,7 @@ def build(data_dir: Path | None = None, agents_dir: Path | None = None, cli: Gro
     brain = Brain(
         settings,
         SessionStore(data / "sessions.json"),
-        SpeakerBook(data / "speakers.json"),
+        SpeakerBook(speakers_file() if data_dir is None else data / "speakers.json"),
         AgentBook(agents_dir or default_agents_dir(), data / "agents_state.json"),
         AdminAuth(data / "admin.json"),
         load_lines("hellos-es.txt"),

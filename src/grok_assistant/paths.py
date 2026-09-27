@@ -33,5 +33,23 @@ def default_data_dir() -> Path:
     return Path.home() / ".config" / "grok-assistant"
 
 
+def exe_dir() -> Path:
+    """Folder that holds GrokAssistant.exe. A source run uses dist/ next to the repo."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parents[2] / "dist"
+
+
+def speakers_file() -> Path:
+    """Voice prints live beside the executable, so a rebuild does not wipe them."""
+    folder = exe_dir() / "data"
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / "speakers.json"
+    legacy = default_data_dir() / "speakers.json"
+    if not path.exists() and legacy.exists():
+        path.write_bytes(legacy.read_bytes())
+    return path
+
+
 def default_agents_dir() -> Path:
     return Path.home() / ".grok" / "agents"

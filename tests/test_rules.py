@@ -469,6 +469,29 @@ def test_the_log_hangs_each_step_under_the_heard_line(world):
     assert any(line.split("  ")[1] == "¦" and line.endswith("Grok: Son las tres.") for line in hub.brain.logs)
 
 
+def test_a_take_without_audio_does_not_erase_the_print(world):
+    hub, _cli, _clock = world
+    hub.brain.speakers.add("Ana", [[1.0, 0.0]], lock=True)
+    hub.brain.enroll = {"stage": "takes", "target": "Ana", "spoken": "Ana", "take": 0, "vectors": []}
+    missed = hub.brain.handle("hola grok")
+    assert "huella" in missed.speak[0].lower()
+    assert hub.brain.enroll["take"] == 0
+    assert hub.brain.speakers.people["Ana"]["prints"] == [[1.0, 0.0]]
+    for _number in range(12):
+        hub.brain.handle("hola grok", vector=[0.2, 0.9])
+    assert hub.brain.enroll is None
+    assert len(hub.brain.speakers.people["Ana"]["prints"]) == 12
+    assert hub.brain.speakers.locked == "Ana"
+
+
+def test_prints_are_stored_next_to_the_executable(tmp_path, monkeypatch):
+    import grok_assistant.paths as paths
+
+    monkeypatch.setattr(paths.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(paths.sys, "executable", str(tmp_path / "GrokAssistant.exe"))
+    assert paths.speakers_file() == tmp_path / "data" / "speakers.json"
+
+
 def test_a_print_can_be_renamed_and_recaptured(world):
     hub, _cli, _clock = world
     hub.brain.speakers.add("Ana", [[1.0, 0.0]], lock=True)
