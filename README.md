@@ -1,14 +1,22 @@
+[Leer en español](README.ES.md)
+
 ![Grok mark, with Assistance underneath](docs/img/banner.jpg)
 
 # Grok Assistant
 
-A small voice assistant for the house.
+A small voice assistant for an older person who already has a small laptop within reach.
 
-I waited a long time for the living-room speaker to become a better listener. It stayed the same, so I made my own. The first one runs on a Raspberry Pi. This repository is the PC version: a window, a tray icon, and a log of what was heard.
+I waited a long time for the living-room speaker to become a better listener. It stayed the same, so I made my own. This repository is that laptop version: a window, a tray icon, and a log of what was heard. For a house where the laptop should stay closed, I am also building the same assistant on a Raspberry Pi 4 with 4 GB.
 
 It can stay listening while the program is open. The sound remains on the computer. A phrase is turned into text here, and Grok receives that text only when you meant it for the assistant: a hello, then a question, an order that starts with `comando`, or a song you asked for. Everyday talk is written in a local session and stays there. A muddled order can be checked with Grok, and it still waits for a sí before it runs.
 
 That is the whole idea. The picture below is the path of one phrase.
+
+## Who it is for
+
+An older person, and a small laptop that is already in the house. In my case that person is my father. His vision is limited, and he spends many hours alone. For years I wanted an assistant that could hold a conversation and explain things using only the voice: no screen to hunt for, no small text to read. That is possible now. I will add more features and more integrations. Grok, on this machine, is what makes those next steps practical.
+
+If someone in the family knows a little more, and wants the same assistant without a laptop open on the table, the other body is a Raspberry Pi 4 with 4 GB of RAM. Same rules. The microphone stays in the room. The laptop stays in the drawer.
 
 ![How a phrase moves: the ear stays local, and only a question or a repaired order sends text to Grok](docs/img/flow.svg)
 
@@ -36,11 +44,11 @@ This is the part the Echo never offered and the phone will not host. The agent d
 
 ChatGPT will write a program. Claude will write a careful one. Both of them do that in a window that lives somewhere else, and then hand the result back as text. Someone still has to know what a folder is, which file is the real one, and which command turns a polite suggestion into software that actually runs. That someone was always going to be me, and I was already tired.
 
-What I wanted is the shape of [OpenClaw](https://github.com/openclaw/openclaw): a free agent that stays on the computer, grows by writing its own instructions, and does the software work so the person who owns the house does not have to become a developer. OpenClaw's skills are plain files, which is why the agent can learn a new trick by writing one down. Grok Build is that idea with the claws already on this machine. The `grok` command is installed here. It is logged in. Point it at this folder and it can read the assistant, change it, run the tests, and leave the next version in the same place. The voice program is the doorbell. Grok Build is the workshop behind the house.
+What I wanted is the shape of [OpenClaw](https://github.com/openclaw/openclaw): an agent that stays on the computer, grows by writing its own instructions, and does the software work here. OpenClaw's skills are plain files, which is why the agent can learn a new trick by writing one down. Grok Build is that idea with the claws already on this machine. The `grok` command is installed here. It is logged in. Point it at this folder and it can read the assistant, change it, run the tests, and leave the next version in the same place. The voice program is the doorbell. Grok Build is the workshop behind the house.
 
-That is also why the thing can configure itself once the install is done. There is no API key to go hunting for, and no form that asks which model the internet is excited about this week. The assistant finds `grok` on the path, asks that command which models it can really run, and uses the Spanish voice the computer already has. The configuration is the fact that Grok is installed. After that, anyone who can follow the steps further down can open this folder with Grok and say, in ordinary language, what the house still needs. A louder greeting. A new order. A recognizer. Grok writes the change locally and produces the new program here. The source is public so they can have it. The local agent is what makes "anyone" include people who have never opened a programming book. They install it. They talk. The claws do the development.
+That is also why more of this can be added without starting over. There is no API key to go hunting for, and no form that asks which model the internet is excited about this week. The assistant finds `grok` on the path, asks that command which models it can really run, and uses the Spanish voice the computer already has. The configuration is the fact that Grok is installed. After that I can open this folder with Grok and say, in ordinary language, what the house still needs. A louder greeting. A new order. A recognizer. Another integration. Grok writes the change locally and produces the new program here.
 
-A question about the weather still does not get to rewrite the computer. That would be the cylinder's bad idea with better grammar. The workshop has its own door, and you open it on purpose, the same way you open an agent. One install, then the assistant can grow without a software career in the room. That is the whole bet.
+A question about the weather still does not get to rewrite the computer. That would be the cylinder's bad idea with better grammar. The workshop has its own door, and you open it on purpose, the same way you open an agent.
 
 ## What is actually running
 
@@ -48,7 +56,7 @@ The diagram further up is the whole product. These are the pieces that implement
 
 | Piece | Where it lives | What it is allowed to do |
 | --- | --- | --- |
-| Ear | `listen.py`, `listeners/dictation.ps1` | Turn sound into text on this PC. Windows Spanish dictation, if the language pack is there, or the keyboard. |
+| Ear | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Turn sound into text on this PC. Kroko streams Spanish locally. Windows Spanish dictation when that recognizer is present. The keyboard is always there. |
 | Rules | `brain.py`, `match.py`, `textutil.py` | Decide ignore, local order, or cloud. One wrong character still matches a local order. Two do not. |
 | Notebook | `store.py`, `%APPDATA%\GrokAssistant` | Keep sessions, speaker names, and the debug history. The shared session is replaced after 24 hours. |
 | Password | `auth.py` | Store a salted hash. The password itself is never written. |
@@ -119,6 +127,4 @@ Music wants `yt-dlp` and `mpv` on the PATH. Without them, the assistant admits i
 
 ## What this is
 
-An experiment, filed next to the others. The Pi proved the microphone could stay awake without a product manager. This one asks whether the same rules can live in a tray icon without becoming a cloud microphone that happens to have a desktop shortcut.
-
-If it works, the house gets a voice that knows when to shut up. If it does not, the Echo remains on the shelf, collecting the dust it spent a decade earning, and I will have learned something slightly more useful than the changelog of a light ring.
+A voice for the hours when reading is hard and the house is quiet. The laptop version is for an older person who already has a small computer nearby. The Raspberry Pi 4, with 4 GB, is the same assistant when a laptop should stay closed. The microphone can stay awake. Only a phrase that was meant for the assistant leaves as text.
