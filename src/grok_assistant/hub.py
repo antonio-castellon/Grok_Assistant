@@ -122,7 +122,12 @@ class Hub:
             self.brain.phase = ""
             self.brain._log(f"{self._identifier_name()}: cierre")
             return self.brain._goodbye(close)
+        from grok_assistant.match import blank_phrase
+
         self.brain.phase = ""
+        if not self.brain.in_conversation or blank_phrase(original):
+            self.brain._log(f"{self._identifier_name()}: no es saludo, ni comando, ni cierre. Se queda en casa.")
+            return Turn(status=self.brain.status_label())
         self.brain._log(f"{self._identifier_name()}: no es saludo, ni comando, ni cierre. Paso el texto tal cual.")
         return self._pass_through(turn, original)
 
@@ -137,7 +142,7 @@ class Hub:
         return self.brain.identifier_label()
 
     def _close_kind(self, original: str, data: dict | None) -> str | None:
-        from grok_assistant.match import closer, tokenize
+        from grok_assistant.match import blank_phrase, closer, tokenize
 
         heard = closer([norm for _, norm in tokenize(original)])
         if heard:
@@ -152,7 +157,11 @@ class Hub:
         return "adios"
 
     def _pass_through(self, turn: Turn, original: str) -> None:
-        self.brain.in_conversation = True
+        from grok_assistant.match import blank_phrase
+
+        if not self.brain.in_conversation or blank_phrase(original):
+            self.brain._log("no hay conversación. No envío a Grok.")
+            return Turn(status=self.brain.status_label())
         turn.job.kind = "converse"
         turn.job.text = original
         turn.speak = [self.brain._next_wait()]

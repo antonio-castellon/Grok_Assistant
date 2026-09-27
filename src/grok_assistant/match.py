@@ -162,6 +162,18 @@ def wake_is_presence(norms: list[str], name: str = "grok") -> bool:
     return loose(head, f"estas ahi {called}") or loose(head, f"{called} estas ahi") or loose(" ".join(norms), f"estas ahi {called}")
 
 
+def blank_phrase(text: str) -> bool:
+    return not any(char.isalnum() for char in (text or ""))
+
+
+def thin_phrase(text: str) -> bool:
+    """Silence, or one short word. Outside a conversation this never leaves the house."""
+    if blank_phrase(text):
+        return True
+    words = [word for word in (text or "").split() if any(char.isalnum() for char in word)]
+    return len(words) == 1 and len(words[0]) <= 4
+
+
 def is_test_word(norms: list[str]) -> bool:
     return len(norms) == 1 and (loose(norms[0], "prueba") or loose(norms[0], "test"))
 

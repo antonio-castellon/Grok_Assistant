@@ -14,8 +14,10 @@ from grok_assistant.match import (
     canonicalize,
     closer,
     display_order,
+    blank_phrase,
     is_exact_wake,
     is_test_word,
+    thin_phrase,
     is_wake,
     is_yes,
     parse_order,
@@ -74,6 +76,8 @@ def split_commands(answer: str) -> tuple[list[str], str]:
 def _next_step(decision: str, sent: bool, detail: str) -> str:
     if decision == "ignorar" and detail == "saludo":
         return "saludo. Abro la conversación. El saludo no sale de casa."
+    if decision == "ignorar" and detail == "corto":
+        return "vacío o una palabra corta. No lo envío."
     if decision == "ignorar" and detail == "larga":
         return "la ignoro: es larga y no va dirigida al asistente."
     if decision == "ignorar" and detail == "canción larga":
@@ -326,6 +330,10 @@ class Brain:
             if not is_cmd:
                 if is_test_word(norms):
                     return self._enter_test(heard)
+                if thin_phrase(heard):
+                    self._record(heard, "ignorar", False, "corto")
+                    self.last_heard = heard
+                    return Turn()
                 if self.settings.local_llm:
                     return self._review(heard)
                 self._record(heard, "ignorar", False)
@@ -358,6 +366,10 @@ class Brain:
         if is_test_word(norms):
             self._touch()
             return self._enter_test(heard)
+        if blank_phrase(heard):
+            self._record(heard, "ignorar", False, "corto")
+            self.last_heard = heard
+            return Turn()
         self._touch()
         return self._cloud(heard)
 
