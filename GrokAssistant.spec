@@ -35,6 +35,7 @@ a = Analysis(
         "grok_assistant.store",
         "grok_assistant.textutil",
         "grok_assistant.tray",
+        "grok_assistant.win_tray",
         "pystray",
         "pystray._win32",
         "PIL",

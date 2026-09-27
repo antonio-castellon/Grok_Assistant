@@ -95,7 +95,7 @@ The tray is the application. Left click opens the information window. Right clic
 
 ## Run the executable
 
-There is no installer. `dist/GrokAssistant.exe` is the whole program. Copy it anywhere and double-click it. Python does not have to be installed for that file. It opens the tray directly.
+There is no installer. `dist/GrokAssistant.exe` is the whole program. Copy it anywhere and double-click it. Python does not have to be installed for that file. A window opens with the live debug — what was heard, and what happens next — and the Grok icon stays in the tray. Closing the window hides it. Quit is the button, or Salir on the tray menu.
 
 If Grok Build is missing, or if you have never signed in, the program stops on a window before the tray. **Instalar Grok Build** runs the official installer:
 

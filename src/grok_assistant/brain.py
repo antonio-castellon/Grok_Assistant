@@ -70,6 +70,32 @@ def split_commands(answer: str) -> tuple[list[str], str]:
     return commands, "\n".join(kept).strip()
 
 
+def _next_step(decision: str, sent: bool, detail: str) -> str:
+    if decision == "ignorar" and detail == "saludo":
+        return "saludo local. No envío nada."
+    if decision == "ignorar" and detail == "larga":
+        return "la ignoro: es larga y no va dirigida al asistente."
+    if decision == "ignorar" and detail == "canción larga":
+        return "la ignoro: la canción pasa de dieciséis palabras."
+    if decision == "ignorar" and detail == "otra voz":
+        return "la ignoro: no es la voz que tengo abierta."
+    if decision == "ignorar" and detail == "prueba":
+        return "modo prueba. Lo anoto y no hago nada."
+    if decision == "ignorar" and not sent:
+        extra = f" ({detail})" if detail else ""
+        return f"la ignoro. Se queda en el cuaderno de casa.{extra}"
+    if decision == "conversacion":
+        extra = f" {detail}." if detail else ""
+        return f"es una pregunta. Envío solo el texto a Grok.{extra}"
+    if decision == "comando":
+        where = "Lo envío a clasificar." if sent else "Lo hago aquí."
+        bit = f" {detail}." if detail else ""
+        return f"es una orden.{bit} {where}"
+    if decision == "respuesta":
+        return detail or "respuesta de Grok"
+    return f"{decision} {detail}".strip()
+
+
 def for_speech(text: str) -> str:
     text = _ANSI.sub("", text or "")
     lines: list[str] = []
@@ -322,7 +348,7 @@ class Brain:
         if speech:
             spoken.append(speech)
             self.last_spoken = speech
-            self._log(f"grok: {speech}")
+            self._log(f"Grok responde: {speech}")
             self.sessions.append({
                 "ts": self.wall(),
                 "heard": "",
@@ -792,12 +818,12 @@ class Brain:
             "detail": detail,
         })
         stamp = time.strftime("%H:%M:%S")
-        place = "enviado" if sent else "local"
-        extra = f"  {detail}" if detail else ""
-        self.logs.append(f"{stamp}  oí: «{heard}»  →  {decision}{extra}  ({place})")
+        if heard:
+            self.logs.append(f"{stamp}  oí      {heard}")
+        self.logs.append(f"{stamp}  sigue   {_next_step(decision, sent, detail)}")
         if len(self.logs) > 500:
             self.logs = self.logs[-500:]
 
     def _log(self, line: str) -> None:
         stamp = time.strftime("%H:%M:%S")
-        self.logs.append(f"{stamp}  {line}")
+        self.logs.append(f"{stamp}  sigue   {line}")

@@ -1,4 +1,4 @@
-"""Tray icon, information window, debug transcript. Closing a window does not quit."""
+"""Main window plus a Windows tray icon. Closing the window hides it. Quit is explicit."""
 
 from __future__ import annotations
 
@@ -9,11 +9,24 @@ import threading
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 
+from grok_assistant.helptext import SCREEN_HELP
 from grok_assistant.hub import Hub, build
 from grok_assistant.listen import Dictation, windows_spanish_available
 from grok_assistant.music import Music
 from grok_assistant.paths import bundle_root
 from grok_assistant.speech import Speaker
+from grok_assistant.win_tray import WinTray
+
+BG = "#14181e"
+PANEL = "#1c232c"
+INK = "#e7eef2"
+MUTED = "#8ea0ab"
+AMBER = "#e8a030"
+TEAL = "#8fd0c4"
+FIELD = "#0e1216"
+FONT = ("Segoe UI", 12)
+FONT_BOLD = ("Segoe UI", 18, "bold")
+MONO = ("Consolas", 12)
 
 
 def shutdown_machine() -> None:
@@ -24,9 +37,13 @@ def shutdown_machine() -> None:
 
 
 def run() -> None:
+    if os.name == "nt":
+        try:
+            ctypes_shell = __import__("ctypes").windll.shell32
+            ctypes_shell.SetCurrentProcessExplicitAppUserModelID("xai.GrokAssistant")
+        except Exception:
+            pass
     root = tk.Tk()
-    root.title("Grok")
-    root.withdraw()
     app = TrayApp(root, build())
     app.start()
     root.mainloop()
@@ -42,11 +59,12 @@ class TrayApp:
         self.jobs: queue.Queue = queue.Queue()
         self.ui: queue.Queue = queue.Queue()
         self.view_from = 0
-        self.info = None
-        self.debug = None
-        self.vars: dict[str, tk.StringVar] = {}
         self.debug_text = None
-        self.icon = None
+        self.help_text = None
+        self.status_var = tk.StringVar(value="Arrancando")
+        self.detail_var = tk.StringVar(value="")
+        self.tray: WinTray | None = None
+        self.tray_ok = False
         self.dictation: Dictation | None = None
         self.pause_file = hub.data_dir / "mic.pause"
         self._closing = False
@@ -55,62 +73,120 @@ class TrayApp:
         if windows_spanish_available():
             recognizers.append("windows")
         self.hub.brain.set_devices(voices, recognizers)
+        self._style()
+        self._build_window()
 
     def start(self) -> None:
         threading.Thread(target=self._worker, daemon=True).start()
         self.jobs.put(("startup", ""))
-        self._build_tray()
-        self.root.after(400, self._open_info)
-        self.root.after(500, self._pulse)
+        self._start_tray()
         self._sync_ear()
+        self._note("ventana lista")
+        self.root.after(200, self._pulse)
 
-    def _build_tray(self) -> None:
+    def _style(self) -> None:
+        self.root.configure(bg=BG)
+        style = ttk.Style(self.root)
         try:
-            import pystray
-            from PIL import Image
-        except ImportError:
-            self._fallback_window()
-            return
-        image = self._tray_image()
-        menu = pystray.Menu(
-            pystray.MenuItem(lambda item: "Seguir escuchando" if self.user_paused else "Pausar escucha", self._toggle_pause),
-            pystray.MenuItem("Información", self._show_info, default=True),
-            pystray.MenuItem("Depuración", self._show_debug),
-            pystray.MenuItem("Reconocedor", pystray.Menu(self._recognizer_menu)),
-            pystray.MenuItem("Voz", pystray.Menu(self._voice_menu)),
-            pystray.MenuItem("Modelo", pystray.Menu(self._model_menu)),
-            pystray.MenuItem("Sesiones", pystray.Menu(self._session_menu)),
-            pystray.MenuItem("Contraseña de administrador", self._set_password),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Salir", self._quit),
+            style.theme_use("clam")
+        except tk.TclError:
+            pass
+        style.configure(".", background=BG, foreground=INK, font=FONT)
+        style.configure("TFrame", background=BG)
+        style.configure("Panel.TFrame", background=PANEL)
+        style.configure("TLabel", background=BG, foreground=INK, font=FONT)
+        style.configure("Muted.TLabel", background=BG, foreground=MUTED, font=("Segoe UI", 10))
+        style.configure("Status.TLabel", background=BG, foreground=AMBER, font=FONT_BOLD)
+        style.configure("TButton", background="#2a3340", foreground=INK, font=FONT, padding=(12, 6), borderwidth=0)
+        style.map("TButton", background=[("active", "#3a4656")])
+        style.configure("TEntry", fieldbackground=FIELD, foreground=INK, insertcolor=INK, font=FONT)
+
+    def _build_window(self) -> None:
+        self.root.title("Grok Assistant")
+        self.root.geometry("860x680")
+        self.root.minsize(640, 480)
+        icon = bundle_root() / "docs" / "img" / "grok.ico"
+        if icon.exists():
+            try:
+                self.root.iconbitmap(str(icon))
+            except tk.TclError:
+                pass
+        self.root.protocol("WM_DELETE_WINDOW", self._hide)
+
+        head = ttk.Frame(self.root)
+        head.pack(fill="x", padx=18, pady=(16, 4))
+        ttk.Label(head, text="Grok Assistant", style="Status.TLabel").pack(side="left")
+        ttk.Label(head, textvariable=self.status_var, font=FONT).pack(side="right")
+        ttk.Label(self.root, textvariable=self.detail_var, style="Muted.TLabel").pack(anchor="w", padx=18)
+
+        ttk.Label(self.root, text="Depuración — lo que oye y lo que hace después", style="Muted.TLabel").pack(anchor="w", padx=18, pady=(12, 4))
+        log_wrap = tk.Frame(self.root, bg=PANEL, padx=1, pady=1)
+        log_wrap.pack(fill="both", expand=True, padx=18, pady=(0, 8))
+        self.debug_text = tk.Text(
+            log_wrap, height=18, wrap="word", bg=FIELD, fg=INK, insertbackground=INK,
+            font=MONO, relief="flat", padx=12, pady=10, borderwidth=0,
         )
-        self.icon = pystray.Icon("grok-assistant", image, "Grok Assistant", menu)
-        try:
-            self.icon.run_detached()
-        except Exception:
-            self.icon = None
-            self._fallback_window()
+        self.debug_text.pack(fill="both", expand=True)
+        self.debug_text.tag_configure("time", foreground="#667884")
+        self.debug_text.tag_configure("oi", foreground=AMBER)
+        self.debug_text.tag_configure("sigue", foreground=TEAL)
+        self.debug_text.configure(state="disabled")
 
-    def _tray_image(self):
-        from PIL import Image, ImageDraw
+        ttk.Label(self.root, text="Ayuda — no es el registro", style="Muted.TLabel").pack(anchor="w", padx=18, pady=(4, 2))
+        self.help_text = tk.Text(
+            self.root, height=6, wrap="word", bg=PANEL, fg=MUTED, font=("Segoe UI", 10),
+            relief="flat", padx=12, pady=8, borderwidth=0,
+        )
+        self.help_text.insert("end", SCREEN_HELP.strip())
+        self.help_text.configure(state="disabled")
+        self.help_text.pack(fill="x", padx=18, pady=(0, 8))
 
-        mark = bundle_root() / "docs" / "img" / "grok-mark.png"
-        if mark.exists():
-            image = Image.open(mark).convert("RGBA")
-            return image.resize((64, 64), Image.Resampling.LANCZOS)
-        image = Image.new("RGBA", (64, 64), (0, 0, 0, 255))
-        draw = ImageDraw.Draw(image)
-        draw.ellipse((8, 8, 56, 56), outline=(255, 255, 255, 255), width=6)
-        draw.line((10, 54, 54, 10), fill=(255, 255, 255, 255), width=6)
-        return image
+        bar = ttk.Frame(self.root)
+        bar.pack(fill="x", padx=18, pady=(0, 8))
+        self.entry = ttk.Entry(bar)
+        self.entry.pack(side="left", fill="x", expand=True, ipady=4)
+        self.entry.bind("<Return>", self._send)
+        ttk.Button(bar, text="Enviar", command=self._send).pack(side="left", padx=(8, 0))
 
-    def _fallback_window(self) -> None:
+        actions = ttk.Frame(self.root)
+        actions.pack(fill="x", padx=18, pady=(0, 16))
+        self.pause_button = ttk.Button(actions, text="Pausar escucha", command=self._toggle_from_ui)
+        self.pause_button.pack(side="left")
+        ttk.Button(actions, text="Limpiar registro", command=self._clear_view).pack(side="left", padx=8)
+        ttk.Button(actions, text="Salir", command=lambda: self._quit(None, None)).pack(side="right")
+
+    def _start_tray(self) -> None:
+        icon = str(bundle_root() / "docs" / "img" / "grok.ico")
+        self.tray = WinTray(
+            icon,
+            on_show=lambda: self.ui.put(self._show_main),
+            on_pause=lambda: self.ui.put(self._toggle_from_ui),
+            on_quit=lambda: self.ui.put(lambda: self._quit(None, None)),
+        )
+        self.tray_ok = self.tray.start()
+        if self.tray_ok:
+            self._note("bandeja activa. Cerrar esta ventana la esconde; el icono de Grok se queda.")
+        else:
+            self._note(f"la bandeja no arrancó ({self.tray.error}). Esta ventana es el programa.")
+
+    def _note(self, text: str) -> None:
+        import time
+        self.hub.brain.logs.append(f"{time.strftime('%H:%M:%S')}  sigue   {text}")
+
+    def _hide(self) -> None:
+        if self.tray_ok:
+            self.root.withdraw()
+            self._note("ventana escondida. El icono de la bandeja sigue.")
+        else:
+            self._note("sin bandeja no escondo la ventana. Salir cierra el programa.")
+
+    def _show_main(self) -> None:
         self.root.deiconify()
-        self.root.title("Grok — sin bandeja")
-        ttk.Button(self.root, text="Información", command=lambda: self._show_info(None, None)).pack(fill="x")
-        ttk.Button(self.root, text="Depuración", command=lambda: self._show_debug(None, None)).pack(fill="x")
-        ttk.Button(self.root, text="Pausar / seguir", command=lambda: self._toggle_pause(None, None)).pack(fill="x")
-        ttk.Button(self.root, text="Salir", command=lambda: self._quit(None, None)).pack(fill="x")
+        self.root.lift()
+        try:
+            self.root.focus_force()
+        except tk.TclError:
+            pass
 
     def _worker(self) -> None:
         while True:
@@ -119,10 +195,12 @@ class TrayApp:
                 break
             if kind == "startup":
                 self.say(self.hub.startup())
+                self._refresh()
                 continue
             if kind == "tick":
                 result = self.hub.tick(speaker=self.say)
                 self._apply(result)
+                self._refresh()
                 continue
             if kind == "phrase":
                 self._hold_mic(True)
@@ -135,6 +213,7 @@ class TrayApp:
                         self._apply(follow)
                 finally:
                     self._hold_mic(False)
+                self._refresh()
 
     def say(self, text: str) -> None:
         if not text:
@@ -144,7 +223,7 @@ class TrayApp:
             voice = self._voice_name()
             ok = self.speaker.say(text, None if voice == "Predeterminada" else voice, self.hub.brain.settings.volume)
             if not ok:
-                self.hub.brain.logs.append(f"no pude decir: {text}")
+                self._note(f"no pude decir: {text}")
         finally:
             self.music.release_after_speech()
 
@@ -173,7 +252,7 @@ class TrayApp:
                 self.music.stop()
                 self._hold_mic(False)
             elif kind == "shutdown":
-                self._shutdown()
+                shutdown_machine()
             elif kind == "recognizer":
                 self._sync_ear()
 
@@ -196,6 +275,12 @@ class TrayApp:
             return
         self.jobs.put(("phrase", text))
 
+    def _send(self, _event=None) -> None:
+        text = self.entry.get().strip()
+        self.entry.delete(0, "end")
+        if text:
+            self.jobs.put(("phrase", text))
+
     def _pulse(self) -> None:
         if self._closing:
             return
@@ -207,7 +292,7 @@ class TrayApp:
             job()
         self.jobs.put(("tick", ""))
         self._paint()
-        self.root.after(1000, self._pulse)
+        self.root.after(400, self._pulse)
 
     def _refresh(self) -> None:
         self.ui.put(self._paint)
@@ -217,192 +302,43 @@ class TrayApp:
             snap = self.hub.brain.snapshot()
         except tk.TclError:
             return
-        if self.icon is not None:
-            self.icon.title = f"Grok — {snap['status']}"
-        for key, var in self.vars.items():
-            value = snap.get(key, "")
-            if key == "shared":
-                value = "sí, la compartida" if snap["shared"] else "no, una con nombre"
-            var.set(str(value))
-        if self.debug_text is not None:
-            shown = self.hub.brain.logs[self.view_from:]
-            self.debug_text.configure(state="normal")
-            self.debug_text.delete("1.0", "end")
-            self.debug_text.insert("end", "\n".join(shown))
-            self.debug_text.configure(state="disabled")
-            self.debug_text.see("end")
+        self.status_var.set(snap["status"])
+        self.detail_var.set(
+            f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {snap['recognizer']}  ·  {snap['session']}  ·  {snap['volume']}%"
+        )
+        if self.tray_ok and self.tray is not None:
+            self.tray.set_tip(f"Grok Assistant — {snap['status']}")
+        if self.debug_text is None:
+            return
+        shown = self.hub.brain.logs[self.view_from:]
+        self.debug_text.configure(state="normal")
+        self.debug_text.delete("1.0", "end")
+        for line in shown:
+            self._insert_log(line)
+        self.debug_text.configure(state="disabled")
+        self.debug_text.see("end")
 
-    def _window(self, title: str) -> tk.Toplevel:
-        window = tk.Toplevel(self.root)
-        window.title(title)
-        window.protocol("WM_DELETE_WINDOW", window.withdraw)
-        return window
-
-    def _show_info(self, icon, item) -> None:
-        self.ui.put(self._open_info)
-
-    def _open_info(self) -> None:
-        if self.info is None or not self.info.winfo_exists():
-            self.info = self._window("Información")
-            labels = [
-                ("status", "Estado"),
-                ("model", "Modelo"),
-                ("effort", "Razonamiento"),
-                ("voice", "Voz"),
-                ("recognizer", "Reconocedor"),
-                ("session", "Sesión"),
-                ("shared", "Compartida"),
-                ("volume", "Volumen"),
-                ("agent", "Agente"),
-                ("last_heard", "Último oído"),
-                ("last_spoken", "Último dicho"),
-            ]
-            for key, label in labels:
-                row = ttk.Frame(self.info)
-                row.pack(fill="x", padx=8, pady=2)
-                ttk.Label(row, text=label, width=16).pack(side="left")
-                var = tk.StringVar()
-                self.vars[key] = var
-                ttk.Label(row, textvariable=var).pack(side="left")
-            text = tk.Text(self.info, height=16, width=78, wrap="word")
-            text.insert("end", self.hub.brain.snapshot()["help"])
-            text.configure(state="disabled")
-            text.pack(fill="both", expand=True, padx=8, pady=8)
-        self.info.deiconify()
-        self.info.lift()
-        self._refresh()
-
-    def _show_debug(self, icon, item) -> None:
-        self.ui.put(self._open_debug)
-
-    def _open_debug(self) -> None:
-        if self.debug is None or not self.debug.winfo_exists():
-            self.debug = self._window("Depuración")
-            self.debug_text = tk.Text(self.debug, height=22, width=88, wrap="word")
-            self.debug_text.pack(fill="both", expand=True)
-            self.debug_text.configure(state="disabled")
-            bar = ttk.Frame(self.debug)
-            bar.pack(fill="x")
-            entry = ttk.Entry(bar)
-            entry.pack(side="left", fill="x", expand=True, padx=4, pady=4)
-
-            def send(_event=None) -> None:
-                text = entry.get().strip()
-                entry.delete(0, "end")
-                if text:
-                    self.jobs.put(("phrase", text))
-
-            entry.bind("<Return>", send)
-            ttk.Button(bar, text="Decir", command=send).pack(side="left")
-            ttk.Button(bar, text="Limpiar vista", command=self._clear_view).pack(side="left", padx=4)
-        self.debug.deiconify()
-        self.debug.lift()
-        self._refresh()
+    def _insert_log(self, line: str) -> None:
+        parts = line.split("  ", 2)
+        if len(parts) == 3 and parts[1].strip() in {"oí", "sigue"}:
+            stamp, kind, rest = parts[0], parts[1].strip(), parts[2]
+            self.debug_text.insert("end", stamp + "  ", "time")
+            self.debug_text.insert("end", kind.ljust(6), "oi" if kind == "oí" else "sigue")
+            self.debug_text.insert("end", rest.strip() + "\n")
+            return
+        self.debug_text.insert("end", line + "\n")
 
     def _clear_view(self) -> None:
         self.view_from = len(self.hub.brain.logs)
-        self._refresh()
+        self._paint()
 
-    def _toggle_pause(self, icon, item) -> None:
+    def _toggle_from_ui(self) -> None:
         self.user_paused = not self.user_paused
         self.hub.brain.set_paused(self.user_paused)
         self._sync_ear()
-        if self.icon is not None:
-            self.icon.update_menu()
-        self._refresh()
-
-    def _recognizer_menu(self):
-        import pystray
-
-        def choose(name):
-            def action(icon, item, picked=name):
-                self.hub.brain.settings.recognizer = picked
-                self.hub.brain.persist()
-                self._sync_ear()
-                self.icon.update_menu()
-            return action
-
-        return tuple(
-            pystray.MenuItem(name, choose(name), radio=True, checked=lambda item, name=name: self.hub.brain.settings.recognizer == name)
-            for name in self.hub.brain.recognizers
-        )
-
-    def _voice_menu(self):
-        import pystray
-
-        def choose(index):
-            def action(icon, item, picked=index):
-                self.hub.brain.settings.voice_index = picked
-                self.hub.brain.persist()
-                self.icon.update_menu()
-            return action
-
-        return tuple(
-            pystray.MenuItem(
-                f"{index + 1}. {name}",
-                choose(index),
-                radio=True,
-                checked=lambda item, index=index: self.hub.brain.settings.voice_index == index,
-            )
-            for index, name in enumerate(self.hub.brain.voices)
-        )
-
-    def _model_menu(self):
-        import pystray
-
-        models = [self.hub.brain.settings.model]
-        if self.hub.cli is not None:
-            found = self.hub.cli.models()
-            if found:
-                models = found
-
-        def choose(name):
-            def action(icon, item, picked=name):
-                self.hub.brain.settings.model = picked
-                self.hub.brain.persist()
-                self.icon.update_menu()
-            return action
-
-        items = [
-            pystray.MenuItem(
-                name,
-                choose(name),
-                radio=True,
-                checked=lambda item, name=name: self.hub.brain.settings.model == name,
-            )
-            for name in models
-        ]
-        effort = "alto" if self.hub.brain.effort_now == "high" else "bajo"
-        items.append(pystray.MenuItem(f"Razonamiento: {effort}", None, enabled=False))
-        return tuple(items)
-
-    def _session_menu(self):
-        import pystray
-
-        def choose(name):
-            def action(icon, item, picked=name):
-                self.hub.brain.sessions.open(picked)
-                self.icon.update_menu()
-                self._refresh()
-            return action
-
-        return tuple(
-            pystray.MenuItem(name, choose(name), radio=True, checked=lambda item, name=name: self.hub.brain.sessions.active == name)
-            for name in self.hub.brain.sessions.names()
-        )
-
-    def _set_password(self, icon, item) -> None:
-        self.ui.put(self._password_dialog)
-
-    def _password_dialog(self) -> None:
-        first = simpledialog.askstring("Administrador", "Nueva contraseña:", show="*", parent=self.root)
-        if not first:
-            return
-        second = simpledialog.askstring("Administrador", "Repite la contraseña:", show="*", parent=self.root)
-        if first != second:
-            messagebox.showinfo("Administrador", "No coinciden.", parent=self.root)
-            return
-        self.hub.brain.auth.set_password(first)
+        self.pause_button.configure(text="Seguir escuchando" if self.user_paused else "Pausar escucha")
+        self._note("escucha en pausa" if self.user_paused else "vuelvo a escuchar")
+        self._paint()
 
     def _ask(self, title: str) -> str | None:
         event = threading.Event()
@@ -416,15 +352,12 @@ class TrayApp:
         event.wait(timeout=180)
         return box["value"]
 
-    def _shutdown(self) -> None:
-        shutdown_machine()
-
-    def _quit(self, icon, item) -> None:
+    def _quit(self, _icon, _item) -> None:
         self._closing = True
         self.jobs.put(("stop", ""))
         if self.dictation is not None:
             self.dictation.stop()
         self.music.stop()
-        if self.icon is not None:
-            self.icon.stop()
-        self.ui.put(self.root.destroy)
+        if self.tray is not None:
+            self.tray.stop()
+        self.root.after(0, self.root.destroy)
