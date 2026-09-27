@@ -837,6 +837,16 @@ class TrayApp:
         finally:
             self.music.release_after_speech()
 
+    def _play_song(self, title: str) -> None:
+        def status(message: str) -> None:
+            self.ui.put(lambda message=message: self.say(message))
+
+        trouble = self.music.play(title, self.hub.brain.settings.volume, status)
+        if trouble:
+            self.ui.put(lambda trouble=trouble: self.say(trouble))
+            return
+        self.ui.put(lambda: self._hold_mic(True))
+
     def _voice_name(self) -> str:
         voices = self.hub.brain.voices
         index = self.hub.brain.settings.voice_index
@@ -848,10 +858,8 @@ class TrayApp:
         for effect in result.effects:
             kind = effect[0]
             if kind == "play":
-                trouble = self.music.play(effect[1], self.hub.brain.settings.volume)
-                if trouble:
-                    self.say(trouble)
-                self._hold_mic(True)
+                title = effect[1]
+                threading.Thread(target=lambda title=title: self._play_song(title), daemon=True).start()
             elif kind == "pause_music":
                 self.music.pause()
                 self._hold_mic(False)

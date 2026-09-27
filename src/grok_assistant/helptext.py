@@ -72,7 +72,8 @@ HELP_TOPICS = (
     (
         "Canción",
         "Pide una canción por el título. Puede ir sin la palabra comando. Cabe hasta dieciséis palabras. "
-        "Hace falta yt-dlp y mpv. Mientras suena, el micrófono está cerrado. La voz pausa la música y luego la sigue, salvo que tú la hayas pausado.",
+        "La primera vez baja yt-dlp y mpv a este equipo. Buscan el audio en YouTube y lo ponen aquí, sin cuenta. "
+        "Mientras suena, el micrófono está cerrado. La voz pausa la música y luego la sigue, salvo que tú la hayas pausado.",
         "pon la canción luna de miel",
     ),
     (
