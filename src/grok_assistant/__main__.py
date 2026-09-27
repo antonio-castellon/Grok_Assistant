@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import faulthandler
 import sys
 import tempfile
 import traceback
@@ -11,6 +12,13 @@ from grok_assistant.paths import bundle_root, default_data_dir, load_lines
 
 
 def main(argv: list[str] | None = None) -> None:
+    try:
+        folder = default_data_dir()
+        folder.mkdir(parents=True, exist_ok=True)
+        crash = folder / "crash.log"
+        faulthandler.enable(crash.open("a", encoding="utf-8"), all_threads=True)
+    except OSError:
+        pass
     try:
         _main(argv)
     except Exception:

@@ -10,10 +10,13 @@ _LABELS = {"base": "Whisper base", "whisper": "Whisper pequeño"}
 
 
 def choose_transcript(first: str, second: str) -> str:
+    from grok_assistant.match import noise_phrase
+
     cleaned = (second or "").strip()
-    if cleaned:
+    primary = (first or "").strip()
+    if cleaned and not noise_phrase(cleaned):
         return cleaned
-    return (first or "").strip()
+    return primary or cleaned
 
 
 class Refiner:

@@ -16,6 +16,8 @@ from grok_assistant.match import (
     display_order,
     blank_phrase,
     is_exact_wake,
+    is_presence,
+    noise_phrase,
     is_test_word,
     thin_phrase,
     is_wake,
@@ -74,10 +76,14 @@ def split_commands(answer: str) -> tuple[list[str], str]:
 
 
 def _next_step(decision: str, sent: bool, detail: str) -> str:
+    if decision == "ignorar" and detail == "presencia":
+        return "pregunta si le oigo. Respondo aquí. No envío nada."
     if decision == "ignorar" and detail == "saludo":
         return "saludo. Abro la conversación. El saludo no sale de casa."
     if decision == "ignorar" and detail == "corto":
         return "vacío o una palabra corta. No lo envío."
+    if decision == "ignorar" and detail == "ruido":
+        return "ruido del reconocedor. No lo envío."
     if decision == "ignorar" and detail == "larga":
         return "la ignoro: es larga y no va dirigida al asistente."
     if decision == "ignorar" and detail == "canción larga":
@@ -281,6 +287,10 @@ class Brain:
         heard = " ".join((text or "").split())
         if not heard or self.paused:
             return Turn()
+        if noise_phrase(heard) and not self.test_mode:
+            self._record(heard, "ignorar", False, "ruido")
+            self.last_heard = heard
+            return Turn()
         self.sessions.roll(self.wall())
         pairs = tokenize(heard)
         norms = [norm for _, norm in pairs]
@@ -309,6 +319,8 @@ class Brain:
         song = song_of(body)
 
         if not self.in_conversation:
+            if not is_cmd and is_presence(norms, self.settings.wake_name):
+                return self._presence(heard)
             if not is_cmd and self._is_wake(norms):
                 return self._wake(heard, norms, speaker_id)
             if song.too_long:
@@ -342,6 +354,8 @@ class Brain:
             self._touch()
             return self._order(heard, body, len(norms))
 
+        if not is_cmd and is_presence(norms, self.settings.wake_name):
+            return self._presence(heard)
         if not is_cmd and self._is_wake(norms):
             return self._wake(heard, norms, speaker_id)
         kind = closer([norm for _, norm in body] if is_cmd else norms)
@@ -557,6 +571,14 @@ class Brain:
             self.naming = None
             return self._said([f"He oído: {heard}. 6 de 6. A partir de ahora me llamo {chosen}."])
         return self._said([f"He oído: {heard}. {count} de 6. Otra vez."])
+
+    def _presence(self, heard: str) -> Turn:
+        self._record(heard, "ignorar", False, "presencia")
+        self.last_heard = heard
+        self.in_conversation = True
+        self.detail_used = False
+        self._touch()
+        return self._said(["Sí, te escucho."], status="Conversación")
 
     def _wake(self, heard: str, norms: list[str], speaker_id: str | None, logged: bool = True) -> Turn:
         if logged:

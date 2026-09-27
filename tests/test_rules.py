@@ -196,6 +196,7 @@ def test_the_second_reading_keeps_an_english_name():
 
     assert choose_transcript("pon la cancion de de bi tles", "pon la canción de The Beatles") == "pon la canción de The Beatles"
     assert choose_transcript("pon la cancion", "") == "pon la cancion"
+    assert choose_transcript("Hola, Grok, ¿me escuches?", "[MUSIC]") == "Hola, Grok, ¿me escuches?"
 
 
 def test_debug_log_keeps_the_last_500_lines(world):
@@ -462,6 +463,20 @@ def test_unmatched_text_stays_home_until_a_conversation_starts(world):
     assert cli.calls == []
     assert not hub.brain.in_conversation
     assert result.spoken == []
+
+
+def test_hola_grok_me_escuchas_is_answered_here(world):
+    hub, cli, _clock = world
+    result = hub.run("hola grok, Me escuchas?")
+    assert result.spoken == ["Sí, te escucho."]
+    assert hub.brain.in_conversation
+    assert cli.calls == []
+    heard = hub.run("Hola, Grok, ¿me escuches?")
+    assert heard.spoken == ["Sí, te escucho."]
+    assert cli.calls == []
+    noise = hub.run("[MUSIC]")
+    assert noise.spoken == []
+    assert cli.calls == []
 
 
 def test_blank_or_a_short_word_never_reaches_grok(world):

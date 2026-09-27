@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from grok_assistant.textutil import edit_distance, loose, normalize, tokenize
@@ -156,6 +157,35 @@ def is_wake(norms: list[str], name: str = "grok", extras: tuple[str, ...] | list
     return False
 
 
+_PRESENCE = (
+    "me escuchas",
+    "me oyes",
+    "me oye",
+    "estas ahi",
+    "estas alli",
+    "me estas oyendo",
+)
+
+
+def without_wake(norms: list[str], name: str = "grok") -> list[str]:
+    called = normalize(name) or "grok"
+    blob = " ".join(norms)
+    for prefix in (f"hola {called}", f"ok {called}", f"despierta {called}", called):
+        if blob == prefix:
+            return []
+        if blob.startswith(prefix + " "):
+            return blob[len(prefix) + 1:].split()
+    return norms
+
+
+def is_presence(norms: list[str], name: str = "grok") -> bool:
+    rest = without_wake(norms, name)
+    if not rest:
+        return False
+    blob = " ".join(rest)
+    return any(blob == item or loose(blob, item) for item in _PRESENCE)
+
+
 def wake_is_presence(norms: list[str], name: str = "grok") -> bool:
     called = normalize(name) or "grok"
     head = " ".join(norms[:4])
@@ -164,6 +194,15 @@ def wake_is_presence(norms: list[str], name: str = "grok") -> bool:
 
 def blank_phrase(text: str) -> bool:
     return not any(char.isalnum() for char in (text or ""))
+
+
+def noise_phrase(text: str) -> bool:
+    """Whisper marks like [MUSIC] or [BLANK_AUDIO]. They are not a question."""
+    raw = (text or "").strip()
+    if "[" not in raw or "]" not in raw:
+        return False
+    rest = re.sub(r"\[[^\[\]]*\]", " ", raw)
+    return blank_phrase(rest)
 
 
 def thin_phrase(text: str) -> bool:

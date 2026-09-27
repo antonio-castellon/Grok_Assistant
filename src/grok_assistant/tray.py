@@ -970,8 +970,22 @@ class TrayApp:
     def _heard(self, text: str, audio=None) -> None:
         if self.user_paused:
             return
-        embedding = self.voiceprint.embed(audio) if audio is not None else None
-        second = self.refiner.transcribe(audio) if audio is not None else ""
+        from grok_assistant.match import is_presence, words_norm
+
+        norms = words_norm(text)
+        # A "can you hear me" stays local. Do not load a second speech model on top of Kroko for it.
+        second = ""
+        embedding = None
+        if audio is not None and not is_presence(norms, self.hub.brain.settings.wake_name):
+            try:
+                second = self.refiner.transcribe(audio)
+            except Exception as exc:
+                self._write_crash(exc)
+                second = ""
+            try:
+                embedding = self.voiceprint.embed(audio)
+            except Exception as exc:
+                self._write_crash(exc)
         chosen = choose_transcript(text, second)
         if second and second.casefold() != text.casefold():
             self.jobs.put(("note", f"{self.refiner.label()} relee: {second}"))
