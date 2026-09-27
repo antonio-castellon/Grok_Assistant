@@ -26,8 +26,16 @@ NIF_TIP = 4
 IMAGE_ICON = 1
 LR_LOADFROMFILE = 0x0010
 MF_STRING = 0
+MF_CHECKED = 0x0008
+MF_POPUP = 0x0010
+MF_SEPARATOR = 0x0800
 TPM_RIGHTALIGN = 0x0008
 TPM_BOTTOMALIGN = 0x0020
+
+user32.AppendMenuW.argtypes = [wintypes.HMENU, wintypes.UINT, ctypes.c_size_t, wintypes.LPCWSTR]
+user32.AppendMenuW.restype = wintypes.BOOL
+user32.CreatePopupMenu.restype = wintypes.HMENU
+user32.DestroyMenu.argtypes = [wintypes.HMENU]
 HWND_MESSAGE = wintypes.HWND(-3)
 LRESULT = ctypes.c_ssize_t
 WNDPROC = ctypes.WINFUNCTYPE(LRESULT, wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
@@ -76,11 +84,13 @@ class POINT(ctypes.Structure):
 
 
 class WinTray:
-    def __init__(self, icon_path: str, on_show, on_pause, on_quit):
+    def __init__(self, icon_path: str, on_show, on_command, items=None):
         self.icon_path = icon_path
         self.on_show = on_show
-        self.on_pause = on_pause
-        self.on_quit = on_quit
+        self.on_command = on_command
+        self.items = items or _default_items
+        self._ids: dict[int, str] = {}
+        self._next_id = 1
         self.hwnd = None
         self.hicon = None
         self.ok = False
@@ -156,13 +166,9 @@ class WinTray:
                 self._menu(hwnd)
             return 0
         if msg == WM_COMMAND:
-            choice = wparam & 0xFFFF
-            if choice == 1:
-                self.on_show()
-            elif choice == 2:
-                self.on_pause()
-            elif choice == 3:
-                self.on_quit()
+            key = self._ids.get(int(wparam) & 0xFFFF)
+            if key and self.on_command:
+                self.on_command(key)
             return 0
         if msg == WM_CLOSE:
             shell32.Shell_NotifyIconW(NIM_DELETE, ctypes.byref(self._data("")))
@@ -174,13 +180,44 @@ class WinTray:
         return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
 
     def _menu(self, hwnd) -> None:
-        menu = user32.CreatePopupMenu()
-        user32.AppendMenuW(menu, MF_STRING, 1, "Mostrar")
-        user32.AppendMenuW(menu, MF_STRING, 2, "Pausar o seguir")
-        user32.AppendMenuW(menu, MF_STRING, 3, "Salir")
+        self._ids = {}
+        self._next_id = 1
+        menu, owned = self._build(self.items())
         point = POINT()
         user32.GetCursorPos(ctypes.byref(point))
         user32.SetForegroundWindow(hwnd)
         user32.TrackPopupMenu(menu, TPM_RIGHTALIGN | TPM_BOTTOMALIGN, point.x, point.y, 0, hwnd, None)
         user32.PostMessageW(hwnd, WM_NULL, 0, 0)
-        user32.DestroyMenu(menu)
+        for handle in owned:
+            user32.DestroyMenu(handle)
+
+    def _build(self, items: list) -> tuple:
+        menu = user32.CreatePopupMenu()
+        owned = [menu]
+        for item in items:
+            kind = item[0]
+            if kind == "sep":
+                user32.AppendMenuW(menu, MF_SEPARATOR, 0, None)
+                continue
+            if kind == "sub":
+                child, nested = self._build(item[2])
+                owned.extend(nested)
+                user32.AppendMenuW(menu, MF_STRING | MF_POPUP, ctypes.cast(child, ctypes.c_void_p).value or 0, item[1])
+                continue
+            number = self._next_id
+            self._next_id += 1
+            self._ids[number] = item[2]
+            flags = MF_STRING | (MF_CHECKED if item[3] else 0)
+            if item[2] == "noop":
+                flags |= 0x0001
+            user32.AppendMenuW(menu, flags, number, item[1])
+        return menu, owned
+
+
+def _default_items() -> list:
+    return [
+        ("cmd", "Mostrar", "show", False),
+        ("cmd", "Pausar o seguir", "pause", False),
+        ("sep",),
+        ("cmd", "Salir", "quit", False),
+    ]
