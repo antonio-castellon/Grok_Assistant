@@ -58,6 +58,20 @@ def _tell_crash(path: Path) -> None:
         return
 
 
+def _importable(name: str) -> bool:
+    try:
+        __import__(name)
+    except Exception:
+        return False
+    return True
+
+
+def _kroko_ready() -> bool:
+    from grok_assistant.kroko_ear import kroko_dir
+
+    return kroko_dir() is not None
+
+
 def _write_check() -> None:
     from grok_assistant import __version__
     from grok_assistant.grok_cli import GrokCLI
@@ -71,6 +85,9 @@ def _write_check() -> None:
         f"listeners={(bundle_root() / 'listeners' / 'dictation.ps1').exists()}",
         f"grok={GrokCLI.find() or ''}",
         f"state={status.state}",
+        f"kroko_model={_kroko_ready()}",
+        f"sherpa={_importable('sherpa_onnx')}",
+        f"mic={_importable('sounddevice')}",
     ]
     Path(tempfile.gettempdir(), "GrokAssistant-check.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
 

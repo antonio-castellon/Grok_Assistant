@@ -3,17 +3,29 @@
 
 from pathlib import Path
 
+import sherpa_onnx
+import sounddevice
+
 root = Path(SPECPATH)
+
+# The extension and its DLLs have to stay in sherpa_onnx/lib. Flattening them breaks the import.
+sherpa_bins = [
+    (str(item), "sherpa_onnx/lib")
+    for item in (Path(sherpa_onnx.__file__).parent / "lib").iterdir()
+    if item.suffix.lower() in {".dll", ".pyd"}
+]
+portaudio = Path(sounddevice.__file__).parent / "_sounddevice_data" / "portaudio-binaries" / "libportaudio64bit.dll"
 
 a = Analysis(
     [str(root / "src" / "grok_assistant" / "__main__.py")],
     pathex=[str(root / "src")],
-    binaries=[],
+    binaries=sherpa_bins,
     datas=[
         (str(root / "src" / "grok_assistant" / "lines"), "grok_assistant/lines"),
         (str(root / "scripts"), "scripts"),
         (str(root / "listeners"), "listeners"),
         (str(root / "docs" / "img"), "docs/img"),
+        (str(portaudio), "_sounddevice_data/portaudio-binaries"),
     ],
     hiddenimports=[
         "grok_assistant",
@@ -22,6 +34,14 @@ a = Analysis(
         "grok_assistant.console",
         "grok_assistant.grok_cli",
         "grok_assistant.helptext",
+        "grok_assistant.kroko_ear",
+        "sherpa_onnx",
+        "sherpa_onnx.lib._sherpa_onnx",
+        "sounddevice",
+        "_sounddevice_data",
+        "numpy",
+        "cffi",
+        "_cffi_backend",
         "grok_assistant.hub",
         "grok_assistant.listen",
         "grok_assistant.local_llm",

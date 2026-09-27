@@ -12,7 +12,8 @@ from tkinter import messagebox, simpledialog, ttk
 
 from grok_assistant.helptext import HELP_TOPICS
 from grok_assistant.hub import Hub, build
-from grok_assistant.listen import RECOGNIZER_LABELS, Dictation, discover_recognizers
+from grok_assistant.kroko_ear import KrokoEar
+from grok_assistant.listen import RECOGNIZER_LABELS, Dictation, discover_recognizers, preferred_recognizer
 from grok_assistant.marketplace import Offer, download, offers
 from grok_assistant.music import Music
 from grok_assistant.paths import bundle_root
@@ -67,11 +68,16 @@ class TrayApp:
         self.tray: WinTray | None = None
         self.tray_ok = False
         self.dictation: Dictation | None = None
+        self.kroko: KrokoEar | None = None
         self.pause_file = hub.data_dir / "mic.pause"
         self._closing = False
         voices = self.speaker.list_voices() or ["Predeterminada"]
         self.models = [self.hub.brain.settings.model]
         self.hub.brain.set_devices(voices, discover_recognizers())
+        chosen = preferred_recognizer(self.hub.brain.settings.recognizer, self.hub.brain.recognizers)
+        if chosen != self.hub.brain.settings.recognizer:
+            self.hub.brain.settings.recognizer = chosen
+            self.hub.brain.persist()
         self._style()
         self._build_window()
 
@@ -661,18 +667,36 @@ class TrayApp:
                 self._sync_ear()
 
     def _hold_mic(self, hold: bool) -> None:
+        paused = hold or self.user_paused or self.music.loaded
         if self.dictation is not None:
-            self.dictation.set_paused(hold or self.user_paused or self.music.loaded)
+            self.dictation.set_paused(paused)
+        if self.kroko is not None:
+            self.kroko.set_paused(paused)
 
     def _sync_ear(self) -> None:
-        want = self.hub.brain.settings.recognizer == "windows" and not self.user_paused
-        if want and self.dictation is None:
+        want_windows = self.hub.brain.settings.recognizer == "windows" and not self.user_paused
+        want_kroko = self.hub.brain.settings.recognizer == "kroko" and not self.user_paused
+        if want_windows and self.dictation is None:
             ear = Dictation(self._heard, self.pause_file)
             if ear.start():
                 self.dictation = ear
-        if not want and self.dictation is not None:
+                self._note("Windows español está escuchando")
+        if not want_windows and self.dictation is not None:
             self.dictation.stop()
             self.dictation = None
+        if want_kroko and self.kroko is None:
+            ear = KrokoEar(self._heard, self._kroko_status)
+            if ear.start():
+                self.kroko = ear
+                self._note("cargo Kroko, el modelo tarda unos segundos")
+            else:
+                self._note(ear.error or "Kroko no pudo escuchar")
+        if not want_kroko and self.kroko is not None:
+            self.kroko.stop()
+            self.kroko = None
+
+    def _kroko_status(self, text: str) -> None:
+        self.ui.put(lambda text=text: self._note(text))
 
     def _heard(self, text: str) -> None:
         if self.user_paused or self.music.loaded:
@@ -761,6 +785,8 @@ class TrayApp:
         self.jobs.put(("stop", ""))
         if self.dictation is not None:
             self.dictation.stop()
+        if self.kroko is not None:
+            self.kroko.stop()
         self.music.stop()
         if self.tray is not None:
             self.tray.stop()

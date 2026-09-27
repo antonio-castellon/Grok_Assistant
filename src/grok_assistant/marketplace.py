@@ -61,6 +61,18 @@ def offers() -> list[Offer]:
     ]
     items.extend([
         Offer(
+            id="kroko",
+            kind="stt",
+            title="Kroko · español",
+            detail="Oído en streaming. Es el que escucha frases en español mientras hablas, sin subir el audio.",
+            size="119 MB",
+            engine_id="kroko",
+            files=((
+                f"{SHERPA}/sherpa-onnx-streaming-zipformer-es-kroko-2025-08-06.tar.bz2",
+                "models/sherpa-onnx-streaming-zipformer-es-kroko-2025-08-06.tar.bz2",
+            ),),
+        ),
+        Offer(
             id="whisper",
             kind="stt",
             title="Whisper pequeño",

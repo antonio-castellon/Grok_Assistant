@@ -32,6 +32,13 @@ RECOGNIZER_LABELS = {
 }
 
 
+def preferred_recognizer(current: str, available: list[str]) -> str:
+    """The keyboard is the fallback. Kroko is the ear that actually streams the microphone."""
+    if current == "teclado" and "kroko" in available:
+        return "kroko"
+    return current
+
+
 def discover_recognizers() -> list[str]:
     """Engines that exist on this machine. The keyboard is always one of them."""
     found = ["teclado"]

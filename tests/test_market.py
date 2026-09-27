@@ -30,7 +30,16 @@ class FakeCLI:
 def test_catalog_covers_voices_ears_and_the_local_model():
     kinds = {item.kind for item in offers()}
     assert kinds == {"voice", "stt", "llm"}
+    assert "kroko" in {item.id for item in offers()}
     assert all(item.title and item.size and item.detail for item in offers())
+
+
+def test_keyboard_steps_aside_when_kroko_is_installed():
+    from grok_assistant.listen import preferred_recognizer
+
+    assert preferred_recognizer("teclado", ["teclado", "kroko"]) == "kroko"
+    assert preferred_recognizer("windows", ["teclado", "windows", "kroko"]) == "windows"
+    assert preferred_recognizer("teclado", ["teclado"]) == "teclado"
 
 
 def test_local_intent_parses_one_json_object():

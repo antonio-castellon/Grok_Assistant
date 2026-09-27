@@ -20,7 +20,7 @@ Answers stay short on purpose. A voice in a noisy house that recites a paragraph
 
 French, German, and English come later, as their own versions. Each one means adapting the ear, the mouth, and the voices: the speech-to-text engine, the text-to-speech engine, and the list of voices that `otra voz` walks through. The hellos, the waiting lines, and the command words travel with the language. The rule underneath does not. A phrase still leaves only when it was said to the assistant.
 
-On this PC the mouth is whatever Spanish voice Windows already has, or espeak on Linux. The Pi has its own Piper set. Recognizer names that already exist for a later install are Kroko, Whisper, base, and Canary. Until one of those is installed, the ear you can always use is the keyboard in the debug window, and Windows Spanish dictation when that language pack is present. A cloud recognizer is not the stand-in. Uploading the room in order to test a noisy room would throw away the experiment.
+On this PC the mouth is whatever Spanish voice Windows already has, or a Piper voice you pick in Mercado, or espeak on Linux. The Pi has its own Piper set. The microphone ear for Spanish is Kroko: a local streaming model. Audio never leaves the machine. Mercado downloads it when you ask; once the folder is on disk and the saved ear was still the keyboard, the assistant starts Kroko on its own. The keyboard in the debug window stays available. Windows Spanish dictation is there when that language pack is present. Whisper, base, and Canary are the other ears, each one waiting for its own model. A cloud recognizer is not the stand-in. Uploading the room in order to test a noisy room would throw away the experiment.
 
 ## The employee who does not need your hardware
 
@@ -58,7 +58,7 @@ The diagram further up is the whole product. These are the pieces that implement
 | Agents | `~/.grok/agents` | Definitions on this account. Opening one is a choice. Their memory is not the local notebook. |
 | Shell | `tray.py` | Tray icon, information window, debug transcript. Closing a window leaves the program running. |
 
-A phrase ends when the recognizer decides the person has stopped. The Windows ear uses about 3.5 seconds of trailing silence. While the assistant is speaking, that ear is paused, so the reply is not heard as a new order. The same pause holds for music.
+A phrase ends when the recognizer decides the person has stopped. Kroko and the Windows ear use about 3.5 seconds of trailing silence. While the assistant is speaking, that ear is paused, so the reply is not heard as a new order. The same pause holds for music.
 
 Outside a conversation the rules are narrow. More than six words is dropped, unless the line is a real wake or `pon la canción` plus a title, up to sixteen words. Inside a conversation the six-word gate is gone. Sixty seconds with nothing new ends the talk. Time spent waiting for the cloud does not count. Administrator mode lasts five minutes.
 

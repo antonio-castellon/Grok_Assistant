@@ -61,7 +61,9 @@ HELP_TOPICS = (
     (
         "Reconocedor",
         "Elige el oído. Teclado es escribir en esta ventana. Windows español usa el dictado de Windows si el idioma está instalado. "
-        "Kroko, Whisper pequeño, Whisper base y Canary aparecen cuando su modelo está en el disco. Si no está, el menú lo marca como no instalado.",
+        "Kroko es el micrófono en español: el audio se queda en este PC y una frase sale tras unos 3,5 segundos de silencio. "
+        "Si el teclado era el único oído y Kroko ya está en el disco, al arrancar se elige Kroko. "
+        "Whisper pequeño, Whisper base y Canary aparecen cuando su modelo está en el disco. Si no está, el menú lo marca como no instalado.",
         "comando reconocedor teclado",
     ),
     (
