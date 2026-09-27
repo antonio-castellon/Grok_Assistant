@@ -50,7 +50,7 @@ def _ui(key: str, fallback: str = "") -> str:
 def _used(active: bool) -> str:
     if not active:
         return ""
-    return "✓  " + _ui("market.used", "EN USO") + "  "
+    return "✓  "
 
 
 def run() -> None:
@@ -333,14 +333,14 @@ class TrayApp:
         from grok_assistant.marketplace import offers
 
         current = self.hub.brain.settings.llm_file if self.hub.brain.settings.local_llm else ""
-        rows = [("cmd", _used(not current) + _ui("menu.none", "Ninguno"), "identifier-off", not current)]
+        rows = [("cmd", _ui("menu.none", "Ninguno"), "identifier-off", not current)]
         ready = [offer for offer in offers() if offer.kind == "llm" and offer.ready()]
         if not ready:
             rows.append(("cmd", _ui("menu.none_downloaded", "(ninguno descargado)"), "noop", False))
             return rows
         for offer in ready:
             filename = offer.files[0][1].rsplit("/", 1)[-1]
-            rows.append(("cmd", _used(filename == current) + offer.title, f"identifier:{filename}", filename == current))
+            rows.append(("cmd", offer.title, f"identifier:{filename}", filename == current))
         return rows
 
     def _pick_identifier_file(self, filename: str) -> None:
@@ -431,19 +431,19 @@ class TrayApp:
         for name, label in RECOGNIZER_LABELS.items():
             shown = _ui(f"ear.{name}", label)
             if name in present:
-                ears.append(("cmd", _used(name == brain.settings.recognizer) + shown, f"ear:{name}", name == brain.settings.recognizer))
+                ears.append(("cmd", shown, f"ear:{name}", name == brain.settings.recognizer))
             elif name == "windows":
                 ears.append(("cmd", _ui("menu.install_windows", "Windows español… instalar"), "install-windows", False))
             else:
                 ears.append(("cmd", f"{shown}  {_ui('menu.not_installed', '(no instalado)')}", "noop", False))
         voices = []
         for index, name in enumerate(brain.voices):
-            voices.append(("cmd", f"{_used(index == brain.settings.voice_index)}{index + 1}. {name}", f"voice:{index + 1}", index == brain.settings.voice_index))
-        models = [("cmd", _used(name == brain.settings.model) + name, f"model:{name}", name == brain.settings.model) for name in self.models]
+            voices.append(("cmd", f"{index + 1}. {name}", f"voice:{index + 1}", index == brain.settings.voice_index))
+        models = [("cmd", name, f"model:{name}", name == brain.settings.model) for name in self.models]
         models.append(("sep",))
         models.append(("cmd", _ui("menu.refresh_models", "Actualizar lista"), "models-refresh", False))
         sessions = [
-            ("cmd", _used(name == brain.sessions.active) + name, f"session:{name}", name == brain.sessions.active)
+            ("cmd", name, f"session:{name}", name == brain.sessions.active)
             for name in brain.sessions.names()
         ]
         sessions += [
@@ -454,7 +454,7 @@ class TrayApp:
         ]
         active_agent = brain.agents.active or ""
         agents = [
-            ("cmd", _used(record.name == active_agent) + record.name, f"agent:{record.name}", record.name == active_agent)
+            ("cmd", record.name, f"agent:{record.name}", record.name == active_agent)
             for record in brain.agents.list()
         ]
         if not agents:
@@ -644,7 +644,7 @@ class TrayApp:
         from grok_assistant.i18n import languages, text
 
         current = self.hub.brain.settings.language
-        rows = [("cmd", _used(code == current) + name, f"lang:{code}", code == current) for code, name in languages()]
+        rows = [("cmd", name, f"lang:{code}", code == current) for code, name in languages()]
         rows.append(("sep",))
         rows.append(("cmd", text("menu.edit_commands", "Editar comandos…"), "edit-commands", False))
         rows.append(("cmd", text("menu.edit_help", "Editar ayuda…"), "edit-help", False))
@@ -765,9 +765,9 @@ class TrayApp:
         from grok_assistant.personality import persons
 
         current = str(self.hub.brain.settings.personality.get("profile") or "")
-        rows = [("cmd", _used(not current) + _ui("persona.none", "Sin persona — la voz de siempre"), "persona:", not current)]
+        rows = [("cmd", _ui("persona.none", "Sin persona — la voz de siempre"), "persona:", not current)]
         for person in persons():
-            rows.append(("cmd", _used(person.id == current) + f"{person.name} — {person.label}", f"persona:{person.id}", person.id == current))
+            rows.append(("cmd", f"{person.name} — {person.label}", f"persona:{person.id}", person.id == current))
         rows.append(("sep",))
         rows.append(("cmd", _ui("persona.adjust", "Ajustar rasgos y comportamiento…"), "persona-edit", False))
         return rows
