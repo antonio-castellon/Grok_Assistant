@@ -515,11 +515,11 @@ class TrayApp:
             )
 
     def _download_offer(self, offer: Offer, status: tk.StringVar, percent: tk.IntVar, label: tk.StringVar, button: ttk.Button) -> None:
-        def show(value: int) -> None:
+        def show(value: int, caption: str = "") -> None:
             def apply() -> None:
                 try:
                     percent.set(value)
-                    label.set(f"{value} %")
+                    label.set(caption or f"{value} %")
                 except tk.TclError:
                     return
 
@@ -546,11 +546,13 @@ class TrayApp:
                 self.ui.put(done)
             except Exception as exc:
                 def fail() -> None:
+                    message = str(exc)[:180]
                     try:
                         button.configure(state="normal", text="Descargar")
+                        label.set(message)
                     except tk.TclError:
                         pass
-                    status.set(str(exc)[:180])
+                    status.set(message)
 
                 self.ui.put(fail)
 
@@ -607,9 +609,13 @@ class TrayApp:
             self._sync_ear()
             self._note(f"oído activo: {offer.title}")
         elif offer.kind == "llm":
+            filename = offer.files[0][1].rsplit("/", 1)[-1] if offer.files else ""
             self.hub.brain.settings.local_llm = True
+            self.hub.brain.settings.llm_file = filename
             self.hub.brain.persist()
-            self._note("el modelo local revisa la frase antes de la nube")
+            if self.hub.mind is not None:
+                self.hub.mind.select(filename)
+            self._note(f"modelo local: {offer.title}. Si no es un comando, el texto sigue tal cual.")
         self._paint()
 
     def _password_dialog(self) -> None:

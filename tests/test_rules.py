@@ -352,6 +352,20 @@ def test_windows_recognizer_is_not_rewritten_to_kroko(world):
     assert cli.calls == []
 
 
+def test_unmatched_text_reaches_grok_unchanged(world):
+    hub, cli, _clock = world
+
+    class Pass:
+        def interpret(self, phrase, in_conversation):
+            return {"accion": "texto", "orden": "", "texto": "frase limpia que no debe usarse"}
+
+    hub.mind = Pass()
+    hub.run("qué tiempo hará mañana en casa")
+    assert cli.calls
+    assert cli.calls[0][0] == "converse"
+    assert cli.calls[0][1] == "qué tiempo hará mañana en casa"
+
+
 def test_conversation_goes_straight_to_grok(world):
     hub, cli, _clock = world
 

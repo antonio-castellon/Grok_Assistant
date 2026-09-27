@@ -295,13 +295,15 @@ class Brain:
             if song.title and len(norms) <= 16:
                 self._touch()
                 return self._song(heard, song)
-            if len(norms) > 6:
+            if len(norms) > 6 and not self.settings.local_llm:
                 self._record(heard, "ignorar", False, "larga")
                 self.last_heard = heard
                 return Turn()
             if not is_cmd:
                 if is_test_word(norms):
                     return self._enter_test(heard)
+                if self.settings.local_llm:
+                    return self._review(heard)
                 self._record(heard, "ignorar", False)
                 self.last_heard = heard
                 return Turn()
@@ -328,6 +330,8 @@ class Brain:
             self._touch()
             return self._enter_test(heard)
         self._touch()
+        if self.settings.local_llm:
+            return self._review(heard)
         return self._cloud(heard)
 
     def finish_classify(self, data: dict) -> Turn:
@@ -542,6 +546,22 @@ class Brain:
             else:
                 return Job("converse", text, effort, record.name, str(record.path), "agent")
         return Job("converse", text, effort, slot="session")
+
+    def _review(self, heard: str) -> Turn:
+        self._record(heard, "ignorar", False, "revisa el modelo local")
+        self.last_heard = heard
+        return Turn(job=Job("review", heard), status=self.status_label())
+
+    def perform(self, hit: Hit) -> Turn:
+        if hit.confirm:
+            self.pending = ("yesno", hit)
+            return self._said([self._confirm(hit)])
+        if hit.admin and not self.is_admin():
+            if not self.auth.is_set:
+                return self._said(["Primero elige una contraseña de administrador en el menú."])
+            self.pending = ("password", hit)
+            return Turn(speak=["Hace falta el modo administrador."], effects=[("ask_password",)], status=self.status_label())
+        return self._run(hit)
 
     def _order(self, heard: str, body: list[tuple[str, str]], full_len: int) -> Turn:
         norms = [norm for _, norm in body]

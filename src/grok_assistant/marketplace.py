@@ -12,7 +12,10 @@ from grok_assistant.paths import default_data_dir
 
 PIPER = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0"
 SHERPA = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models"
-QWEN = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+QWEN_05 = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+QWEN_15 = "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+SMOL_360 = "https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct-GGUF/resolve/main/smollm2-360m-instruct-q8_0.gguf"
+LLAMA_1B = "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf"
 
 
 @dataclass(frozen=True)
@@ -35,7 +38,9 @@ class Offer:
         base = root or default_data_dir()
         if self.kind == "llm":
             folder = base / "llm"
-            return any(folder.rglob("*.gguf")) and _llama_exe(folder) is not None
+            return all((base / rel).stat().st_size > 1_000_000 for _url, rel in self.files if (base / rel).exists()) and all(
+                (base / rel).exists() for _url, rel in self.files
+            ) and _llama_exe(folder) is not None
         return all((base / rel).exists() for _url, rel in self.files)
 
 
@@ -117,23 +122,41 @@ def offers() -> list[Offer]:
         )
         for key, title, path, size in ears
     )
-    items.append(
+    items.extend(
         Offer(
-            id="local-llm",
+            id=key,
             kind="llm",
-            title="Qwen 0.5B",
-            detail="Modelo pequeño en este PC. Lee la frase y decide si es orden, pregunta o ruido antes de llamar a la nube.",
-            size="~400 MB + llama.cpp",
-            files=((QWEN, "llm/qwen2.5-0.5b-instruct-q4_k_m.gguf"),),
+            title=title,
+            detail="Mira si la frase del oído es un comando de la lista o una variación. Si no lo es, el texto sigue tal cual hacia Grok.",
+            size=size,
+            files=((url, f"llm/{name}"),),
+        )
+        for key, title, size, url, name in (
+            ("qwen-0.5b", "Qwen 0.5B", "491 MB + motor", QWEN_05, "qwen2.5-0.5b-instruct-q4_k_m.gguf"),
+            ("smol-360m", "SmolLM2 360M", "386 MB + motor", SMOL_360, "smollm2-360m-instruct-q8_0.gguf"),
+            ("llama-1b", "Llama 3.2 1B", "808 MB + motor", LLAMA_1B, "Llama-3.2-1B-Instruct-Q4_K_M.gguf"),
+            ("qwen-1.5b", "Qwen 1.5B", "1.1 GB + motor", QWEN_15, "qwen2.5-1.5b-instruct-q4_k_m.gguf"),
         )
     )
     return items
 
 
 def progress_percent(done: int, total: int) -> int:
-    if total <= 0:
+    if done <= 0 or total <= 0:
         return 0
-    return max(0, min(100, int(done * 100 / total)))
+    value = int(done * 100 / total)
+    if value == 0:
+        return 1
+    return min(100, value)
+
+
+def cpu_windows_zip(assets: list) -> dict | None:
+    """The Windows CPU build. Releases named 'latest' no longer carry it."""
+    for asset in assets:
+        name = str(asset.get("name", "")).lower()
+        if name.endswith(".zip") and "win" in name and "cpu" in name and "x64" in name and "cuda" not in name:
+            return asset
+    return None
 
 
 def download(offer: Offer, on_status, on_progress=None, root: Path | None = None) -> None:
@@ -158,8 +181,9 @@ def download(offer: Offer, on_status, on_progress=None, root: Path | None = None
             seen[key] = total
             known = sum(seen.values())
         current = done + got
-        whole = known or current or 1
-        _report(on_progress, min(99, progress_percent(current, whole)))
+        whole = known or max(current, 1)
+        caption = _bytes_caption(current, whole if known else total)
+        _report(on_progress, min(99, progress_percent(current, whole)), caption)
 
     seen: dict[str, int] = {}
     for url, rel in offer.files:
@@ -168,6 +192,9 @@ def download(offer: Offer, on_status, on_progress=None, root: Path | None = None
         if not dest.exists() or dest.stat().st_size < 1000:
             on_status(f"bajo {offer.title}")
             _fetch(url, dest, lambda got, total, key=rel: account(got, total, key))
+        else:
+            on_status(f"{offer.title} ya está en el disco")
+            _report(on_progress, 1, "el archivo ya está. Sigue el motor.")
         size = dest.stat().st_size
         done += size
         if rel not in seen:
@@ -187,9 +214,9 @@ def download(offer: Offer, on_status, on_progress=None, root: Path | None = None
     _report(on_progress, 100)
 
 
-def _report(on_progress, value: int) -> None:
+def _report(on_progress, value: int, caption: str = "") -> None:
     if on_progress is not None:
-        on_progress(value)
+        on_progress(value, caption)
 
 
 def _fetch(url: str, dest: Path, on_bytes=None) -> None:
@@ -216,6 +243,12 @@ def _fetch(url: str, dest: Path, on_bytes=None) -> None:
     part.replace(dest)
 
 
+def _bytes_caption(done: int, total: int) -> str:
+    if total <= 0:
+        return f"{done / (1024 * 1024):.1f} MB"
+    return f"{done / (1024 * 1024):.1f} MB / {total / (1024 * 1024):.0f} MB"
+
+
 def _ensure_llama(folder: Path, on_status, on_bytes=None) -> None:
     if _llama_exe(folder):
         return
@@ -223,15 +256,15 @@ def _ensure_llama(folder: Path, on_status, on_bytes=None) -> None:
 
     folder.mkdir(parents=True, exist_ok=True)
     request = urllib.request.Request(
-        "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest",
+        "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=20",
         headers={"User-Agent": "GrokAssistant", "Accept": "application/vnd.github+json"},
     )
     with urllib.request.urlopen(request, timeout=60) as response:
-        payload = json.load(response)
+        releases = json.load(response)
     url = ""
-    for asset in payload.get("assets", []):
-        name = asset.get("name", "").lower()
-        if name.endswith(".zip") and "win" in name and "x64" in name and "cpu" in name:
+    for release in releases:
+        asset = cpu_windows_zip(release.get("assets") or [])
+        if asset:
             url = asset["browser_download_url"]
             break
     if not url:

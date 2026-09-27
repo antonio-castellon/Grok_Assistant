@@ -1,6 +1,6 @@
 from grok_assistant.hub import build
 from grok_assistant.local_llm import parse_intent
-from grok_assistant.marketplace import offers, progress_percent
+from grok_assistant.marketplace import cpu_windows_zip, offers, progress_percent
 
 
 class Clock:
@@ -40,10 +40,26 @@ def test_menu_ears_are_in_the_market():
     assert offers()[0].kind == "stt"
 
 
-def test_progress_percent_stays_inside_the_download():
+def test_progress_percent_moves_as_soon_as_bytes_arrive():
     assert progress_percent(0, 0) == 0
+    assert progress_percent(1, 491_000_000) == 1
     assert progress_percent(50, 200) == 25
     assert progress_percent(200, 200) == 100
+
+
+def test_cpu_zip_is_not_taken_from_an_empty_latest_release():
+    latest = [{"name": "nightly-tag.txt"}]
+    builds = [
+        {"name": "llama-b11216-bin-win-cuda-12.4-x64.zip"},
+        {"name": "llama-b11216-bin-win-cpu-x64.zip", "browser_download_url": "https://example/cpu.zip"},
+    ]
+    assert cpu_windows_zip(latest) is None
+    assert cpu_windows_zip(builds)["browser_download_url"] == "https://example/cpu.zip"
+
+
+def test_local_models_only_sort_commands():
+    names = [item.title for item in offers() if item.kind == "llm"]
+    assert names == ["Qwen 0.5B", "SmolLM2 360M", "Llama 3.2 1B", "Qwen 1.5B"]
 
 
 def test_a_partial_file_is_not_ready(tmp_path):

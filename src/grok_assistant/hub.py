@@ -92,28 +92,38 @@ class Hub:
     def _local_turn(self, turn: Turn) -> Turn | None:
         if turn.job is None or self.mind is None or not self.brain.settings.local_llm:
             return None
-        # Inside a conversation the phrase goes to Grok. The local model does not sit in front.
         if turn.job.kind == "converse":
             return None
+        original = turn.job.text
+        ready = self.mind.available() if hasattr(self.mind, "available") else True
+        if not ready:
+            if turn.job.kind == "review" and self.brain.in_conversation:
+                return self._pass_through(turn, original)
+            if turn.job.kind == "review":
+                return Turn(status=self.brain.status_label())
+            return None
         try:
-            data = self.mind.interpret(turn.job.text, self.brain.in_conversation)
+            data = self.mind.interpret(original, self.brain.in_conversation)
         except Exception:
             self.brain._log("modelo local no respondió")
-            return None
-        if not data:
-            return None
-        accion = data.get("accion")
-        self.brain._log(f"modelo local: {accion}")
-        if turn.job.kind == "classify" or accion == "comando":
-            self.brain.phase = ""
-            return self.brain.finish_classify(data)
-        if accion == "ignorar":
-            self.brain.phase = ""
-            self.brain._log("modelo local: se queda en casa")
-            return Turn(speak=[], status=self.brain.status_label())
-        if accion == "pregunta" and data.get("texto"):
-            turn.job.text = data["texto"]
-            self.brain._log(f"modelo local afina: {turn.job.text}")
+            data = None
+        if data and data.get("accion") == "comando":
+            from grok_assistant.match import canonicalize
+
+            hit = canonicalize(str(data.get("orden") or ""))
+            if hit is not None:
+                self.brain.phase = ""
+                self.brain._log(f"modelo local: comando {hit.strict}")
+                return self.brain.perform(hit)
+        self.brain.phase = ""
+        self.brain._log("modelo local: no es un comando. Paso el texto tal cual.")
+        return self._pass_through(turn, original)
+
+    def _pass_through(self, turn: Turn, original: str) -> None:
+        self.brain.in_conversation = True
+        turn.job.kind = "converse"
+        turn.job.text = original
+        turn.speak = [self.brain._next_wait()]
         return None
 
     def _cloud(self, turn: Turn) -> Turn:
@@ -202,4 +212,5 @@ def build(data_dir: Path | None = None, agents_dir: Path | None = None, cli: Gro
         pass
     hub = Hub(brain, cli, data)
     hub.mind = LocalMind(data)
+    hub.mind.selected = settings.llm_file
     return hub

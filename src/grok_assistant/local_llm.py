@@ -14,16 +14,20 @@ from grok_assistant.quiet import no_window
 
 PORT = 8099
 SYSTEM = (
-    "Eres un clasificador local. No buscas en internet. Respondes solo un JSON con las claves "
-    "accion, orden y texto. accion es ignorar, comando o pregunta. "
-    "Si es una orden conocida, orden es la línea estricta y texto es vacío. "
-    "Si es una pregunta para el asistente, orden es vacío y texto es la pregunta limpia, corta. "
-    "Si es ruido o charla de la sala, accion es ignorar. "
-    "Órdenes: subir volumen, bajar volumen, otra voz, voz N, pon cancion TITULO, "
-    "pausa musica, seguir musica, para la musica, otro reconocedor, "
-    "reconocedor teclado, reconocedor windows, reconocedor kroko, "
-    "listar sesiones, abrir sesion NOMBRE, cerrar sesion, "
-    "listar agentes, abrir agente NOMBRE, cerrar agente, ayuda, prueba."
+    "Eres un proceso local. No buscas en internet. No conversas. No reescribes la frase.\n"
+    "Miras el texto tal como lo entregó el reconocedor de voz. Decides solo esto: "
+    "si es un comando de la lista, o una variación mal oída de uno de ellos.\n"
+    "Respondes un único JSON con las claves accion y orden.\n"
+    "Si es un comando o una variación, accion es \"comando\" y orden es la línea estricta, sin cambiar el sentido.\n"
+    "Si no es un comando, accion es \"texto\" y orden es \"\". El texto original se queda como está.\n"
+    "No inventes órdenes.\n"
+    "Lista:\n"
+    "subir volumen, bajar volumen, otra voz, voz N, pon cancion TITULO,\n"
+    "pausa musica, seguir musica, para la musica, otro reconocedor,\n"
+    "reconocedor teclado, reconocedor windows, reconocedor kroko, reconocedor whisper, reconocedor base, reconocedor canary,\n"
+    "listar sesiones, crear sesion NOMBRE, abrir sesion NOMBRE, cerrar sesion, borrar sesion NOMBRE,\n"
+    "listar agentes, abrir agente NOMBRE, crear agente NOMBRE, cerrar agente,\n"
+    "apagar, ayuda, prueba, identifica mi voz, lista las personas, borra NOMBRE, modo administrador."
 )
 
 
@@ -39,7 +43,7 @@ def parse_intent(raw: str) -> dict | None:
     if not isinstance(data, dict) or "accion" not in data:
         return None
     accion = str(data.get("accion") or "").strip().lower()
-    if accion not in {"ignorar", "comando", "pregunta"}:
+    if accion not in {"ignorar", "comando", "pregunta", "texto"}:
         return None
     return {
         "accion": accion,
@@ -51,6 +55,7 @@ def parse_intent(raw: str) -> dict | None:
 class LocalMind:
     def __init__(self, data_dir: Path | None = None):
         self.data_dir = data_dir or default_data_dir()
+        self.selected = ""
         self._server: subprocess.Popen | None = None
 
     def available(self) -> bool:
@@ -62,7 +67,7 @@ class LocalMind:
             return None
         if not self._ensure_server():
             return None
-        user = phrase if in_conversation else f"Fuera de conversación. Frase: {phrase}"
+        user = f"Frase del reconocedor:\n{phrase}"
         body = json.dumps({
             "messages": [
                 {"role": "system", "content": SYSTEM},
@@ -92,7 +97,7 @@ class LocalMind:
             return True
         folder = self.data_dir / "llm"
         exe = _llama_exe(folder)
-        model = next(folder.glob("*.gguf"), None)
+        model = self._model_file(folder)
         if exe is None or model is None or exe.name != "llama-server.exe":
             server = next(folder.rglob("llama-server.exe"), None)
             exe = server or exe
@@ -112,6 +117,21 @@ class LocalMind:
             import time
             time.sleep(0.25)
         return False
+
+    def select(self, filename: str) -> None:
+        if filename == self.selected:
+            return
+        self.selected = filename
+        if self._server is not None and self._server.poll() is None:
+            self._server.kill()
+        self._server = None
+
+    def _model_file(self, folder: Path) -> Path | None:
+        if self.selected:
+            chosen = folder / self.selected
+            if chosen.exists():
+                return chosen
+        return next(folder.glob("*.gguf"), None)
 
     def _healthy(self) -> bool:
         try:

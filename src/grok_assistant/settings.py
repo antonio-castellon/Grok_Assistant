@@ -17,6 +17,7 @@ class Settings:
     recognizer: str = "teclado"
     volume: int = 70
     local_llm: bool = True
+    llm_file: str = ""
 
     @classmethod
     def load(cls, path: Path) -> "Settings":
