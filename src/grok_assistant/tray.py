@@ -241,7 +241,10 @@ class TrayApp:
                 self.menu_ear.add_command(label=f"{label}  (no instalado)", state="disabled")
         menu.add_cascade(label="Reconocedor", menu=self.menu_ear)
         menu.add_separator()
-        menu.add_command(label="Prueba", command=lambda: self._command("prueba"))
+        if self.hub.brain.test_mode:
+            menu.add_command(label="✓  Desactivar prueba", command=self._toggle_test)
+        else:
+            menu.add_command(label="Activar prueba", command=self._toggle_test)
         menu.add_command(label="Identificar mi voz", command=lambda: self._command("identifica mi voz"))
 
     def _fill_voz(self) -> None:
@@ -329,6 +332,7 @@ class TrayApp:
                 ("cmd", "Seguir", "music-resume", False),
                 ("cmd", "Parar", "music-stop", False),
             ]),
+            ("cmd", "Desactivar prueba" if brain.test_mode else "Activar prueba", "test-toggle", brain.test_mode),
             ("cmd", "Mercado…", "market", False),
             ("sub", "Acerca de + Ayuda", [
                 ("cmd", "Comandos…", "help", False),
@@ -349,6 +353,8 @@ class TrayApp:
             return
         elif key.startswith("voice:"):
             self._command(f"voz {key.split(':', 1)[1]}")
+        elif key == "test-toggle":
+            self._toggle_test()
         elif key == "install-windows":
             self._install_windows()
         elif key.startswith("ear:"):
@@ -385,6 +391,9 @@ class TrayApp:
             self._open_help()
         elif key == "about":
             self._open_about()
+
+    def _toggle_test(self) -> None:
+        self._command("salir" if self.hub.brain.test_mode else "prueba")
 
     def _command(self, words: str) -> None:
         self.jobs.put(("phrase", f"comando {words}"))

@@ -261,12 +261,17 @@ def test_cloud_error_does_not_offer_detail(world):
 def test_test_mode_hears_and_does_nothing(world):
     hub, cli, _clock = world
     entered = hub.run("prueba")
-    assert entered.spoken == ["Prueba."]
+    assert "salir" in entered.spoken[0].lower()
+    assert "prueba" in entered.spoken[0].lower()
     ignored = hub.run("comando subir volumen")
     assert ignored.spoken == []
     assert cli.calls == []
     left = hub.run("salir")
-    assert left.spoken == ["Salgo de la prueba."]
+    assert left.spoken == ["Salgo de la prueba. Vuelvo a escuchar."]
+    hub.run("comando prueba")
+    menu_left = hub.run("comando salir")
+    assert menu_left.spoken == ["Salgo de la prueba. Vuelvo a escuchar."]
+    assert hub.brain.test_mode is False
 
 
 def test_locked_voice_is_the_only_one_heard(world):

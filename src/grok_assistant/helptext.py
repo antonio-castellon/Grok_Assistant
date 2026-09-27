@@ -110,7 +110,8 @@ HELP_TOPICS = (
     ),
     (
         "Prueba",
-        "Entra en un modo que enseña en el registro lo que el oído escribió y no ejecuta nada. salir vuelve al modo normal.",
+        "Entra en un modo que enseña en el registro lo que el oído escribió y no ejecuta nada. "
+        "Al entrar lo dice: para salir, di salir, o usa Desactivar prueba en el menú Escucha.",
         "comando prueba",
     ),
     (

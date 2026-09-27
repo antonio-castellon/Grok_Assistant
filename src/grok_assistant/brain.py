@@ -728,13 +728,20 @@ class Brain:
     def _enter_test(self, heard: str) -> Turn:
         self.test_mode = True
         self._record(heard, "comando", False, "prueba")
-        return self._said(["Prueba."], status="Prueba")
+        return self._said(
+            ["Modo prueba. Anoto lo que oigo y no hago nada. Para salir, di salir, o desactívalo en el menú."],
+            status="Prueba",
+        )
+
+    def _leave_test(self, heard: str) -> Turn:
+        self.test_mode = False
+        self._record(heard, "comando", False, "salir de la prueba")
+        return self._said(["Salgo de la prueba. Vuelvo a escuchar."])
 
     def _test(self, heard: str, norms: list[str]) -> Turn:
-        if len(norms) == 1 and norms[0] == "salir":
-            self.test_mode = False
-            self._record(heard, "comando", False, "salir de la prueba")
-            return self._said(["Salgo de la prueba."])
+        bare = [word for word in norms if word != "comando"]
+        if bare == ["salir"] or bare == ["salir", "de", "la", "prueba"]:
+            return self._leave_test(heard)
         self._record(heard, "ignorar", False, "prueba")
         self.last_heard = heard
         return Turn(status="Prueba")
