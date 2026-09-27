@@ -288,6 +288,17 @@ def _match_fixed(blob: str) -> Hit | None:
     return None
 
 
+_EARS = ("teclado", "windows", "kroko", "whisper", "base", "canary")
+
+
+def _ear_name(norms: list[str]) -> str | None:
+    for word in norms:
+        hits = [name for name in _EARS if loose(word, name)]
+        if len(hits) == 1:
+            return hits[0]
+    return None
+
+
 def _match_prefix(pairs: list[tuple[str, str]]) -> Hit | None:
     norms = [norm for _, norm in pairs]
     raws = [raw for raw, _ in pairs]
@@ -297,8 +308,10 @@ def _match_prefix(pairs: list[tuple[str, str]]) -> Hit | None:
     rest = " ".join(raws[1:]).strip()
     if loose(head, "voz") and len(norms) == 2 and norms[1].isdigit():
         return Hit("voz", norms[1])
-    if loose(head, "reconocedor") and len(norms) == 2 and norms[1] in {"kroko", "whisper", "base", "canary"}:
-        return Hit("reconocedor", norms[1])
+    if loose(head, "reconocedor"):
+        ear = _ear_name(norms[1:])
+        if ear:
+            return Hit("reconocedor", ear)
     if loose(head, "borra") or (loose(head, "borrar") and "sesion" not in norms and "agente" not in norms):
         if rest:
             return Hit("borra", rest, confirm=True, admin=True)

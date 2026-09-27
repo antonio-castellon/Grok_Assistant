@@ -21,6 +21,7 @@ SYSTEM = (
     "Si es ruido o charla de la sala, accion es ignorar. "
     "Órdenes: subir volumen, bajar volumen, otra voz, voz N, pon cancion TITULO, "
     "pausa musica, seguir musica, para la musica, otro reconocedor, "
+    "reconocedor teclado, reconocedor windows, reconocedor kroko, "
     "listar sesiones, abrir sesion NOMBRE, cerrar sesion, "
     "listar agentes, abrir agente NOMBRE, cerrar agente, ayuda, prueba."
 )

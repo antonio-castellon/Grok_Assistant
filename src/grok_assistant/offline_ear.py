@@ -144,7 +144,7 @@ class OfflineEar:
                     elif speech:
                         speech.append(chunk)
                         silent += 0.1
-                    ended = speech and ((silent >= 3.5 and voiced >= 0.4) or voiced >= 30.0)
+                    ended = speech and ((silent >= 0.7 and voiced >= 0.4) or voiced >= 30.0)
                     if not ended:
                         continue
                     audio = np.concatenate(speech)

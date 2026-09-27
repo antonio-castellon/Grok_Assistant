@@ -92,6 +92,9 @@ class Hub:
     def _local_turn(self, turn: Turn) -> Turn | None:
         if turn.job is None or self.mind is None or not self.brain.settings.local_llm:
             return None
+        # Inside a conversation the phrase goes to Grok. The local model does not sit in front.
+        if turn.job.kind == "converse":
+            return None
         try:
             data = self.mind.interpret(turn.job.text, self.brain.in_conversation)
         except Exception:

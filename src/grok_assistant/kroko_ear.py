@@ -93,9 +93,10 @@ class KrokoEar:
                 feature_dim=80,
                 decoding_method="greedy_search",
                 enable_endpoint_detection=True,
-                rule1_min_trailing_silence=3.5,
-                rule2_min_trailing_silence=1.8,
-                rule3_min_utterance_length=45,
+                # After the person stops, the phrase has to be ready in under two seconds.
+                rule1_min_trailing_silence=1.0,
+                rule2_min_trailing_silence=0.6,
+                rule3_min_utterance_length=20,
             )
             stream = recognizer.create_stream()
             rate = 16000
@@ -108,21 +109,30 @@ class KrokoEar:
         self._report("Kroko está escuchando el micrófono")
         try:
             with source:
+                quiet = 0.0
                 while not self._stop.is_set():
                     samples, _overflow = source.read(block)
                     if self._paused.is_set():
+                        recognizer.reset(stream)
+                        quiet = 0.0
                         continue
                     chunk = np.ascontiguousarray(samples, dtype=np.float32).reshape(-1)
                     stream.accept_waveform(rate, chunk)
                     while recognizer.is_ready(stream):
                         recognizer.decode_stream(stream)
-                    if recognizer.is_endpoint(stream):
-                        result = recognizer.get_result(stream)
-                        text = result if isinstance(result, str) else getattr(result, "text", "")
-                        text = str(text).strip()
+                    result = recognizer.get_result(stream)
+                    text = result if isinstance(result, str) else getattr(result, "text", "")
+                    text = str(text).strip()
+                    loud = float(np.sqrt(np.mean(np.square(chunk)))) > 0.01
+                    quiet = 0.0 if loud else quiet + 0.1
+                    # 0.7 s of quiet, or the model's own short endpoint. Either stays under two seconds.
+                    if text and (quiet >= 0.7 or recognizer.is_endpoint(stream)):
                         recognizer.reset(stream)
-                        if text:
-                            self.on_line(text)
+                        quiet = 0.0
+                        self.on_line(text)
+                    elif recognizer.is_endpoint(stream):
+                        recognizer.reset(stream)
+                        quiet = 0.0
         except Exception as exc:
             self.error = f"Kroko se detuvo: {exc}"
             self._report(self.error)

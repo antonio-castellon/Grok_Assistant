@@ -70,7 +70,6 @@ def test_local_model_resolves_a_command_without_the_cloud(tmp_path):
     cli = FakeCLI()
     hub = build(tmp_path / "data", tmp_path / "agents", cli, clock=clock, wall=clock.wall)
     hub.mind = Mind()
-    hub.run("hola grok")
-    result = hub.run("sube eso un poco")
+    result = hub.run("comando sube eso un poco")
     assert cli.calls == []
     assert any("Volumen" in line or "Has dicho" in line for line in result.spoken)

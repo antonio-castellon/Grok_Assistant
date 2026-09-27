@@ -60,7 +60,7 @@ The diagram further up is the whole product. These are the pieces that implement
 | Agents | `~/.grok/agents` | Definitions on this account. Opening one is a choice. Their memory is not the local notebook. |
 | Shell | `tray.py` | Tray icon, information window, debug transcript. Closing a window leaves the program running. |
 
-A phrase ends when the recognizer decides the person has stopped. Kroko and the Windows ear use about 3.5 seconds of trailing silence. While the assistant is speaking, that ear is paused, so the reply is not heard as a new order. The same pause holds for music.
+A phrase ends when the person has stopped. Kroko and the Windows ear close it in under two seconds. While the assistant is speaking, that ear is paused, so the reply is not heard as a new order. The same pause holds for music. Inside a conversation, what was heard goes straight to Grok until goodbye.
 
 Outside a conversation the rules are narrow. More than six words is dropped, unless the line is a real wake or `pon la canción` plus a title, up to sixteen words. Inside a conversation the six-word gate is gone. Sixty seconds with nothing new ends the talk. Time spent waiting for the cloud does not count. Administrator mode lasts five minutes.
 

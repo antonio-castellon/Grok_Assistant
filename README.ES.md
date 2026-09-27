@@ -60,7 +60,7 @@ El diagrama de más arriba es el producto entero. Estas son las piezas que lo im
 | Agentes | `~/.grok/agents` | Definiciones de esta cuenta. Abrir uno es una elección. Su memoria no es el cuaderno local. |
 | Carcasa | `tray.py` | Icono de bandeja, ventana de información, transcripción de depuración. Cerrar una ventana deja el programa en marcha. |
 
-Una frase termina cuando el reconocedor decide que la persona ha parado. Kroko y el oído de Windows usan unos 3,5 segundos de silencio al final. Mientras el asistente habla, ese oído está en pausa, para que la respuesta no se oiga como una orden nueva. La misma pausa vale para la música.
+Una frase termina cuando la persona ha parado. Kroko y el oído de Windows la cierran en menos de dos segundos. Mientras el asistente habla, ese oído está en pausa, para que la respuesta no se oiga como una orden nueva. La misma pausa vale para la música. Dentro de una conversación, lo oído pasa directo a Grok hasta el adiós.
 
 Fuera de una conversación las reglas son estrechas. Más de seis palabras se descarta, salvo que la línea sea un aviso de verdad o `pon la canción` más un título, hasta dieciséis palabras. Dentro de una conversación el límite de seis palabras desaparece. Sesenta segundos sin nada nuevo terminan la charla. El tiempo esperando a la nube no cuenta. El modo administrador dura cinco minutos.
 

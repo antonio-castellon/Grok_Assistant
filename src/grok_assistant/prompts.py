@@ -9,7 +9,7 @@ Si no la reconoces, accion es "ignorar", orden es "" y texto es "".
 Líneas estrictas posibles:
 subir volumen, bajar volumen, otra voz, voz N, pon cancion TITULO,
 pausa musica, seguir musica, para la musica, otro reconocedor,
-reconocedor kroko, reconocedor whisper, reconocedor base, reconocedor canary,
+reconocedor teclado, reconocedor windows, reconocedor kroko, reconocedor whisper, reconocedor base, reconocedor canary,
 listar sesiones, crear sesion NOMBRE, abrir sesion NOMBRE, cerrar sesion, borrar sesion NOMBRE,
 listar agentes, abrir agente NOMBRE, crear agente NOMBRE, cerrar agente,
 apagar, ayuda, prueba, identifica mi voz, lista las personas, borra NOMBRE, modo administrador.

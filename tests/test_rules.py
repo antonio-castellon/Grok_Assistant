@@ -328,6 +328,31 @@ def test_stop_music_is_not_pause_music(world):
     assert hub.run("comando pausa la musica").spoken == ["Pauso."]
 
 
+def test_windows_recognizer_is_not_rewritten_to_kroko(world):
+    hub, cli, _clock = world
+    hub.brain.recognizers = ["teclado", "windows", "kroko"]
+    hub.brain.settings.recognizer = "kroko"
+    said = hub.run("comando reconocedor windows").spoken[0]
+    assert "windows" in said.lower()
+    assert hub.brain.settings.recognizer == "windows"
+    assert cli.calls == []
+
+
+def test_conversation_goes_straight_to_grok(world):
+    hub, cli, _clock = world
+
+    class Swallow:
+        def interpret(self, phrase, in_conversation):
+            return {"accion": "ignorar", "orden": "", "texto": ""}
+
+    hub.mind = Swallow()
+    hub.run("hola grok")
+    hub.run("qué tiempo hará mañana en casa")
+    assert cli.calls
+    assert cli.calls[0][0] == "converse"
+    assert "tiempo" in cli.calls[0][1]
+
+
 def test_one_loose_recognizer_character(world):
     hub, _cli, _clock = world
     said = hub.run("comando otro reconocedot").spoken[0]
