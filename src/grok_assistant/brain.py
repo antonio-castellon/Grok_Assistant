@@ -88,8 +88,8 @@ def _next_step(decision: str, sent: bool, detail: str) -> str:
         return "la ignoro: es larga y no va dirigida al asistente."
     if decision == "ignorar" and detail == "canción larga":
         return "la ignoro: la canción pasa de dieciséis palabras."
-    if decision == "ignorar" and detail == "otra voz":
-        return "la ignoro: no es la voz que tengo abierta."
+    if decision == "ignorar" and detail in {"otra voz", "revisa el modelo local"}:
+        return ""
     if decision == "ignorar" and detail == "prueba":
         return "modo prueba. Lo anoto y no hago nada."
     if decision == "ignorar" and not sent:
@@ -307,12 +307,14 @@ class Brain:
         norms = [norm for _, norm in pairs]
         if self.test_mode:
             return self._test(heard, norms)
+        if not speaker_id and vector and self.embedder_ready:
+            speaker_id = self.speakers.closest(vector)
+        if self._silent_stranger(speaker_id, vector):
+            return Turn()
         if not norms:
             self._record(heard, "ignorar", False)
             return Turn()
         if not self._voice_allowed(speaker_id):
-            self._record(heard, "ignorar", False, "otra voz")
-            self.last_heard = heard
             return Turn()
         if self.naming is not None:
             return self._name_take(heard, norms)
@@ -542,6 +544,22 @@ class Brain:
             job=self._converse_job(question, "high"),
             status=self.phase,
         )
+
+    def _silent_stranger(self, speaker_id: str | None, vector: list[float] | None) -> bool:
+        """Microphone audio with no saved print stays out of the log and the local model."""
+        if self.enroll is not None or self.naming is not None:
+            return False
+        if self.pending and self.pending[0] == "new_name":
+            return False
+        if not self.embedder_ready:
+            return False
+        if vector is None and not speaker_id:
+            return False
+        if not self.speakers.has_prints():
+            return True
+        if self.speakers.locked:
+            return speaker_id != self.speakers.locked
+        return not speaker_id
 
     def _voice_allowed(self, speaker_id: str | None) -> bool:
         if not self.embedder_ready:
@@ -978,7 +996,9 @@ class Brain:
         })
         if heard:
             self._log_line("oí", heard)
-        self._log_line("sigue", _next_step(decision, sent, detail))
+        step = _next_step(decision, sent, detail)
+        if step:
+            self._log_line("sigue", step)
 
     def note(self, line: str) -> None:
         self._log(line)

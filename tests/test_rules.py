@@ -386,6 +386,24 @@ def test_locked_voice_is_the_only_one_heard(world):
     assert hub.run("hola grok", speaker_id="Ana").spoken
 
 
+def test_audio_without_a_saved_print_is_not_processed(world):
+    hub, cli, _clock = world
+    hub.brain.embedder_ready = True
+    hub.brain.settings.local_llm = True
+    before = list(hub.brain.logs)
+    stranger = hub.run("que hora es en la cocina", vector=[0.0, 1.0])
+    assert stranger.spoken == []
+    assert hub.brain.logs == before
+    assert cli.calls == []
+    hub.brain.speakers.add("Ana", [[1.0, 0.0]], lock=False)
+    before = list(hub.brain.logs)
+    missed = hub.run("pon la radio de la cocina", vector=[0.0, 1.0])
+    assert missed.spoken == []
+    assert hub.brain.logs == before
+    typed = hub.run("hola grok")
+    assert typed.spoken
+
+
 def test_new_print_name_never_leaves(world):
     hub, cli, _clock = world
     asked = hub.run("hola grok", unknown_print=True, vector=[0.2, 0.9])

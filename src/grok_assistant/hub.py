@@ -126,9 +126,8 @@ class Hub:
 
         self.brain.phase = ""
         if not self.brain.in_conversation or blank_phrase(original):
-            self.brain._log(f"{self._identifier_name()}: no es saludo, ni comando, ni cierre. Se queda en casa.")
             return Turn(status=self.brain.status_label())
-        self.brain._log(f"{self._identifier_name()}: no es saludo, ni comando, ni cierre. Paso el texto tal cual.")
+        self.brain._log(f"{self._identifier_name()}: paso el texto tal cual.")
         return self._pass_through(turn, original)
 
     def _identifier_ready(self) -> bool:

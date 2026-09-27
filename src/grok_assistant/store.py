@@ -182,6 +182,12 @@ class SpeakerBook:
     def names(self) -> list[str]:
         return sorted(self.people)
 
+    def has_prints(self) -> bool:
+        for person in self.people.values():
+            if person.get("prints"):
+                return True
+        return False
+
     def resolve(self, name: str) -> str | None:
         key = " ".join(name.split()).casefold()
         for existing in self.people:

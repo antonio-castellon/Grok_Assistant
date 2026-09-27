@@ -1444,8 +1444,9 @@ class TrayApp:
             kind = item[0]
             payload = item[1] if len(item) > 1 else ""
             embedding = item[2] if len(item) > 2 else None
+            speaker_id = item[3] if len(item) > 3 else None
             try:
-                self._job(kind, payload, embedding)
+                self._job(kind, payload, embedding, speaker_id)
             except Exception as exc:
                 self._write_crash(exc)
 
@@ -1462,7 +1463,7 @@ class TrayApp:
             return
         self.ui.put(lambda: self._note(f"fallo interno: {exc}"))
 
-    def _job(self, kind: str, payload: str, embedding) -> None:
+    def _job(self, kind: str, payload: str, embedding, speaker_id=None) -> None:
         if kind == "note":
             self._note(payload)
             self._refresh()
@@ -1479,7 +1480,7 @@ class TrayApp:
         if kind == "phrase":
             self._hold_mic(True)
             try:
-                result = self.hub.run(payload, speaker=self.say, vector=embedding)
+                result = self.hub.run(payload, speaker=self.say, vector=embedding, speaker_id=speaker_id)
                 self._apply(result)
                 if any(item[0] == "ask_password" for item in result.effects):
                     password = self._ask(_ui("dialog.admin", "Administrador"))
@@ -1589,32 +1590,46 @@ class TrayApp:
         from grok_assistant.match import is_presence, words_norm
 
         norms = words_norm(text)
+        embedding = None
+        if audio is not None:
+            try:
+                embedding = self.voiceprint.embed(audio)
+            except Exception as exc:
+                self._write_crash(exc)
+        allowed, who = self._mic_voice(embedding)
+        if not allowed:
+            return
         # A "can you hear me" stays local. Do not load a second speech model on top of Kroko for it.
         second = ""
-        embedding = None
         if audio is not None and not is_presence(norms, self.hub.brain.settings.wake_name):
             try:
                 second = self.refiner.transcribe(audio)
             except Exception as exc:
                 self._write_crash(exc)
                 second = ""
-            try:
-                embedding = self.voiceprint.embed(audio)
-            except Exception as exc:
-                self._write_crash(exc)
         chosen = choose_transcript(text, second)
         if second and second.casefold() != text.casefold():
             self.jobs.put(("note", f"{self.refiner.label()} relee: {second}"))
-        text = chosen
-        if self.music.loaded:
-            who = self.hub.brain.speakers.closest(embedding)
-            if not who:
-                if not self._music_note:
-                    self._music_note = True
-                    self.jobs.put(("note", "música: esa voz no está registrada. Solo sigo a una huella guardada."))
-                return
-            self._music_note = False
-        self.jobs.put(("phrase", text, embedding))
+        self.jobs.put(("phrase", chosen, embedding, who))
+
+    def _mic_voice(self, embedding) -> tuple[bool, str | None]:
+        brain = self.hub.brain
+        if brain.test_mode or brain.enroll is not None or brain.naming is not None:
+            return True, None
+        if brain.pending and brain.pending[0] == "new_name":
+            return True, None
+        who = brain.speakers.closest(embedding) if embedding else None
+        if not brain.embedder_ready:
+            if self.music.loaded and not who:
+                return False, None
+            return True, who
+        if not brain.speakers.has_prints():
+            return False, None
+        if brain.speakers.locked and who != brain.speakers.locked:
+            return False, None
+        if not who:
+            return False, None
+        return True, who
 
     def _send(self, _event=None) -> None:
         text = self.entry.get().strip()
