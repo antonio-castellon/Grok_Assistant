@@ -50,30 +50,32 @@
   <polygon points="454,444 460,456 466,444" fill="#1f6f6a"/>
   <text x="472" y="428" fill="#b7d4cf" font-size="13">No</text>
 
-  <rect x="40" y="580" width="300" height="130" rx="14" fill="#142824" stroke="#1f6f6a"/>
-  <text x="190" y="616" fill="#f4f7f8" font-size="17" text-anchor="middle" font-weight="650">Complete command</text>
-  <text x="190" y="644" fill="#b7d4cf" font-size="14" text-anchor="middle">Run it on this PC.</text>
-  <text x="190" y="668" fill="#b7d4cf" font-size="14" text-anchor="middle">Volume, voice, music.</text>
-  <text x="190" y="692" fill="#7f93a0" font-size="13" text-anchor="middle">Grok is not called.</text>
+  <rect x="40" y="590" width="250" height="125" rx="14" fill="#1a242c" stroke="#314552"/>
+  <text x="165" y="638" fill="#f4f7f8" font-size="17" text-anchor="middle" font-weight="650">Stay home</text>
+  <text x="165" y="666" fill="#9aafbb" font-size="14" text-anchor="middle">Nothing is sent.</text>
 
-  <rect x="370" y="580" width="300" height="130" rx="14" fill="#2a2114" stroke="#e8a030"/>
-  <text x="520" y="616" fill="#f4f7f8" font-size="17" text-anchor="middle" font-weight="650">Open a conversation</text>
-  <text x="520" y="644" fill="#f0d7a8" font-size="14" text-anchor="middle">Not a finished command.</text>
-  <text x="520" y="668" fill="#f0d7a8" font-size="14" text-anchor="middle">Pass the text to Grok.</text>
-  <text x="520" y="692" fill="#e8a030" font-size="13" text-anchor="middle">The corner turns green.</text>
+  <rect x="310" y="590" width="270" height="125" rx="14" fill="#142824" stroke="#1f6f6a"/>
+  <text x="445" y="632" fill="#f4f7f8" font-size="17" text-anchor="middle" font-weight="650">Complete command</text>
+  <text x="445" y="658" fill="#b7d4cf" font-size="14" text-anchor="middle">Run it on this PC.</text>
+  <text x="445" y="680" fill="#b7d4cf" font-size="14" text-anchor="middle">Volume, voice, music.</text>
+  <text x="445" y="700" fill="#7f93a0" font-size="13" text-anchor="middle">Grok is not called.</text>
 
-  <rect x="700" y="580" width="140" height="130" rx="14" fill="#1a242c" stroke="#314552"/>
-  <text x="770" y="628" fill="#f4f7f8" font-size="16" text-anchor="middle" font-weight="650">Stay</text>
-  <text x="770" y="652" fill="#f4f7f8" font-size="16" text-anchor="middle" font-weight="650">home</text>
-  <text x="770" y="680" fill="#9aafbb" font-size="13" text-anchor="middle">Nothing</text>
-  <text x="770" y="698" fill="#9aafbb" font-size="13" text-anchor="middle">is sent.</text>
+  <rect x="600" y="590" width="250" height="125" rx="14" fill="#2a2114" stroke="#e8a030"/>
+  <text x="725" y="632" fill="#f4f7f8" font-size="17" text-anchor="middle" font-weight="650">Open a conversation</text>
+  <text x="725" y="658" fill="#f0d7a8" font-size="14" text-anchor="middle">Not a finished command.</text>
+  <text x="725" y="680" fill="#f0d7a8" font-size="14" text-anchor="middle">Pass the text to Grok.</text>
+  <text x="725" y="700" fill="#e8a030" font-size="13" text-anchor="middle">The corner turns green.</text>
 
-  <path d="M320 534 V556 H190 V580" stroke="#1f6f6a" stroke-width="2" fill="none"/>
-  <path d="M460 534 V580" stroke="#e8a030" stroke-width="2" fill="none"/>
-  <path d="M560 534 V556 H770 V580" stroke="#7f93a0" stroke-width="2" fill="none"/>
-  <polygon points="184,576 190,588 196,576" fill="#1f6f6a"/>
-  <polygon points="454,576 460,588 466,576" fill="#e8a030"/>
-  <polygon points="764,576 770,588 776,576" fill="#7f93a0"/>
+  <path d="M280 534 V562 H165 V590" stroke="#7f93a0" stroke-width="2" fill="none"/>
+  <path d="M460 534 V590" stroke="#1f6f6a" stroke-width="2" fill="none"/>
+  <path d="M620 534 V562 H725 V590" stroke="#e8a030" stroke-width="2" fill="none"/>
+  <polygon points="159,586 165,598 171,586" fill="#7f93a0"/>
+  <polygon points="454,586 460,598 466,586" fill="#1f6f6a"/>
+  <polygon points="719,586 725,598 731,586" fill="#e8a030"/>
+
+  <path d="M850 650 H980 V582" stroke="#e8a030" stroke-width="2" fill="none"/>
+  <polygon points="974,594 980,582 986,594" fill="#e8a030"/>
+  <text x="868" y="642" fill="#e8a030" font-size="13">to Grok</text>
 
   <rect x="40" y="740" width="1100" height="88" rx="14" fill="#121c22" stroke="#314552"/>
   <text x="60" y="774" fill="#f4f7f8" font-size="16" font-weight="650">While a conversation is open, the next phrase skips the local model.</text>
