@@ -10,13 +10,18 @@ from pathlib import Path
 
 from grok_assistant.paths import bundle_root, default_data_dir, load_lines
 
+_FAULT_LOG = None
+
 
 def main(argv: list[str] | None = None) -> None:
     try:
         folder = default_data_dir()
         folder.mkdir(parents=True, exist_ok=True)
         crash = folder / "crash.log"
-        faulthandler.enable(crash.open("a", encoding="utf-8"), all_threads=True)
+        # The file has to stay referenced or a later native fault has nowhere to land.
+        global _FAULT_LOG
+        _FAULT_LOG = crash.open("a", encoding="utf-8")
+        faulthandler.enable(_FAULT_LOG, all_threads=True)
     except OSError:
         pass
     try:

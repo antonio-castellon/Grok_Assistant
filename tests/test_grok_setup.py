@@ -42,3 +42,18 @@ def test_account_percent_is_the_allowance_already_used():
 def test_bundle_root_is_the_checkout_when_not_frozen():
     assert (bundle_root() / "scripts" / "speak.ps1").exists()
     assert (bundle_root() / "listeners" / "dictation.ps1").exists()
+
+
+def test_tray_keeps_the_full_module_handle():
+    import ctypes
+    from ctypes import wintypes
+
+    from grok_assistant import win_tray
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.GetModuleHandleW.argtypes = [wintypes.LPCWSTR]
+    kernel.GetModuleHandleW.restype = wintypes.HMODULE
+    full = int(kernel.GetModuleHandleW(None) or 0)
+    seen = int(win_tray.kernel32.GetModuleHandleW(None) or 0)
+    assert seen == full
+    assert seen > 0
