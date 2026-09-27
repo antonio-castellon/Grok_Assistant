@@ -29,6 +29,7 @@ a = Analysis(
     ],
     hiddenimports=[
         "grok_assistant",
+        "grok_assistant.account_usage",
         "grok_assistant.auth",
         "grok_assistant.brain",
         "grok_assistant.console",

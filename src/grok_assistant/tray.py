@@ -72,6 +72,7 @@ class TrayApp:
         self.debug_text = None
         self.status_var = tk.StringVar(value="Arrancando")
         self.detail_var = tk.StringVar(value="")
+        self.usage_var = tk.StringVar(value="cuenta …")
         self.tray: WinTray | None = None
         self.tray_ok = False
         self.dictation: Dictation | None = None
@@ -94,6 +95,7 @@ class TrayApp:
         self.jobs.put(("startup", ""))
         self._start_tray()
         self._sync_ear()
+        self._poll_usage()
         self._note("ventana lista")
         self.root.after(200, self._pulse)
 
@@ -140,7 +142,9 @@ class TrayApp:
         head = ttk.Frame(self.root)
         head.pack(fill="x", padx=18, pady=(16, 4))
         ttk.Label(head, text="Grok Assistant", style="Status.TLabel").pack(side="left")
-        ttk.Label(head, textvariable=self.status_var, font=FONT).pack(side="right")
+        self.usage_label = tk.Label(head, textvariable=self.usage_var, bg=BG, fg=MUTED, font=FONT_BOLD)
+        self.usage_label.pack(side="right")
+        ttk.Label(head, textvariable=self.status_var, font=FONT).pack(side="right", padx=(0, 18))
         ttk.Label(self.root, textvariable=self.detail_var, style="Muted.TLabel").pack(anchor="w", padx=18)
 
         ttk.Label(self.root, text="Depuración — lo que oye y lo que hace después", style="Muted.TLabel").pack(anchor="w", padx=18, pady=(12, 4))
@@ -846,6 +850,34 @@ class TrayApp:
         self.entry.delete(0, "end")
         if text:
             self.jobs.put(("phrase", text))
+
+    def _poll_usage(self) -> None:
+        def work() -> None:
+            from grok_assistant.account_usage import fetch_account_percent
+
+            percent = fetch_account_percent()
+
+            def apply() -> None:
+                try:
+                    if percent is None:
+                        self.usage_var.set("sin cuenta")
+                        self.usage_label.configure(fg=MUTED)
+                        return
+                    self.usage_var.set(f"cuenta {percent}%")
+                    if percent >= 90:
+                        color = "#e06a6a"
+                    elif percent >= 70:
+                        color = AMBER
+                    else:
+                        color = TEAL
+                    self.usage_label.configure(fg=color)
+                except tk.TclError:
+                    return
+
+            self.ui.put(apply)
+
+        threading.Thread(target=work, daemon=True).start()
+        self.root.after(60_000, self._poll_usage)
 
     def _pulse(self) -> None:
         if self._closing:

@@ -23,6 +23,14 @@ def test_every_help_topic_has_an_example():
     assert len(titles) >= 12
 
 
+def test_account_percent_is_the_allowance_already_used():
+    from grok_assistant.account_usage import percent_used
+
+    assert percent_used({"config": {"creditUsagePercent": 79.4}}) == 79
+    assert percent_used({"config": {}}) is None
+    assert percent_used({}) is None
+
+
 def test_bundle_root_is_the_checkout_when_not_frozen():
     assert (bundle_root() / "scripts" / "speak.ps1").exists()
     assert (bundle_root() / "listeners" / "dictation.ps1").exists()
