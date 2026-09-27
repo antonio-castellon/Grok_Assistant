@@ -18,16 +18,40 @@ PIPER_LABELS = {
     "es_ES-carlfm-x_low": "Carlfm · España",
     "es_AR-daniela-high": "Daniela · Argentina",
     "es_MX-claude-high": "Claude · México",
+    "es_ES-mls_9972-low": "MLS 9972 · España",
+    "es_ES-mls_10246-low": "MLS 10246 · España",
+    "fr_FR-siwis-medium": "Siwis · France",
+    "fr_FR-upmc-medium": "UPMC · France",
+    "fr_FR-tom-medium": "Tom · France",
+    "de_DE-thorsten-medium": "Thorsten · Deutschland",
+    "de_DE-eva_k-x_low": "Eva · Deutschland",
+    "de_DE-kerstin-low": "Kerstin · Deutschland",
+    "en_US-lessac-medium": "Lessac · US",
+    "en_US-ryan-medium": "Ryan · US",
+    "en_GB-alba-medium": "Alba · UK",
+    "en_GB-alan-medium": "Alan · UK",
 }
 
 
+def voice_lang(name: str) -> str:
+    """es, fr, de, or en from a Piper file name or a Windows culture."""
+    token = (name or "").strip().replace("_", "-").lower()
+    head = token.split("-", 1)[0]
+    if head in {"es", "fr", "de", "en"}:
+        return head
+    return ""
+
+
 class Speaker:
-    def list_voices(self) -> list[str]:
-        found = _piper_voices()
+    def list_voices(self, lang: str | None = None) -> list[str]:
+        from grok_assistant.i18n import code
+
+        wanted = voice_lang(lang or code() or "es") or "es"
+        found = [label for label, tongue in _piper_voices() if tongue == wanted]
         if os.name == "nt":
-            found.extend(_windows_voices())
+            found.extend(name for name, tongue in _windows_voices() if tongue == wanted)
         else:
-            found.extend(_linux_voices())
+            found.extend(name for name, tongue in _linux_voices() if tongue == wanted)
         return found or ["Predeterminada"]
 
     def say(self, text: str, voice: str | None, volume: int) -> bool:
@@ -43,7 +67,7 @@ class Speaker:
         return _linux_say(text, voice, volume)
 
 
-def _windows_voices() -> list[str]:
+def _windows_voices() -> list[tuple[str, str]]:
     script = bundle_root() / "scripts" / "voices.ps1"
     if not script.exists():
         return []
@@ -58,20 +82,16 @@ def _windows_voices() -> list[str]:
         )
     except (OSError, subprocess.TimeoutExpired):
         return []
-    spanish = []
-    others = []
+    found = []
     for line in (done.stdout or "").splitlines():
         if "|" not in line:
             continue
         name, culture = line.split("|", 1)
         name = name.strip()
-        if not name:
-            continue
-        if culture.lower().startswith("es"):
-            spanish.append(name)
-        else:
-            others.append(name)
-    return spanish + others
+        tongue = voice_lang(culture)
+        if name and tongue:
+            found.append((name, tongue))
+    return found
 
 
 def _windows_say(text: str, voice: str | None, volume: int) -> bool:
@@ -128,8 +148,13 @@ def _piper_by_label() -> dict[str, Path]:
     return catalog
 
 
-def _piper_voices() -> list[str]:
-    return list(_piper_by_label())
+def _piper_voices() -> list[tuple[str, str]]:
+    rows = []
+    for label, model in _piper_by_label().items():
+        tongue = voice_lang(model.stem)
+        if tongue:
+            rows.append((label, tongue))
+    return rows
 
 
 def _piper_say(text: str, model: Path) -> bool:
@@ -168,12 +193,14 @@ def _piper_say(text: str, model: Path) -> bool:
             pass
 
 
-def _linux_voices() -> list[str]:
+def _linux_voices() -> list[tuple[str, str]]:
     if shutil.which("espeak-ng"):
-        return ["es", "es-la", "es+m3", "es+f3", "es+m1"]
-    if shutil.which("espeak"):
-        return ["es", "es-la"]
-    return []
+        names = ["es", "es-la", "fr", "de", "en"]
+    elif shutil.which("espeak"):
+        names = ["es", "es-la", "fr", "de", "en"]
+    else:
+        return []
+    return [(name, voice_lang(name)) for name in names if voice_lang(name)]
 
 
 def _linux_say(text: str, voice: str | None, volume: int) -> bool:

@@ -29,6 +29,7 @@ class Offer:
     use_label: str = ""
     engine_id: str = ""
     local: str = ""
+    lang: str = ""
 
     def ready(self, root: Path | None = None) -> bool:
         if self.local == "windows-speech":
@@ -53,6 +54,16 @@ def offers() -> list[Offer]:
         ("ald", "Ald · México", "es/es_MX/ald/medium/es_MX-ald-medium", "63 MB"),
         ("mls9972", "MLS 9972 · España", "es/es_ES/mls_9972/low/es_ES-mls_9972-low", "63 MB"),
         ("mls10246", "MLS 10246 · España", "es/es_ES/mls_10246/low/es_ES-mls_10246-low", "63 MB"),
+        ("siwis", "Siwis · France", "fr/fr_FR/siwis/medium/fr_FR-siwis-medium", "60 MB"),
+        ("upmc", "UPMC · France", "fr/fr_FR/upmc/medium/fr_FR-upmc-medium", "73 MB"),
+        ("tom", "Tom · France", "fr/fr_FR/tom/medium/fr_FR-tom-medium", "61 MB"),
+        ("thorsten", "Thorsten · Deutschland", "de/de_DE/thorsten/medium/de_DE-thorsten-medium", "60 MB"),
+        ("eva", "Eva · Deutschland", "de/de_DE/eva_k/x_low/de_DE-eva_k-x_low", "20 MB"),
+        ("kerstin", "Kerstin · Deutschland", "de/de_DE/kerstin/low/de_DE-kerstin-low", "60 MB"),
+        ("lessac", "Lessac · US", "en/en_US/lessac/medium/en_US-lessac-medium", "60 MB"),
+        ("ryan", "Ryan · US", "en/en_US/ryan/medium/en_US-ryan-medium", "60 MB"),
+        ("alba", "Alba · UK", "en/en_GB/alba/medium/en_GB-alba-medium", "60 MB"),
+        ("alan", "Alan · UK", "en/en_GB/alan/medium/en_GB-alan-medium", "60 MB"),
     ]
     items = [
         Offer(
@@ -112,9 +123,10 @@ def offers() -> list[Offer]:
             id=key,
             kind="voice",
             title=title,
-            detail="Voz Piper en español. Se usa en el menú Voz.",
+            detail="Voz Piper. Solo se ofrece y se puede elegir cuando el idioma coincide.",
             size=size,
             use_label=title,
+            lang=path.split("/", 1)[0],
             files=(
                 (f"{PIPER}/{path}.onnx", f"voices/{path.rsplit('/', 1)[-1]}.onnx"),
                 (f"{PIPER}/{path}.onnx.json", f"voices/{path.rsplit('/', 1)[-1]}.onnx.json"),
@@ -139,6 +151,19 @@ def offers() -> list[Offer]:
         )
     )
     return items
+
+
+def offers_for(lang: str | None = None) -> list[Offer]:
+    """Voice rows follow the selected language. Ears and local models stay listed."""
+    from grok_assistant.i18n import code
+
+    wanted = (lang or code() or "es").split("-")[0].lower()
+    rows = []
+    for item in offers():
+        if item.kind == "voice" and item.lang and item.lang != wanted:
+            continue
+        rows.append(item)
+    return rows
 
 
 def progress_percent(done: int, total: int) -> int:

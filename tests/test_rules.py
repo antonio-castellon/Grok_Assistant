@@ -465,6 +465,19 @@ def test_unmatched_text_stays_home_until_a_conversation_starts(world):
     assert result.spoken == []
 
 
+def test_a_voice_from_another_language_is_dropped(world):
+    hub, _cli, _clock = world
+    hub.brain.voices = ["Helena", "Zira"]
+    hub.brain.settings.voice_index = 0
+    hub.brain.set_devices(["Helena", "Dave · España"], ["teclado"])
+    assert hub.brain.voices[hub.brain.settings.voice_index] == "Helena"
+    hub.brain.voices = ["Helena", "Zira"]
+    hub.brain.settings.voice_index = 1
+    hub.brain.set_devices(["Helena", "Dave · España"], ["teclado"])
+    assert "Zira" not in hub.brain.voices
+    assert hub.brain.settings.voice_index == 0
+
+
 def test_ola_grok_still_wakes_when_the_identifier_says_no(world):
     hub, cli, _clock = world
 

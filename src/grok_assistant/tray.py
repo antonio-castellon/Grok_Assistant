@@ -20,7 +20,7 @@ from grok_assistant.listen import (
     install_windows_speech,
     preferred_recognizer,
 )
-from grok_assistant.marketplace import Offer, download, offers
+from grok_assistant.marketplace import Offer, download, offers, offers_for
 from grok_assistant.music import Music
 from grok_assistant.refine import Refiner, choose_transcript
 from grok_assistant.voiceprint import VoicePrint
@@ -620,6 +620,7 @@ class TrayApp:
                     self.hub.brain.settings.recognizer = candidate
                     break
         self.hub.brain.persist()
+        self.hub.brain.set_devices(self.speaker.list_voices(code), self.hub.brain.recognizers)
         self._build_menus()
         self._sync_ear()
         name = dict(languages()).get(code, code)
@@ -919,7 +920,7 @@ class TrayApp:
             ("llm", "Modelo local"),
         )
         canvases: dict[str, tk.Canvas] = {}
-        catalog = offers()
+        catalog = offers_for()
         for kind, title in groups:
             page = ttk.Frame(book)
             book.add(page, text=title)

@@ -27,6 +27,24 @@ class FakeCLI:
         return "Son las tres."
 
 
+def test_voice_market_lists_only_the_selected_language():
+    from grok_assistant.marketplace import offers_for
+    from grok_assistant.speech import voice_lang
+
+    spanish = [item for item in offers_for("es") if item.kind == "voice"]
+    french = [item for item in offers_for("fr") if item.kind == "voice"]
+    german = [item for item in offers_for("de") if item.kind == "voice"]
+    english = [item for item in offers_for("en") if item.kind == "voice"]
+    assert spanish and french and german and english
+    assert {item.lang for item in spanish} == {"es"}
+    assert {item.lang for item in french} == {"fr"}
+    assert {item.lang for item in german} == {"de"}
+    assert {item.lang for item in english} == {"en"}
+    assert voice_lang("es_ES-davefx-medium") == "es"
+    assert voice_lang("fr_FR-siwis-medium") == "fr"
+    assert voice_lang("en-US") == "en"
+
+
 def test_catalog_covers_voices_ears_and_the_local_model():
     kinds = {item.kind for item in offers()}
     assert kinds == {"voice", "stt", "llm"}

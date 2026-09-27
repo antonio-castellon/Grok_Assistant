@@ -171,6 +171,9 @@ class Brain:
         self.logs: list[str] = []
 
     def set_devices(self, voices: list[str], recognizers: list[str]) -> None:
+        previous = ""
+        if self.voices and 0 <= self.settings.voice_index < len(self.voices):
+            previous = self.voices[self.settings.voice_index]
         if voices:
             self.voices = list(voices)
         if recognizers:
@@ -178,8 +181,16 @@ class Brain:
         if self.settings.recognizer not in self.recognizers:
             self.settings.recognizer = self.recognizers[0]
             self.persist()
-        if self.settings.voice_index >= len(self.voices):
-            self.settings.voice_index = 0
+        if previous and previous not in {"Predeterminada", ""} and previous in self.voices:
+            chosen = self.voices.index(previous)
+        elif previous and previous not in {"Predeterminada", ""}:
+            chosen = 0
+        else:
+            chosen = self.settings.voice_index
+        if chosen >= len(self.voices):
+            chosen = 0
+        if chosen != self.settings.voice_index:
+            self.settings.voice_index = chosen
             self.persist()
 
     def startup_line(self) -> str:
