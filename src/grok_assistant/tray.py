@@ -6,6 +6,7 @@ import os
 import queue
 import subprocess
 import threading
+import webbrowser
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 
@@ -417,14 +418,41 @@ class TrayApp:
         )
 
     def _open_about(self) -> None:
-        self._open_text(
-            "Acerca de",
-            "Grok Assistant escucha en casa. El audio no sale. "
+        window = tk.Toplevel(self.root)
+        window.title("Acerca de")
+        window.configure(bg=BG)
+        window.geometry("640x460")
+        text = tk.Text(
+            window, wrap="word", bg=FIELD, fg=INK, font=("Segoe UI", 12),
+            relief="flat", padx=18, pady=16, insertbackground=INK,
+        )
+        text.pack(fill="both", expand=True)
+        text.tag_configure("name", font=("Segoe UI", 16, "bold"), foreground=AMBER, spacing3=6)
+        text.tag_configure("quiet", foreground=MUTED, spacing3=10)
+        self._link_tag(text, "github", "https://github.com/antonio-castellon")
+        self._link_tag(text, "site", "https://www.castellon.ch")
+        text.insert("end", "Antonio Castellon\n", "name")
+        text.insert("end", "Castellon.CH\n", "quiet")
+        text.insert("end", "GitHub  ")
+        text.insert("end", "antonio-castellon", "github")
+        text.insert("end", "\nWeb  ")
+        text.insert("end", "www.castellon.ch", "site")
+        text.insert(
+            "end",
+            "\n\nGrok Assistant escucha en casa. El audio no sale. "
             "A Grok solo se le manda el texto de una pregunta o de una orden, y solo cuando las reglas lo permiten. "
             "Lo demás se queda en el cuaderno de este equipo.\n\n"
             "Esta ventana es el registro: lo que se oyó y lo que se hizo después. "
             "Cerrarla esconde el programa. El icono de Grok en la bandeja lo vuelve a abrir. Salir lo cierra.",
         )
+        text.bind("<Key>", lambda _event: "break")
+        window.protocol("WM_DELETE_WINDOW", window.destroy)
+
+    def _link_tag(self, text: tk.Text, tag: str, url: str) -> None:
+        text.tag_configure(tag, foreground=TEAL, underline=True)
+        text.tag_bind(tag, "<Button-1>", lambda _event, url=url: webbrowser.open(url))
+        text.tag_bind(tag, "<Enter>", lambda _event: text.configure(cursor="hand2"))
+        text.tag_bind(tag, "<Leave>", lambda _event: text.configure(cursor="arrow"))
 
     def _open_text(self, title: str, body: str) -> None:
         window = tk.Toplevel(self.root)
