@@ -12,10 +12,6 @@ That is the whole idea. The picture below is the path of one phrase.
 
 ![How a phrase moves: the ear stays local, and only a question or a repaired order sends text to Grok](docs/img/flow.svg)
 
-## Two bodies, one unreasonable request
-
-The Pi is the other body of the same idea: a box in the room that does not have to ask an operating system for permission to exist. This repository does not contain that box. It does not contain the little screen, the fan that cannot be slowed down, the Wi-Fi boot opera, or the Pi's administrator key. Shutdown here, after you say sí, is the normal shutdown of the computer you are sitting at. The password is one you type in the tray. The file on disk is a salted hash. There is no password in the source, and there will not be a clever default. Clever defaults are how cylinders get into your shopping list.
-
 ## Spanish first, because the house is loud
 
 The first language is Spanish. That is the language we actually speak at home, so it is the honest place to start an experiment. A quiet desk and a headset would make any assistant look clever. The kitchen does not. People talk across each other, the television stays on, someone asks for a song while someone else is already in the middle of a sentence. I want that noise. The test is whether a wake and a short order still survive a real room, and whether everything else stays on the machine when the room is messy.
