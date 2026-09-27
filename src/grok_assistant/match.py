@@ -20,7 +20,9 @@ SONG_PREFIXES = (
     "pon la cancion de",
     "pon una cancion de",
     "ponme la cancion",
+    "poner una cancion de",
     "poner la cancion",
+    "poner una cancion",
     "pon la cancion",
     "pon una cancion",
     "poner cancion",
@@ -205,8 +207,10 @@ def song_of(pairs: list[tuple[str, str]]) -> Song:
     for prefix in SONG_PREFIXES:
         parts = prefix.split()
         size = len(parts)
-        if len(norms) <= size:
+        if len(norms) < size:
             continue
+        if len(norms) == size and edit_distance(" ".join(norms), prefix, 1) <= 1:
+            return Song(matched=True)
         if edit_distance(" ".join(norms[:size]), prefix, 1) <= 1:
             if len(norms) > 16:
                 return Song(matched=True, too_long=True)

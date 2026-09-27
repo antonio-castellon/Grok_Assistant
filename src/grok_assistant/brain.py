@@ -311,6 +311,11 @@ class Brain:
                 self._record(heard, "ignorar", False, "canción larga")
                 self.last_heard = heard
                 return Turn()
+            if song.matched and not song.title and not song.too_long:
+                self._touch()
+                self._record(heard, "comando", False, "pon cancion")
+                self.last_heard = heard
+                return self._said(["¿Qué canción?"])
             if song.title and len(norms) <= 16:
                 self._touch()
                 return self._song(heard, song)
@@ -336,6 +341,11 @@ class Brain:
             self._touch()
             self._record(heard, "ignorar", False, "adios")
             return self._goodbye(kind)
+        if song.matched and not song.title and not song.too_long:
+            self._touch()
+            self._record(heard, "comando", False, "pon cancion")
+            self.last_heard = heard
+            return self._said(["¿Qué canción?"])
         if song.title and len(norms) <= 16:
             self._touch()
             return self._song(heard, song)
@@ -349,8 +359,6 @@ class Brain:
             self._touch()
             return self._enter_test(heard)
         self._touch()
-        if self.settings.local_llm:
-            return self._review(heard)
         return self._cloud(heard)
 
     def finish_classify(self, data: dict) -> Turn:

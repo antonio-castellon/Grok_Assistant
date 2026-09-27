@@ -159,6 +159,38 @@ def test_a_near_greeting_goes_to_the_text_identifier(world):
     assert any("Abro la conversación" in line for line in hub.brain.logs)
 
 
+def test_poner_una_cancion_is_a_command_even_in_conversation(world):
+    hub, cli, _clock = world
+
+    class Steal:
+        def interpret(self, phrase, in_conversation):
+            return {"accion": "texto", "orden": "", "texto": ""}
+
+    hub.mind = Steal()
+    hub.brain.settings.local_llm = True
+    hub.run("hola grok")
+    result = hub.run("poner una cancion")
+    assert result.spoken == ["¿Qué canción?"]
+    assert cli.calls == []
+
+
+def test_conversation_goes_to_grok_without_the_local_model(world):
+    hub, cli, _clock = world
+
+    class Steal:
+        def interpret(self, phrase, in_conversation):
+            return {"accion": "comando", "orden": "subir volumen", "texto": ""}
+
+    hub.mind = Steal()
+    hub.brain.settings.local_llm = True
+    hub.run("hola grok")
+    result = hub.run("qué hora es")
+    assert cli.calls
+    assert cli.calls[0][0] == "converse"
+    assert "hora" in cli.calls[0][1]
+    assert "Volumen" not in " ".join(result.spoken)
+
+
 def test_ok_closes_without_the_waiting_line(world):
     hub, cli, _clock = world
     hub.run("hola grok")
@@ -170,7 +202,7 @@ def test_ok_closes_without_the_waiting_line(world):
     assert not hub.brain.in_conversation
 
 
-def test_local_model_closes_without_asking_grok(world):
+def test_outside_conversation_the_local_model_can_close(world):
     hub, cli, _clock = world
 
     class Close:
@@ -178,11 +210,10 @@ def test_local_model_closes_without_asking_grok(world):
             return {"accion": "cierre", "orden": "gracias", "texto": ""}
 
     hub.mind = Close()
-    hub.run("hola grok")
+    hub.brain.settings.local_llm = True
     result = hub.run("graxias")
     assert result.spoken == ["De nada."]
     assert cli.calls == []
-    assert not any("busque" in line.lower() or "ver" in line.lower() for line in result.spoken)
 
 
 def test_a_trained_name_wakes_from_what_was_heard(world):
