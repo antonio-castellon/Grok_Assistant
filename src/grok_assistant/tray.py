@@ -161,9 +161,15 @@ class TrayApp:
         head = ttk.Frame(self.root)
         head.pack(fill="x", padx=18, pady=(16, 4))
         ttk.Label(head, text="Grok Assistant", style="Status.TLabel").pack(side="left")
-        self.usage_label = tk.Label(head, textvariable=self.usage_var, bg=BG, fg=MUTED, font=FONT_BOLD)
-        self.usage_label.pack(side="right")
-        ttk.Label(head, textvariable=self.status_var, font=FONT).pack(side="right", padx=(0, 18))
+        corner = tk.Frame(head, bg=BG)
+        corner.pack(side="right")
+        self.state_var = tk.StringVar(value=_ui("status.banner_wait", "ESPERA"))
+        self.state_label = tk.Label(
+            corner, textvariable=self.state_var, bg=BG, fg=TEAL, font=("Segoe UI", 26, "bold"),
+        )
+        self.state_label.pack(anchor="e")
+        self.usage_label = tk.Label(corner, textvariable=self.usage_var, bg=BG, fg=MUTED, font=("Segoe UI", 12, "bold"))
+        self.usage_label.pack(anchor="e")
         ttk.Label(self.root, textvariable=self.detail_var, style="Muted.TLabel").pack(anchor="w", padx=18)
 
         self.debug_label = ttk.Label(self.root, text=_ui("window.debug", "Depuración — lo que oye y lo que hace después"), style="Muted.TLabel")
@@ -1774,6 +1780,9 @@ class TrayApp:
         except tk.TclError:
             return
         self.status_var.set(snap["status"])
+        self.state_var.set(snap.get("banner") or _ui("status.banner_wait", "ESPERA"))
+        kind = snap.get("banner_kind") or "wait"
+        self.state_label.configure(fg={"talk": GREEN, "pause": AMBER, "test": AMBER}.get(kind, TEAL))
         self._refresh_market_marks()
         self.detail_var.set(
             f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {snap['recognizer']}  ·  {snap['identifier']}  ·  {snap['session']}  ·  {snap['volume']}%"

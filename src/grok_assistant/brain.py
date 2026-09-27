@@ -211,12 +211,23 @@ class Brain:
     def status_label(self) -> str:
         return self.mode_label()
 
+    def banner_label(self) -> str:
+        if self.paused:
+            return text("status.banner_pause", "EN PAUSA")
+        if self.test_mode:
+            return text("status.banner_test", "PRUEBA")
+        if self.in_conversation:
+            return text("status.banner_talk", "EN CONVERSACIÓN")
+        return text("status.banner_wait", "ESPERA")
+
     def snapshot(self) -> dict:
         session = self.sessions.current()
         voice_no = self.settings.voice_index + 1
         voice_name = self.voices[self.settings.voice_index] if self.voices else ""
         return {
             "status": self.status_label(),
+            "banner": self.banner_label(),
+            "banner_kind": "pause" if self.paused else "test" if self.test_mode else "talk" if self.in_conversation else "wait",
             "model": self.settings.model,
             "effort": text("status.effort_high", "alto") if self.effort_now == "high" else text("status.effort_low", "bajo"),
             "voice": f"{voice_no}. {voice_name}",

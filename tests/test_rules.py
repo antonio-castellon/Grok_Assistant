@@ -449,6 +449,15 @@ def test_stop_music_is_not_pause_music(world):
     assert hub.run("comando pausa la musica").spoken == ["Pauso."]
 
 
+def test_the_corner_says_waiting_until_a_conversation_starts(world):
+    hub, _cli, _clock = world
+    assert hub.brain.banner_label() == "ESPERA"
+    hub.run("hola grok")
+    assert hub.brain.banner_label() == "EN CONVERSACIÓN"
+    hub.brain.paused = True
+    assert hub.brain.banner_label() == "EN PAUSA"
+
+
 def test_the_log_hangs_each_step_under_the_heard_line(world):
     hub, _cli, _clock = world
 
