@@ -509,9 +509,7 @@ class TrayApp:
         ttk.Label(row, text=f"{offer.title}   {offer.size}", font=("Segoe UI", 11)).pack(anchor="w")
         ttk.Label(row, textvariable=label, style="Muted.TLabel").pack(anchor="w")
         ttk.Label(row, text=offer.detail, style="Muted.TLabel").pack(anchor="w")
-        ttk.Progressbar(
-            row, maximum=100, variable=percent, style="Market.Horizontal.TProgressbar",
-        ).pack(fill="x", pady=(4, 2))
+        bar = ttk.Progressbar(row, maximum=100, variable=percent, style="Market.Horizontal.TProgressbar")
         button = ttk.Button(row)
         button.pack(anchor="w", pady=(2, 0))
         if ready:
@@ -519,10 +517,10 @@ class TrayApp:
         else:
             button.configure(
                 text="Descargar",
-                command=lambda item=offer: self._download_offer(item, status, percent, label, button),
+                command=lambda item=offer: self._download_offer(item, status, percent, label, button, bar),
             )
 
-    def _download_offer(self, offer: Offer, status: tk.StringVar, percent: tk.IntVar, label: tk.StringVar, button: ttk.Button) -> None:
+    def _download_offer(self, offer: Offer, status: tk.StringVar, percent: tk.IntVar, label: tk.StringVar, button: ttk.Button, bar: ttk.Progressbar) -> None:
         def show(value: int, caption: str = "") -> None:
             def apply() -> None:
                 try:
@@ -543,7 +541,7 @@ class TrayApp:
 
                 def done() -> None:
                     try:
-                        percent.set(100)
+                        bar.pack_forget()
                         label.set("100 %")
                         button.configure(text="Usar", state="normal", command=lambda item=offer: self._use_offer(item))
                     except tk.TclError:
@@ -556,6 +554,7 @@ class TrayApp:
                 def fail() -> None:
                     message = str(exc)[:180]
                     try:
+                        bar.pack_forget()
                         button.configure(state="normal", text="Descargar")
                         label.set(message)
                     except tk.TclError:
@@ -568,6 +567,7 @@ class TrayApp:
             button.configure(state="disabled", text="Descargando")
             label.set("0 %")
             percent.set(0)
+            bar.pack(fill="x", pady=(4, 2), before=button)
         except tk.TclError:
             return
         status.set(f"descargando {offer.title}…")

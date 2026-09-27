@@ -14,7 +14,9 @@ WM_CLOSE = 0x0010
 WM_DESTROY = 0x0002
 WM_COMMAND = 0x0111
 WM_LBUTTONUP = 0x0202
+WM_LBUTTONDBLCLK = 0x0203
 WM_RBUTTONUP = 0x0205
+WM_CONTEXTMENU = 0x007B
 WM_NULL = 0x0000
 WM_TRAY = 0x0400 + 20
 NIM_ADD = 0
@@ -31,12 +33,13 @@ MF_POPUP = 0x0010
 MF_SEPARATOR = 0x0800
 TPM_RIGHTALIGN = 0x0008
 TPM_BOTTOMALIGN = 0x0020
+TPM_RIGHTBUTTON = 0x0002
+WS_POPUP = 0x80000000
 
 user32.AppendMenuW.argtypes = [wintypes.HMENU, wintypes.UINT, ctypes.c_size_t, wintypes.LPCWSTR]
 user32.AppendMenuW.restype = wintypes.BOOL
 user32.CreatePopupMenu.restype = wintypes.HMENU
 user32.DestroyMenu.argtypes = [wintypes.HMENU]
-HWND_MESSAGE = wintypes.HWND(-3)
 LRESULT = ctypes.c_ssize_t
 WNDPROC = ctypes.WINFUNCTYPE(LRESULT, wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
 
@@ -136,7 +139,11 @@ class WinTray:
             self.error = f"RegisterClass {kernel32.GetLastError()}"
             self._ready.set()
             return
-        self.hwnd = user32.CreateWindowExW(0, class_name, "Grok Assistant", 0, 0, 0, 0, 0, HWND_MESSAGE, None, window_class.hInstance, None)
+        # A real hidden window. A message-only window drops the right-click.
+        self.hwnd = user32.CreateWindowExW(
+            0, class_name, "Grok Assistant", WS_POPUP,
+            0, 0, 0, 0, None, None, window_class.hInstance, None,
+        )
         if not self.hwnd:
             self.error = f"CreateWindow {kernel32.GetLastError()}"
             self._ready.set()
@@ -160,10 +167,11 @@ class WinTray:
 
     def _wnd(self, hwnd, msg, wparam, lparam):
         if msg == WM_TRAY:
-            if lparam in (WM_LBUTTONUP, 0x0203):
-                self.on_show()
-            elif lparam == WM_RBUTTONUP:
+            event = int(lparam) & 0xFFFF
+            if event in (WM_RBUTTONUP, WM_CONTEXTMENU):
                 self._menu(hwnd)
+            elif event in (WM_LBUTTONUP, WM_LBUTTONDBLCLK):
+                self.on_show()
             return 0
         if msg == WM_COMMAND:
             key = self._ids.get(int(wparam) & 0xFFFF)
@@ -186,7 +194,12 @@ class WinTray:
         point = POINT()
         user32.GetCursorPos(ctypes.byref(point))
         user32.SetForegroundWindow(hwnd)
-        user32.TrackPopupMenu(menu, TPM_RIGHTALIGN | TPM_BOTTOMALIGN, point.x, point.y, 0, hwnd, None)
+        user32.TrackPopupMenu(
+            menu,
+            TPM_RIGHTALIGN | TPM_BOTTOMALIGN | TPM_RIGHTBUTTON,
+            point.x, point.y, 0, hwnd, None,
+        )
+        user32.PostMessageW(hwnd, WM_NULL, 0, 0)
         user32.PostMessageW(hwnd, WM_NULL, 0, 0)
         for handle in owned:
             user32.DestroyMenu(handle)
