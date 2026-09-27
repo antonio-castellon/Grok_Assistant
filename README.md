@@ -60,9 +60,19 @@ Wake with `hola grok` or `¿estás ahí?`. Outside a conversation, every other o
 
 The tray is the application. Left click opens the information window. Right click opens the menu: pause, information, debug, recognizer, voice, model, sessions, administrator password, quit. Closing a window does not quit. Quit is a menu item, because some of us have been trained badly by years of “are you sure you want to hide the window and pretend that is an exit.”
 
-## Run it
+## Install it
 
-You need Python 3.11 or newer, and the `grok` command already logged in as you. This project does not want an API key in a `.env`. If `grok` is missing, local orders still work and the cloud gets a one-line apology.
+Python 3.11 or newer, and the `grok` command already logged in as you. This project does not want an API key in a `.env`. If `grok` is missing, local orders still work and the cloud gets a one-line apology.
+
+From this folder:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\installer\install.ps1
+```
+
+Or double-click `installer\Install Grok Assistant.cmd`. The installer copies the program to `%LOCALAPPDATA%\GrokAssistant`, builds a virtual environment there, and puts a **Grok Assistant** shortcut on the desktop and in the Start menu. The icon on that shortcut is the Grok mark. `-Destination` picks another folder. `-NoShortcuts` skips the desktop and the Start menu. `-Force` replaces an install that is already there. `uninstall.ps1` in the install folder takes it back off.
+
+## Run it from the source tree
 
 ```powershell
 cd C:\DEV.Personal\Grok_Assistant
