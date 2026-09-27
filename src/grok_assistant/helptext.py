@@ -13,7 +13,6 @@ otra voz
 otro reconocedor
 pon la canción X
 para la música
-apaga el dispositivo
 prueba
 identifica mi voz
 """
@@ -120,11 +119,6 @@ HELP_TOPICS = (
         "Ayuda hablada",
         "comando ayuda dice en voz alta la lista corta. La explicación larga, con estos ejemplos, está en este menú.",
         "comando ayuda",
-    ),
-    (
-        "Apagar",
-        "Pide sí o no. Sí apaga el equipo con el apagado normal del sistema. No, o cualquier otra frase, dice Vale y no apaga.",
-        "comando apagar",
     ),
 )
 

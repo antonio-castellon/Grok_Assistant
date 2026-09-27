@@ -12,7 +12,7 @@ pausa musica, seguir musica, para la musica, otro reconocedor,
 reconocedor teclado, reconocedor windows, reconocedor kroko, reconocedor whisper, reconocedor base, reconocedor canary,
 listar sesiones, crear sesion NOMBRE, abrir sesion NOMBRE, cerrar sesion, borrar sesion NOMBRE,
 listar agentes, abrir agente NOMBRE, crear agente NOMBRE, cerrar agente,
-apagar, ayuda, prueba, identifica mi voz, lista las personas, borra NOMBRE, modo administrador.
+ayuda, prueba, identifica mi voz, lista las personas, borra NOMBRE, modo administrador.
 No inventes otras órdenes. No añadas markdown.
 """
 

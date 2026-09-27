@@ -417,17 +417,11 @@ def test_conversation_timeout_ignores_time_spent_busy(world):
     assert not hub.brain.in_conversation
 
 
-def test_shutdown_is_only_an_effect_after_yes(world):
-    hub, cli, _clock = world
-    cli.classified = {"accion": "comando", "orden": "apagar", "texto": ""}
-    asked = hub.run("comando apaga ya el chisme")
-    assert not any(effect[0] == "shutdown" for effect in asked.effects)
-    refused = hub.run("no")
-    assert refused.spoken == ["Vale."]
-    hub.run("comando apagar")
-    accepted = hub.run("sí")
-    assert any(effect[0] == "shutdown" for effect in accepted.effects)
-    assert accepted.spoken[0] == "Apago."
+def test_apagar_is_not_a_command(world):
+    hub, _cli, _clock = world
+    result = hub.run("comando apagar")
+    assert result.spoken == ["No conozco ese comando."]
+    assert not any(effect[0] == "shutdown" for effect in result.effects)
 
 
 def test_stop_music_is_not_pause_music(world):

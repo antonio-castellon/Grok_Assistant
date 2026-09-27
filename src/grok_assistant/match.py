@@ -69,7 +69,6 @@ _FIXED: tuple[tuple[str, tuple[str, ...], bool, bool], ...] = (
     ("identifica mi voz", ("identifica mi voz",), False, False),
     ("cambiar nombre", ("cambiar nombre", "cambia el nombre", "cambiar el nombre"), False, False),
     ("lista las personas", ("lista las personas", "listar las personas", "lista personas"), False, True),
-    ("apagar", ("apagar", "apaga", "apaga el dispositivo", "apagar el dispositivo"), True, False),
     ("modo administrador", ("modo administrador", "administrador"), False, True),
 )
 

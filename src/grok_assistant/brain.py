@@ -677,8 +677,6 @@ class Brain:
         return "Dime el nombre."
 
     def _confirm(self, hit: Hit) -> str:
-        if hit.strict == "apagar":
-            return "¿Apago el equipo? ¿Sí o no?"
         if hit.strict == "crear sesion":
             return f"¿Creo la sesión {hit.arg}? ¿Sí o no?"
         if hit.strict == "borrar sesion":
@@ -807,8 +805,6 @@ class Brain:
             return self._said([f"Borro a {deleted}.{extra}"])
         if name == "modo administrador":
             return self._said(["Modo administrador."])
-        if name == "apagar":
-            return self._said(["Apago."], effects=[("shutdown",)])
         return self._said(["No conozco ese comando."])
 
     def _enter_test(self, heard: str) -> Turn:

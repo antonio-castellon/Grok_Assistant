@@ -75,9 +75,7 @@ class Hub:
         return result
 
     def _emit(self, turn: Turn, speaker, result: Result) -> None:
-        early = [item for item in turn.effects if item[0] != "shutdown"]
-        late = [item for item in turn.effects if item[0] == "shutdown"]
-        for effect in early:
+        for effect in turn.effects:
             result.effects.append(effect)
             if self.on_effect:
                 self.on_effect(effect)
@@ -85,10 +83,6 @@ class Hub:
             result.spoken.append(line)
             if speaker and line:
                 speaker(line)
-        for effect in late:
-            result.effects.append(effect)
-            if self.on_effect:
-                self.on_effect(effect)
 
     def _local_turn(self, turn: Turn) -> Turn | None:
         if turn.job is None or self.mind is None or not self.brain.settings.local_llm:

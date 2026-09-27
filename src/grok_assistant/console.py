@@ -5,7 +5,6 @@ from __future__ import annotations
 import sys
 
 from grok_assistant.hub import build
-from grok_assistant.tray import shutdown_machine
 
 
 def run() -> None:
@@ -25,6 +24,3 @@ def run() -> None:
             for said in follow.spoken:
                 print(said)
             result.effects.extend(follow.effects)
-        if any(item[0] == "shutdown" for item in result.effects):
-            shutdown_machine()
-            return

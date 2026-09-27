@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 import queue
-import subprocess
 import threading
 import webbrowser
 import tkinter as tk
@@ -39,13 +38,6 @@ FIELD = "#0e1216"
 FONT = ("Segoe UI", 12)
 FONT_BOLD = ("Segoe UI", 18, "bold")
 MONO = ("Consolas", 12)
-
-
-def shutdown_machine() -> None:
-    if os.name == "nt":
-        subprocess.Popen(["shutdown", "/s", "/t", "5"])
-    else:
-        subprocess.Popen(["systemctl", "poweroff"])
 
 
 def run() -> None:
@@ -248,8 +240,6 @@ class TrayApp:
             menu.add_command(label="✓  Desactivar arranque con Windows", command=self._toggle_startup)
         else:
             menu.add_command(label="Activar arranque con Windows", command=self._toggle_startup)
-        menu.add_separator()
-        menu.add_command(label="Apagar el equipo…", command=self._confirm_shutdown)
 
     def _toggle_startup(self) -> None:
         from grok_assistant.startup import enabled, set_enabled
@@ -812,11 +802,6 @@ class TrayApp:
         text.tag_bind(tag, "<Enter>", lambda _event: text.configure(cursor="hand2"))
         text.tag_bind(tag, "<Leave>", lambda _event: text.configure(cursor="arrow"))
 
-    def _confirm_shutdown(self) -> None:
-        if messagebox.askyesno("Apagar", "¿Apago el equipo?", parent=self.root):
-            self._note("apago el equipo.")
-            shutdown_machine()
-
     def _note(self, text: str) -> None:
         self.hub.brain.note(text)
 
@@ -930,8 +915,6 @@ class TrayApp:
                 self.music.resume()
             elif kind == "stop_music":
                 self.music.stop()
-            elif kind == "shutdown":
-                shutdown_machine()
             elif kind == "recognizer":
                 self._sync_ear()
 
