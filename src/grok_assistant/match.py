@@ -130,6 +130,18 @@ def wake_targets(name: str = "grok", extras: tuple[str, ...] | list[str] = ()) -
     return targets
 
 
+def is_exact_wake(norms: list[str], name: str = "grok", extras: tuple[str, ...] | list[str] = ()) -> bool:
+    """The words match a greeting exactly. A near miss is left for the text identifier."""
+    if not norms:
+        return False
+    blob = " ".join(norms)
+    for target in wake_targets(name, extras):
+        size = len(target.split())
+        if blob == target or " ".join(norms[:size]) == target:
+            return True
+    return False
+
+
 def is_wake(norms: list[str], name: str = "grok", extras: tuple[str, ...] | list[str] = ()) -> bool:
     if not norms:
         return False

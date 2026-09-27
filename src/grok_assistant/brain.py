@@ -14,6 +14,7 @@ from grok_assistant.match import (
     canonicalize,
     closer,
     display_order,
+    is_exact_wake,
     is_test_word,
     is_wake,
     is_yes,
@@ -72,7 +73,7 @@ def split_commands(answer: str) -> tuple[list[str], str]:
 
 def _next_step(decision: str, sent: bool, detail: str) -> str:
     if decision == "ignorar" and detail == "saludo":
-        return "saludo local. No envío nada."
+        return "saludo. Abro la conversación. El saludo no sale de casa."
     if decision == "ignorar" and detail == "larga":
         return "la ignoro: es larga y no va dirigida al asistente."
     if decision == "ignorar" and detail == "canción larga":
@@ -147,6 +148,7 @@ class Brain:
         self.pending = None
         self.enroll = None
         self.naming = None
+        self.identifier_ready = False
         self.opener = None
         self.detail_used = False
         self.last_question = ""
@@ -203,6 +205,16 @@ class Brain:
             return "modo conversación"
         return "modo escucha"
 
+    def identifier_label(self) -> str:
+        if not self.settings.local_llm or not self.settings.llm_file:
+            return "sin identificador"
+        from grok_assistant.marketplace import offers
+
+        for offer in offers():
+            if offer.kind == "llm" and offer.files and offer.files[0][1].rsplit("/", 1)[-1] == self.settings.llm_file:
+                return offer.title
+        return self.settings.llm_file
+
     def status_label(self) -> str:
         return self.mode_label()
 
@@ -216,6 +228,7 @@ class Brain:
             "effort": "alto" if self.effort_now == "high" else "bajo",
             "voice": f"{voice_no}. {voice_name}",
             "recognizer": self.settings.recognizer,
+            "identifier": self.identifier_label(),
             "session": session.name,
             "shared": session.shared,
             "volume": self.settings.volume,
@@ -488,7 +501,10 @@ class Brain:
         return True
 
     def _is_wake(self, norms: list[str]) -> bool:
-        return is_wake(norms, self.settings.wake_name, self.settings.wake_heard or [])
+        heard = self.settings.wake_heard or []
+        if self.identifier_ready:
+            return is_exact_wake(norms, self.settings.wake_name, heard)
+        return is_wake(norms, self.settings.wake_name, heard)
 
     def _name_take(self, heard: str, norms: list[str]) -> Turn:
         self._record(heard, "ignorar", False, "nombre")
@@ -519,8 +535,9 @@ class Brain:
             return self._said([f"He oído: {heard}. 6 de 6. A partir de ahora me llamo {chosen}."])
         return self._said([f"He oído: {heard}. {count} de 6. Otra vez."])
 
-    def _wake(self, heard: str, norms: list[str], speaker_id: str | None) -> Turn:
-        self._record(heard, "ignorar", False, "saludo")
+    def _wake(self, heard: str, norms: list[str], speaker_id: str | None, logged: bool = True) -> Turn:
+        if logged:
+            self._record(heard, "ignorar", False, "saludo")
         self.last_heard = heard
         self.in_conversation = True
         self.detail_used = False

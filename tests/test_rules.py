@@ -143,6 +143,22 @@ def test_local_command_does_not_spend_a_filler(world):
     assert hub.brain.settings.wait_index == before
 
 
+def test_a_near_greeting_goes_to_the_text_identifier(world):
+    hub, cli, _clock = world
+
+    class Hear:
+        def interpret(self, phrase, in_conversation):
+            return {"accion": "saludo", "orden": "", "texto": ""}
+
+    hub.mind = Hear()
+    hub.brain.settings.local_llm = True
+    result = hub.run("Hola Groo")
+    assert result.spoken == ["Hola."]
+    assert hub.brain.in_conversation
+    assert cli.calls == []
+    assert any("Abro la conversación" in line for line in hub.brain.logs)
+
+
 def test_ok_closes_without_the_waiting_line(world):
     hub, cli, _clock = world
     hub.run("hola grok")

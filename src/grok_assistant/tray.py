@@ -207,6 +207,7 @@ class TrayApp:
         self.root.configure(menu=bar)
         self.menu_escucha = tk.Menu(bar, postcommand=self._fill_escucha, **kw)
         self.menu_ear = tk.Menu(self.menu_escucha, **kw)
+        self.menu_identifier = tk.Menu(self.menu_escucha, postcommand=self._fill_identifiers, **kw)
         self.menu_voz = tk.Menu(bar, postcommand=self._fill_voz, **kw)
         self.menu_modelo = tk.Menu(bar, postcommand=self._fill_modelo, **kw)
         self.menu_sesion = tk.Menu(bar, postcommand=self._fill_sesion, **kw)
@@ -250,6 +251,7 @@ class TrayApp:
             else:
                 self.menu_ear.add_command(label=f"{label}  (no instalado)", state="disabled")
         menu.add_cascade(label="Reconocedor", menu=self.menu_ear)
+        menu.add_cascade(label="Identificador texto", menu=self.menu_identifier)
         menu.add_separator()
         if self.hub.brain.test_mode:
             menu.add_command(label="✓  Desactivar prueba", command=self._toggle_test)
@@ -257,6 +259,64 @@ class TrayApp:
             menu.add_command(label="Activar prueba", command=self._toggle_test)
         menu.add_command(label="Identificar mi voz", command=lambda: self._command("identifica mi voz"))
         menu.add_command(label="Cambiar nombre…", command=lambda: self._command("cambiar nombre"))
+
+    def _fill_identifiers(self) -> None:
+        menu = self.menu_identifier
+        menu.delete(0, "end")
+        from grok_assistant.marketplace import offers
+
+        current = self.hub.brain.settings.llm_file if self.hub.brain.settings.local_llm else ""
+        menu.add_command(
+            label=("✓  " if not current else "") + "Ninguno",
+            command=lambda: self._pick_identifier(None),
+        )
+        ready = [offer for offer in offers() if offer.kind == "llm" and offer.ready()]
+        if not ready:
+            menu.add_command(label="(ninguno descargado)", state="disabled")
+            return
+        for offer in ready:
+            filename = offer.files[0][1].rsplit("/", 1)[-1]
+            mark = "✓  " if filename == current else ""
+            menu.add_command(label=mark + offer.title, command=lambda item=offer: self._pick_identifier(item))
+
+    def _identifier_items(self) -> list:
+        from grok_assistant.marketplace import offers
+
+        current = self.hub.brain.settings.llm_file if self.hub.brain.settings.local_llm else ""
+        rows = [("cmd", "Ninguno", "identifier-off", not current)]
+        ready = [offer for offer in offers() if offer.kind == "llm" and offer.ready()]
+        if not ready:
+            rows.append(("cmd", "(ninguno descargado)", "noop", False))
+            return rows
+        for offer in ready:
+            filename = offer.files[0][1].rsplit("/", 1)[-1]
+            rows.append(("cmd", offer.title, f"identifier:{filename}", filename == current))
+        return rows
+
+    def _pick_identifier_file(self, filename: str) -> None:
+        from grok_assistant.marketplace import offers
+
+        for offer in offers():
+            if offer.kind == "llm" and offer.files and offer.files[0][1].rsplit("/", 1)[-1] == filename:
+                self._pick_identifier(offer)
+                return
+
+    def _pick_identifier(self, offer: Offer | None) -> None:
+        if offer is None:
+            self.hub.brain.settings.local_llm = False
+            self.hub.brain.settings.llm_file = ""
+            self.hub.brain.persist()
+            self._note("sin identificador de texto")
+            self._paint()
+            return
+        filename = offer.files[0][1].rsplit("/", 1)[-1]
+        self.hub.brain.settings.local_llm = True
+        self.hub.brain.settings.llm_file = filename
+        self.hub.brain.persist()
+        if self.hub.mind is not None:
+            self.hub.mind.select(filename)
+        self._note(f"identificador de texto: {offer.title}")
+        self._paint()
 
     def _fill_voz(self) -> None:
         menu = self.menu_voz
@@ -334,6 +394,7 @@ class TrayApp:
             ("cmd", "Mostrar", "show", False),
             ("cmd", "Seguir escuchando" if self.user_paused else "Pausar escucha", "pause", self.user_paused),
             ("sub", "Reconocedor", ears),
+            ("sub", "Identificador texto", self._identifier_items()),
             ("sub", "Voz", voices + [("sep",), ("cmd", "Subir volumen", "vol-up", False), ("cmd", "Bajar volumen", "vol-down", False)]),
             ("sub", "Modelo", models),
             ("sub", "Sesión", sessions),
@@ -368,6 +429,10 @@ class TrayApp:
             self._command("cambiar nombre")
         elif key == "install-windows":
             self._install_windows()
+        elif key == "identifier-off":
+            self._pick_identifier(None)
+        elif key.startswith("identifier:"):
+            self._pick_identifier_file(key.split(":", 1)[1])
         elif key.startswith("ear:"):
             self._command(f"reconocedor {key.split(':', 1)[1]}")
         elif key.startswith("model:"):
@@ -902,7 +967,7 @@ class TrayApp:
             return
         self.status_var.set(snap["status"])
         self.detail_var.set(
-            f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {snap['recognizer']}  ·  {snap['session']}  ·  {snap['volume']}%"
+            f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {snap['recognizer']}  ·  {snap['identifier']}  ·  {snap['session']}  ·  {snap['volume']}%"
         )
         if self.tray_ok and self.tray is not None:
             self.tray.set_tip(f"Grok Assistant — {snap['status']}")

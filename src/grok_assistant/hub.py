@@ -42,6 +42,7 @@ class Hub:
         return self.brain.startup_line()
 
     def run(self, text: str, speaker=None, **kwargs) -> Result:
+        self.brain.identifier_ready = self._identifier_ready()
         self.brain.mark_busy()
         try:
             turn = self.brain.handle(text, **kwargs)
@@ -107,22 +108,39 @@ class Hub:
         except Exception:
             self.brain._log("modelo local no respondió")
             data = None
+        if data and data.get("accion") == "saludo":
+            from grok_assistant.match import tokenize
+
+            self.brain.phase = ""
+            self.brain._log(f"{self._identifier_name()}: saludo. Abro la conversación.")
+            norms = [norm for _, norm in tokenize(original)]
+            return self.brain._wake(original, norms, None, logged=False)
         if data and data.get("accion") == "comando":
             from grok_assistant.match import canonicalize
 
             hit = canonicalize(str(data.get("orden") or ""))
             if hit is not None:
                 self.brain.phase = ""
-                self.brain._log(f"modelo local: comando {hit.strict}")
+                self.brain._log(f"{self._identifier_name()}: comando {hit.strict}")
                 return self.brain.perform(hit)
         close = self._close_kind(original, data)
         if close:
             self.brain.phase = ""
-            self.brain._log("modelo local: cierre")
+            self.brain._log(f"{self._identifier_name()}: cierre")
             return self.brain._goodbye(close)
         self.brain.phase = ""
-        self.brain._log("modelo local: no es un comando. Paso el texto tal cual.")
+        self.brain._log(f"{self._identifier_name()}: no es saludo, ni comando, ni cierre. Paso el texto tal cual.")
         return self._pass_through(turn, original)
+
+    def _identifier_ready(self) -> bool:
+        if not self.brain.settings.local_llm or self.mind is None:
+            return False
+        if hasattr(self.mind, "available"):
+            return bool(self.mind.available())
+        return True
+
+    def _identifier_name(self) -> str:
+        return self.brain.identifier_label()
 
     def _close_kind(self, original: str, data: dict | None) -> str | None:
         from grok_assistant.match import closer, tokenize

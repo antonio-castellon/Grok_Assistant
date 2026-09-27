@@ -18,6 +18,8 @@ SYSTEM = (
     "Miras el texto tal como lo entregó el reconocedor de voz. Decides solo esto: "
     "si es un comando de la lista, o una variación mal oída de uno de ellos.\n"
     "Respondes un único JSON con las claves accion y orden.\n"
+    "Si es un saludo al asistente, aunque el oído lo haya deformado (hola grok oído como hola groo), "
+    "accion es \"saludo\" y orden es \"\".\n"
     "Si es un comando o una variación, accion es \"comando\" y orden es la línea estricta, sin cambiar el sentido.\n"
     "Si cierra la conversación (gracias, nada gracias, ok, vale, adiós, cierra, hasta luego, o una variación), "
     "accion es \"cierre\" y orden es \"gracias\", \"adios\" o \"vale\".\n"
@@ -45,7 +47,7 @@ def parse_intent(raw: str) -> dict | None:
     if not isinstance(data, dict) or "accion" not in data:
         return None
     accion = str(data.get("accion") or "").strip().lower()
-    if accion not in {"ignorar", "comando", "pregunta", "texto", "cierre"}:
+    if accion not in {"ignorar", "comando", "pregunta", "texto", "cierre", "saludo"}:
         return None
     return {
         "accion": accion,
