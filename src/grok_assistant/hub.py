@@ -179,6 +179,7 @@ class Hub:
                 self.sent.append(("classify", job.text))
                 return self.brain.finish_classify(data)
             session_id, first = self._slot(job)
+            spoken = self._spoken_rules(job)
             try:
                 answer = self.cli.converse(
                     job.text,
@@ -187,6 +188,7 @@ class Hub:
                     session_id=session_id,
                     first=first,
                     agent_path=job.agent_path,
+                    system=spoken,
                 )
             except GrokError:
                 if first:
@@ -199,11 +201,19 @@ class Hub:
                     session_id=session_id,
                     first=True,
                     agent_path=job.agent_path,
+                    system=spoken,
                 )
             self.sent.append(("converse", job.text, job.effort, job.agent_name))
             return self.brain.finish_converse(answer)
         except GrokError as exc:
             return self.brain.finish_error(str(exc))
+
+    def _spoken_rules(self, job) -> str:
+        from grok_assistant.personality import voice_prompt
+        from grok_assistant.prompts import AGENT_RULES, VOICE_SYSTEM
+
+        base = AGENT_RULES if job.agent_path else VOICE_SYSTEM
+        return voice_prompt(self.brain.settings.personality, base)
 
     def _slot(self, job) -> tuple[str, bool]:
         if job.slot == "agent" and job.agent_name:

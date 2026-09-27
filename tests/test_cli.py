@@ -51,3 +51,25 @@ def test_converse_can_search_and_cannot_inherit_this_checkout(tmp_path):
     assert cli.command[cli.command.index("--cwd") + 1] == str(tmp_path)
     assert "--session-id" in cli.command
     assert "--system-prompt-override" in cli.command
+
+
+def test_converse_sends_the_personality_with_the_answer(tmp_path):
+    from grok_assistant.personality import load_person, voice_prompt
+    from grok_assistant.prompts import VOICE_SYSTEM
+
+    cli = Capture(tmp_path)
+    cfg = load_person("marcos")
+    cfg["behavior"] = "Pregunta si hace falta Kubernetes."
+    cli.converse(
+        "qué hora es",
+        model="grok-4.7",
+        effort="low",
+        session_id="11111111-1111-1111-1111-111111111111",
+        first=True,
+        agent_path=None,
+        system=voice_prompt(cfg, VOICE_SYSTEM),
+    )
+    override = cli.command[cli.command.index("--system-prompt-override") + 1]
+    assert "Persona: Marcos" in override
+    assert "Pregunta si hace falta Kubernetes." in override
+    assert "una o dos frases" in override

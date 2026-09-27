@@ -30,7 +30,7 @@ class FakeCLI:
         self.calls.append(("classify", text))
         return self.classified
 
-    def converse(self, text, *, model, effort, session_id, first, agent_path):
+    def converse(self, text, *, model, effort, session_id, first, agent_path, system=None):
         self.calls.append(("converse", text, effort, agent_path))
         return self.answer
 

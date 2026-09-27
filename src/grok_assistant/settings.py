@@ -6,6 +6,8 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from grok_assistant.personality import blank_personality, normalize_personality
+
 
 @dataclass
 class Settings:
@@ -20,6 +22,7 @@ class Settings:
     llm_file: str = ""
     wake_name: str = "grok"
     wake_heard: list = field(default_factory=list)
+    personality: dict = field(default_factory=blank_personality)
 
     @classmethod
     def load(cls, path: Path) -> "Settings":
@@ -39,6 +42,7 @@ class Settings:
         item.wake_name = str(item.wake_name or "grok").strip() or "grok"
         if not isinstance(item.wake_heard, list):
             item.wake_heard = []
+        item.personality = normalize_personality(item.personality)
         return item
 
     def save(self, path: Path) -> None:

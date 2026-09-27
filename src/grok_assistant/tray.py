@@ -213,6 +213,7 @@ class TrayApp:
         self.menu_modelo = tk.Menu(bar, postcommand=self._fill_modelo, **kw)
         self.menu_sesion = tk.Menu(bar, postcommand=self._fill_sesion, **kw)
         self.menu_agente = tk.Menu(bar, postcommand=self._fill_agente, **kw)
+        self.menu_persona = tk.Menu(bar, postcommand=self._fill_persona, **kw)
         self.menu_musica = tk.Menu(bar, **kw)
         self.menu_admin = tk.Menu(bar, postcommand=self._fill_admin, **kw)
         bar.add_cascade(label="Escucha", menu=self.menu_escucha)
@@ -220,10 +221,11 @@ class TrayApp:
         bar.add_cascade(label="Modelo", menu=self.menu_modelo)
         bar.add_cascade(label="Sesión", menu=self.menu_sesion)
         bar.add_cascade(label="Agente", menu=self.menu_agente)
+        bar.add_cascade(label="Personalidad", menu=self.menu_persona)
         bar.add_cascade(label="Música", menu=self.menu_musica)
         bar.add_cascade(label="Administrador", menu=self.menu_admin)
-        bar.add_command(label="Mercado", command=self._open_market)
-        bar.add_command(label="Acerca de + Ayuda", command=self._open_about)
+        bar.add_command(label="Voice market", command=self._open_market)
+        bar.add_command(label="Acerca de", command=self._open_about)
         self.menu_musica.add_command(label="Pausar", command=lambda: self._command("pausa musica"))
         self.menu_musica.add_command(label="Seguir", command=lambda: self._command("seguir musica"))
         self.menu_musica.add_command(label="Parar", command=lambda: self._command("para la musica"))
@@ -428,6 +430,7 @@ class TrayApp:
             ("sub", "Modelo", models),
             ("sub", "Sesión", sessions),
             ("sub", "Agente", agents),
+            ("sub", "Personalidad", self._persona_items()),
             ("sub", "Música", [
                 ("cmd", "Pausar", "music-pause", False),
                 ("cmd", "Seguir", "music-resume", False),
@@ -436,8 +439,8 @@ class TrayApp:
             ("cmd", "Desactivar prueba" if brain.test_mode else "Activar prueba", "test-toggle", brain.test_mode),
             ("cmd", "Cambiar nombre…", "rename", False),
             ("cmd", "Desactivar arranque con Windows" if self._startup_on() else "Activar arranque con Windows", "startup", self._startup_on()),
-            ("cmd", "Mercado", "market", False),
-            ("cmd", "Acerca de + Ayuda", "about", False),
+            ("cmd", "Voice market", "market", False),
+            ("cmd", "Acerca de", "about", False),
             ("sep",),
             ("cmd", "Salir", "quit", False),
         ]
@@ -493,6 +496,10 @@ class TrayApp:
             self._command("para la musica")
         elif key == "startup":
             self._toggle_startup()
+        elif key.startswith("persona:"):
+            self._choose_person(key.split(":", 1)[1])
+        elif key == "persona-edit":
+            self._open_personality()
         elif key == "market":
             self._open_market()
         elif key == "help":
@@ -544,12 +551,211 @@ class TrayApp:
         if name and name.strip():
             self._command(f"crear agente {name.strip()}")
 
+    def _fill_persona(self) -> None:
+        from grok_assistant.personality import PERSONS
+
+        menu = self.menu_persona
+        menu.delete(0, "end")
+        current = str(self.hub.brain.settings.personality.get("profile") or "")
+        menu.add_command(
+            label=("✓  " if not current else "") + "Sin persona — la voz de siempre",
+            command=lambda: self._choose_person(""),
+        )
+        menu.add_separator()
+        for person in PERSONS:
+            mark = "✓  " if person.id == current else ""
+            menu.add_command(
+                label=f"{mark}{person.name} — {person.label}",
+                command=lambda picked=person.id: self._choose_person(picked),
+            )
+        menu.add_separator()
+        menu.add_command(label="Ajustar rasgos y comportamiento…", command=self._open_personality)
+
+    def _persona_items(self) -> list:
+        from grok_assistant.personality import PERSONS
+
+        current = str(self.hub.brain.settings.personality.get("profile") or "")
+        rows = [("cmd", "Sin persona — la voz de siempre", "persona:", not current)]
+        for person in PERSONS:
+            rows.append(("cmd", f"{person.name} — {person.label}", f"persona:{person.id}", person.id == current))
+        rows.append(("sep",))
+        rows.append(("cmd", "Ajustar rasgos y comportamiento…", "persona-edit", False))
+        return rows
+
+    def _choose_person(self, person_id: str) -> None:
+        from grok_assistant.personality import load_person, person_by_id
+
+        self.hub.brain.settings.personality = load_person(person_id)
+        self.hub.brain.persist()
+        person = person_by_id(person_id)
+        if person is None:
+            self._note("sin persona. Grok contesta con la voz de siempre.")
+        else:
+            self._note(f"persona {person.name}: {person.label}")
+        self._open_personality()
+        self._paint()
+
+    def _open_personality(self) -> None:
+        existing = getattr(self, "_persona_win", None)
+        if existing is not None:
+            try:
+                if existing.winfo_exists():
+                    self._persona_fill(self.hub.brain.settings.personality)
+                    existing.deiconify()
+                    existing.lift()
+                    return
+            except tk.TclError:
+                pass
+        self._build_personality()
+
+    def _build_personality(self) -> None:
+        from grok_assistant.personality import CULTURES, FORMALITY, PERSONS, TONES, TRAITS, VERBOSITY
+
+        window = tk.Toplevel(self.root)
+        window.title("Personalidad")
+        window.configure(bg=BG)
+        window.geometry("760x720")
+        self._persona_win = window
+        self._persona_hold = False
+        blank_label = "Sin persona — la voz de siempre"
+        self._persona_ids = {blank_label: ""}
+        self._persona_labels = {"": blank_label}
+        for person in PERSONS:
+            shown = f"{person.name} — {person.label}"
+            self._persona_ids[shown] = person.id
+            self._persona_labels[person.id] = shown
+        self._persona_choice = tk.StringVar()
+        self._persona_meaning = tk.StringVar()
+        self._persona_tone = tk.StringVar()
+        self._persona_culture = tk.StringVar()
+        self._persona_verbosity = tk.StringVar()
+        self._persona_formality = tk.StringVar()
+        self._tone_ids = {label: key for key, label in TONES}
+        self._culture_ids = {label: key for key, label in CULTURES}
+        self._verbosity_ids = {label: key for key, label in VERBOSITY}
+        self._formality_ids = {label: key for key, label in FORMALITY}
+        self._tone_labels = {key: label for key, label in TONES}
+        self._culture_labels = {key: label for key, label in CULTURES}
+        self._verbosity_labels = {key: label for key, label in VERBOSITY}
+        self._formality_labels = {key: label for key, label in FORMALITY}
+
+        ttk.Label(window, text="Personalidad", style="Status.TLabel").pack(anchor="w", padx=16, pady=(14, 2))
+        ttk.Label(
+            window,
+            text="Elige una persona y, si quieres, mueve cada rasgo. El comportamiento es texto libre.",
+            style="Muted.TLabel",
+        ).pack(anchor="w", padx=16, pady=(0, 8))
+        ttk.Button(window, text="Aplicar", command=self._persona_save).pack(side="bottom", anchor="e", padx=16, pady=12)
+        page = ttk.Frame(window)
+        page.pack(fill="both", expand=True, padx=8)
+        _canvas, inner = self._scroll_page(page)
+
+        head = ttk.Frame(inner)
+        head.pack(fill="x", padx=8, pady=(8, 4))
+        ttk.Label(head, text="Persona").pack(anchor="w")
+        person_labels = list(self._persona_ids)
+        picker = ttk.OptionMenu(head, self._persona_choice, person_labels[0], *person_labels[1:])
+        picker.pack(anchor="w", pady=(2, 6))
+        ttk.Label(head, textvariable=self._persona_meaning, wraplength=680, style="Muted.TLabel").pack(anchor="w")
+
+        picks = ttk.Frame(inner)
+        picks.pack(fill="x", padx=8, pady=(10, 4))
+        self._option_row(picks, "Tono", self._persona_tone, [label for _key, label in TONES])
+        self._option_row(picks, "Cultura", self._persona_culture, [label for _key, label in CULTURES])
+        self._option_row(picks, "Verbosidad", self._persona_verbosity, [label for _key, label in VERBOSITY])
+        self._option_row(picks, "Formalidad", self._persona_formality, [label for _key, label in FORMALITY])
+
+        self._persona_scales = {}
+        for key, title, low, high in TRAITS:
+            row = ttk.Frame(inner)
+            row.pack(fill="x", padx=8, pady=3)
+            ttk.Label(row, text=f"{title}    {low}  ·  {high}").pack(anchor="w")
+            scale = tk.Scale(
+                row, from_=0, to=100, orient="horizontal", showvalue=True,
+                bg=BG, fg=INK, troughcolor=FIELD, highlightthickness=0,
+                activebackground=TEAL, length=640,
+            )
+            scale.pack(anchor="w")
+            self._persona_scales[key] = scale
+
+        ttk.Label(inner, text="Comportamiento").pack(anchor="w", padx=8, pady=(12, 2))
+        ttk.Label(
+            inner,
+            text="Esto no es un número. Escribe cómo debe comportarse.",
+            style="Muted.TLabel",
+        ).pack(anchor="w", padx=8)
+        self._persona_behavior = tk.Text(
+            inner, height=8, wrap="word", bg=FIELD, fg=INK, insertbackground=INK,
+            font=FONT, relief="flat", padx=10, pady=8,
+        )
+        self._persona_behavior.pack(fill="x", padx=8, pady=(4, 12))
+        self._persona_choice.trace_add("write", self._on_person_picked)
+        self._persona_fill(self.hub.brain.settings.personality)
+
+    def _option_row(self, parent, title: str, variable: tk.StringVar, labels: list[str]) -> None:
+        row = ttk.Frame(parent)
+        row.pack(fill="x", pady=2)
+        ttk.Label(row, text=title, width=14).pack(side="left")
+        ttk.OptionMenu(row, variable, labels[0], *labels[1:]).pack(side="left")
+
+    def _on_person_picked(self, *_args) -> None:
+        if self._persona_hold:
+            return
+        from grok_assistant.personality import load_person
+
+        person_id = self._persona_ids.get(self._persona_choice.get(), "")
+        self._persona_fill(load_person(person_id))
+
+    def _persona_fill(self, raw) -> None:
+        from grok_assistant.personality import normalize_personality, person_by_id
+
+        cfg = normalize_personality(raw)
+        self._persona_hold = True
+        self._persona_choice.set(self._persona_labels.get(cfg["profile"], self._persona_labels[""]))
+        person = person_by_id(cfg["profile"])
+        if person is None:
+            self._persona_meaning.set("Sin persona. Grok contesta con la voz de siempre.")
+        else:
+            self._persona_meaning.set(person.meaning)
+        self._persona_tone.set(self._tone_labels.get(cfg["tone"], self._tone_labels["auto"]))
+        self._persona_culture.set(self._culture_labels.get(cfg["culture"], self._culture_labels["spain_neutral"]))
+        self._persona_verbosity.set(self._verbosity_labels.get(cfg["verbosity"], self._verbosity_labels["media"]))
+        self._persona_formality.set(self._formality_labels.get(cfg["formality"], self._formality_labels["auto"]))
+        for key, scale in self._persona_scales.items():
+            scale.set(cfg[key])
+        self._persona_behavior.delete("1.0", "end")
+        if cfg["behavior"]:
+            self._persona_behavior.insert("1.0", cfg["behavior"])
+        self._persona_hold = False
+
+    def _persona_save(self) -> None:
+        from grok_assistant.personality import normalize_personality, person_by_id
+
+        cfg = {
+            "profile": self._persona_ids.get(self._persona_choice.get(), ""),
+            "tone": self._tone_ids.get(self._persona_tone.get(), "auto"),
+            "culture": self._culture_ids.get(self._persona_culture.get(), "spain_neutral"),
+            "verbosity": self._verbosity_ids.get(self._persona_verbosity.get(), "media"),
+            "formality": self._formality_ids.get(self._persona_formality.get(), "auto"),
+            "behavior": self._persona_behavior.get("1.0", "end").strip(),
+        }
+        for key, scale in self._persona_scales.items():
+            cfg[key] = int(round(float(scale.get())))
+        self.hub.brain.settings.personality = normalize_personality(cfg)
+        self.hub.brain.persist()
+        person = person_by_id(cfg["profile"])
+        if person is None:
+            self._note("sin persona. La próxima respuesta usa la voz de siempre.")
+        else:
+            self._note(f"persona {person.name}. La próxima respuesta usa estos rasgos.")
+        self._paint()
+
     def _open_market(self) -> None:
         window = tk.Toplevel(self.root)
-        window.title("Mercado")
+        window.title("Voice market")
         window.configure(bg=BG)
         window.geometry("760x640")
-        ttk.Label(window, text="Mercado", style="Status.TLabel").pack(anchor="w", padx=16, pady=(14, 2))
+        ttk.Label(window, text="Voice market", style="Status.TLabel").pack(anchor="w", padx=16, pady=(14, 2))
         ttk.Label(
             window,
             text="Nada baja solo. En el menú entra cuando la descarga llega al 100 %.",
@@ -742,7 +948,7 @@ class TrayApp:
 
     def _open_about(self) -> None:
         window = tk.Toplevel(self.root)
-        window.title("Acerca de + Ayuda")
+        window.title("Acerca de")
         window.configure(bg=BG)
         window.geometry("720x560")
         book = ttk.Notebook(window, style="Market.TNotebook")

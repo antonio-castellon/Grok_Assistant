@@ -22,7 +22,7 @@ class FakeCLI:
         self.calls.append(("classify", text))
         return {"accion": "ignorar", "orden": "", "texto": ""}
 
-    def converse(self, text, *, model, effort, session_id, first, agent_path):
+    def converse(self, text, *, model, effort, session_id, first, agent_path, system=None):
         self.calls.append(("converse", text))
         return "Son las tres."
 

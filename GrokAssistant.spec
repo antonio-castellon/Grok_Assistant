@@ -51,6 +51,7 @@ a = Analysis(
         "grok_assistant.match",
         "grok_assistant.music",
         "grok_assistant.paths",
+        "grok_assistant.personality",
         "grok_assistant.quiet",
         "grok_assistant.prompts",
         "grok_assistant.settings",

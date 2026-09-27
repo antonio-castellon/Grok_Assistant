@@ -1,0 +1,95 @@
+"""The spoken answer can wear a person, numeric traits, and a free behavior text."""
+
+from grok_assistant.personality import compose, load_person, normalize_personality, voice_prompt
+from grok_assistant.prompts import VOICE_SYSTEM
+from grok_assistant.settings import Settings
+
+
+def test_no_person_leaves_the_voice_prompt_alone():
+    assert compose({}) == ""
+    assert voice_prompt(load_person(""), VOICE_SYSTEM) == VOICE_SYSTEM
+
+
+def test_a_person_carries_meaning_traits_and_behavior():
+    cfg = load_person("ines")
+    assert cfg["warmth"] == 80
+    assert "torpe" in cfg["behavior"]
+    block = compose(cfg)
+    assert "Inés" in block
+    assert "la maestra" in block
+    assert "calidez 80" in block
+    assert "torpe" in block
+    assert "techos" in block
+
+
+def test_free_behavior_replaces_the_stock_paragraph():
+    cfg = load_person("bruno")
+    cfg["behavior"] = "Habla despacio y no hagas chistes hoy."
+    cfg["humor"] = 12
+    block = compose(cfg)
+    assert "Habla despacio y no hagas chistes hoy." in block
+    assert "humor 12" in block
+    assert "No expliques el chiste" not in block
+
+
+def test_traits_stay_between_zero_and_one_hundred():
+    cfg = normalize_personality({"profile": "alex", "humor": 400, "warmth": -5, "tone": "no-such"})
+    assert cfg["humor"] == 100
+    assert cfg["warmth"] == 0
+    assert cfg["tone"] == "auto"
+    assert cfg["profile"] == "alex"
+
+
+def test_settings_roundtrip_keeps_a_custom_person(tmp_path):
+    path = tmp_path / "config.json"
+    item = Settings()
+    item.personality = load_person("marcos")
+    item.personality["behavior"] = "Pregunta si hace falta Kubernetes."
+    item.save(path)
+    loaded = Settings.load(path)
+    assert loaded.personality["profile"] == "marcos"
+    assert loaded.personality["directness"] == 90
+    assert loaded.personality["behavior"] == "Pregunta si hace falta Kubernetes."
+
+
+def test_personality_window_saves_a_free_behavior(tmp_path):
+    import tkinter as tk
+
+    from grok_assistant.hub import build
+    from grok_assistant.tray import TrayApp
+
+    root = tk.Tk()
+    root.withdraw()
+    app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
+    try:
+        app._choose_person("ines")
+        root.update()
+        assert "ejemplo" in app._persona_meaning.get()
+        assert "Inés" in app._persona_choice.get()
+        app._persona_scales["humor"].set(11)
+        app._persona_behavior.delete("1.0", "end")
+        app._persona_behavior.insert("1.0", "Habla despacio y con un ejemplo.")
+        app._persona_save()
+        saved = app.hub.brain.settings.personality
+        assert saved["profile"] == "ines"
+        assert saved["humor"] == 11
+        assert saved["behavior"] == "Habla despacio y con un ejemplo."
+        assert "Habla despacio y con un ejemplo." in compose(saved)
+        bar = app.root.nametowidget(app.root["menu"])
+        labels = [bar.entrycget(index, "label") for index in range(bar.index("end") + 1)]
+        assert "Voice market" in labels
+        assert "Acerca de" in labels
+        assert "Personalidad" in labels
+        assert "Mercado" not in labels
+        assert "Acerca de + Ayuda" not in labels
+    finally:
+        root.destroy()
+
+
+def test_an_old_config_without_personality_still_loads(tmp_path):
+    path = tmp_path / "config.json"
+    path.write_text('{"model": "grok-4.7", "volume": 40}', encoding="utf-8")
+    loaded = Settings.load(path)
+    assert loaded.volume == 40
+    assert loaded.personality["profile"] == ""
+    assert compose(loaded.personality) == ""

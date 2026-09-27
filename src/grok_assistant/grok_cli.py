@@ -60,7 +60,17 @@ class GrokCLI:
         raw = self._run(command, 60)
         return _parse_classify(raw)
 
-    def converse(self, text: str, *, model: str, effort: str, session_id: str, first: bool, agent_path: str | None) -> str:
+    def converse(
+        self,
+        text: str,
+        *,
+        model: str,
+        effort: str,
+        session_id: str,
+        first: bool,
+        agent_path: str | None,
+        system: str | None = None,
+    ) -> str:
         command = [
             self.binary, "-p", text,
             "--verbatim",
@@ -74,9 +84,9 @@ class GrokCLI:
             "--cwd", str(self.cwd),
         ]
         if agent_path:
-            command += ["--agent", agent_path, "--rules", AGENT_RULES]
+            command += ["--agent", agent_path, "--rules", AGENT_RULES if system is None else system]
         else:
-            command += ["--system-prompt-override", VOICE_SYSTEM]
+            command += ["--system-prompt-override", VOICE_SYSTEM if system is None else system]
         command += ["--session-id", session_id] if first else ["--resume", session_id]
         return self._run(command, 120).strip()
 
