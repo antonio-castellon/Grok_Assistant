@@ -1,6 +1,6 @@
 [← README.md](../../README.md)
 
-# Spanish first, because the house is loud
+# Spanish first, because it was developed and tested in Spanish first
 
 Spanish is the language we speak at home, so that is where the assistant starts. Replies are deliberately short: when the room is noisy, a concise answer is much easier to follow than a long monologue.
 

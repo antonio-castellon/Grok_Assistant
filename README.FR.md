@@ -22,7 +22,7 @@ Le schéma ci-dessous montre ce qui arrive à une phrase à partir du moment où
 
 ## Lire la suite
 
-- [L'espagnol d'abord, parce que la maison est bruyante](docs/fr/ecoute.md)
+- [L'espagnol d'abord, parce qu'il a été développé et essayé d'abord en espagnol](docs/fr/ecoute.md)
 - [Empreintes et oreilles](docs/fr/empreintes.md)
 - [Sessions et agents](docs/fr/sessions.md)
 - [Pourquoi Grok, et pas une autre fenêtre de chat](docs/fr/grok.md)

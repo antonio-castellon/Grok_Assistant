@@ -22,7 +22,7 @@ The diagram below shows what happens to a spoken phrase from the moment it is he
 
 ## Read on
 
-- [Spanish first, because the house is loud](docs/en/listening.md)
+- [Spanish first, because it was developed and tested in Spanish first](docs/en/listening.md)
 - [Voice prints and listeners](docs/en/prints.md)
 - [Sessions and agents](docs/en/sessions.md)
 - [Why Grok, and not another chat window](docs/en/why-grok.md)

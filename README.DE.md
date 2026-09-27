@@ -22,7 +22,7 @@ Die folgende Grafik zeigt, was mit einem gesprochenen Satz passiert.
 
 ## Weiterlesen
 
-- [Spanisch zuerst, weil sich Erkennungsfehler damit schneller finden lassen](docs/de/hoeren.md)
+- [Spanisch zuerst, weil es zuerst auf Spanisch entwickelt und geprüft wurde](docs/de/hoeren.md)
 - [Stimmabdrücke und Ohren](docs/de/abdruecke.md)
 - [Sitzungen und Agenten](docs/de/sitzungen.md)
 - [Warum Grok, und nicht ein weiteres Chatfenster](docs/de/grok.md)

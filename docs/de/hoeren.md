@@ -1,6 +1,6 @@
 [← README.DE.md](../../README.DE.md)
 
-# Spanisch zuerst, weil sich Erkennungsfehler damit schneller finden lassen
+# Spanisch zuerst, weil es zuerst auf Spanisch entwickelt und geprüft wurde
 
 Zu Hause sprechen wir Spanisch. Das war ein natürlicher Ausgangspunkt, aber die Entscheidung hatte auch einen ganz praktischen Grund: Während der Entwicklung musste ich Erkennungsfehler schnell bemerken, unterscheiden können, ob das Problem in der Transkription oder in der nachfolgenden Logik lag, und denselben Satz auf verschiedene Arten wiederholen, bis sich die Ursache eindeutig finden ließ.
 

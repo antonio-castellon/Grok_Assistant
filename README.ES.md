@@ -22,7 +22,7 @@ El diagrama de abajo muestra qué ocurre con una frase desde que se pronuncia.
 
 ## Seguir leyendo
 
-- [Español primero, porque la casa es ruidosa](docs/es/escucha.md)
+- [Español primero, porque inicialmente se desarrolló y se probó en español](docs/es/escucha.md)
 - [Huellas y oídos](docs/es/huellas.md)
 - [Sesiones y agentes](docs/es/sesiones.md)
 - [Por qué Grok, y no otra ventana de chat](docs/es/grok.md)

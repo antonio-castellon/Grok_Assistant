@@ -1,6 +1,6 @@
 [← README.ES.md](../../README.ES.md)
 
-# Español primero, porque la casa es ruidosa
+# Español primero, porque inicialmente se desarrolló y se probó en español
 
 En casa hablamos español, así que el asistente empieza por ahí. Las respuestas son deliberadamente breves: cuando hay ruido alrededor, es mucho más fácil seguir una respuesta corta que un discurso largo.
 

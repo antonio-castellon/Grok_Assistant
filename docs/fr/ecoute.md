@@ -1,6 +1,6 @@
 [← README.FR.md](../../README.FR.md)
 
-# L'espagnol d'abord, parce que la maison est bruyante
+# L'espagnol d'abord, parce qu'il a été développé et essayé d'abord en espagnol
 
 À la maison, nous parlons espagnol, c'est donc la langue par laquelle l'assistant commence. Les réponses restent volontairement courtes : dans une pièce bruyante, une réponse concise est bien plus facile à suivre qu'un long monologue.
 
