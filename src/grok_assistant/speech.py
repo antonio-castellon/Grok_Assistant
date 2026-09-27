@@ -6,9 +6,8 @@ import os
 import shutil
 import subprocess
 import tempfile
-from pathlib import Path
 
-_SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
+from grok_assistant.paths import bundle_root
 
 
 class Speaker:
@@ -28,7 +27,7 @@ class Speaker:
 
 
 def _windows_voices() -> list[str]:
-    script = _SCRIPTS / "voices.ps1"
+    script = bundle_root() / "scripts" / "voices.ps1"
     if not script.exists():
         return []
     try:
@@ -58,7 +57,7 @@ def _windows_voices() -> list[str]:
 
 
 def _windows_say(text: str, voice: str | None, volume: int) -> bool:
-    script = _SCRIPTS / "speak.ps1"
+    script = bundle_root() / "scripts" / "speak.ps1"
     if not script.exists():
         return False
     handle = tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt", delete=False)

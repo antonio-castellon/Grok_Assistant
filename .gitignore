@@ -3,7 +3,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 *.egg-info/
-dist/
+dist/*
+!dist/GrokAssistant.exe
 build/
 models/
 runtime/

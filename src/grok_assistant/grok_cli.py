@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -32,7 +33,14 @@ class GrokCLI:
 
     @staticmethod
     def find() -> str | None:
-        return shutil.which("grok")
+        found = shutil.which("grok") or shutil.which("grok.exe")
+        if found:
+            return found
+        name = "grok.exe" if os.name == "nt" else "grok"
+        home = Path.home() / ".grok" / "bin" / name
+        if home.exists():
+            return str(home)
+        return None
 
     def classify(self, text: str, model: str) -> dict:
         command = [
@@ -105,6 +113,18 @@ class GrokCLI:
             tail = detail[-1] if detail else f"salida {done.returncode}"
             raise GrokError(tail[:180])
         return done.stdout or ""
+
+
+def interpret_models(stdout: str, stderr: str, code: int) -> str:
+    """ready, signed_out, or broken. Does not look at credential files."""
+    text = f"{stdout}\n{stderr}".lower()
+    if code == 0 and ("logged in" in text or "available models" in text or "grok-" in text):
+        return "ready"
+    if "sign in" in text or "not logged" in text or "login" in text:
+        return "signed_out"
+    if code != 0:
+        return "broken"
+    return "signed_out"
 
 
 def _parse_classify(raw: str) -> dict:

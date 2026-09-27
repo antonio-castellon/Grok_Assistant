@@ -3,7 +3,15 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
+
+
+def bundle_root() -> Path:
+    """Repo root in a checkout, or the unpacked folder inside the single executable."""
+    if getattr(sys, "frozen", False):
+        return Path(getattr(sys, "_MEIPASS"))
+    return Path(__file__).resolve().parents[2]
 
 
 def lines_dir() -> Path:

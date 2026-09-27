@@ -7,15 +7,20 @@ import subprocess
 import threading
 from pathlib import Path
 
-_DICTATION = Path(__file__).resolve().parents[2] / "listeners" / "dictation.ps1"
+from grok_assistant.paths import bundle_root
+
+
+def dictation_script() -> Path:
+    return bundle_root() / "listeners" / "dictation.ps1"
 
 
 def windows_spanish_available() -> bool:
-    if os.name != "nt" or not _DICTATION.exists():
+    script = dictation_script()
+    if os.name != "nt" or not script.exists():
         return False
     try:
         done = subprocess.run(
-            ["powershell", "-NoProfile", "-File", str(_DICTATION), "-Probe"],
+            ["powershell", "-NoProfile", "-File", str(script), "-Probe"],
             capture_output=True,
             text=True,
             timeout=25,
@@ -40,7 +45,7 @@ class Dictation:
             return False
         try:
             self._proc = subprocess.Popen(
-                ["powershell", "-NoProfile", "-File", str(_DICTATION), "-PauseFile", str(self.pause_file)],
+                ["powershell", "-NoProfile", "-File", str(dictation_script()), "-PauseFile", str(self.pause_file)],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
                 text=True,
