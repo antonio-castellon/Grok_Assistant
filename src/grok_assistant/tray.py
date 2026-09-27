@@ -13,6 +13,7 @@ from tkinter import messagebox, simpledialog, ttk
 from grok_assistant.helptext import HELP_TOPICS
 from grok_assistant.hub import Hub, build
 from grok_assistant.kroko_ear import KrokoEar
+from grok_assistant.offline_ear import OFFLINE_KINDS, OfflineEar
 from grok_assistant.listen import (
     RECOGNIZER_LABELS,
     Dictation,
@@ -75,6 +76,7 @@ class TrayApp:
         self.tray_ok = False
         self.dictation: Dictation | None = None
         self.kroko: KrokoEar | None = None
+        self.offline: OfflineEar | None = None
         self.pause_file = hub.data_dir / "mic.pause"
         self._closing = False
         voices = self.speaker.list_voices() or ["Predeterminada"]
@@ -430,13 +432,31 @@ class TrayApp:
             text="Elige qué se descarga a este equipo y qué queda en uso. Nada baja solo.",
             style="Muted.TLabel",
         ).pack(anchor="w", padx=16, pady=(0, 8))
-        canvas = tk.Canvas(window, bg=BG, highlightthickness=0)
-        canvas.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        frame = ttk.Frame(window)
+        frame.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        canvas = tk.Canvas(frame, bg=BG, highlightthickness=0)
+        scroll = ttk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scroll.set)
+        scroll.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
         inner = ttk.Frame(canvas)
-        canvas.create_window((0, 0), window=inner, anchor="nw")
-        inner.bind("<Configure>", lambda _event: canvas.configure(scrollregion=canvas.bbox("all")))
+        window_id = canvas.create_window((0, 0), window=inner, anchor="nw")
+
+        def _fit(event) -> None:
+            canvas.itemconfigure(window_id, width=event.width)
+
+        def _scroll(_event) -> None:
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        def _wheel(event) -> None:
+            canvas.yview_scroll(int(-event.delta / 120), "units")
+
+        canvas.bind("<Configure>", _fit)
+        inner.bind("<Configure>", _scroll)
+        window.bind("<MouseWheel>", _wheel)
+        window.bind("<Destroy>", lambda event: window.unbind("<MouseWheel>") if event.widget is window else None)
         status = tk.StringVar(value="")
-        ttk.Label(window, textvariable=status, style="Muted.TLabel").pack(anchor="w", padx=16, pady=(0, 10))
+        ttk.Label(window, textvariable=status, style="Muted.TLabel").pack(side="bottom", anchor="w", padx=16, pady=(0, 10))
         headings = {"voice": "Voces", "stt": "Reconocimiento", "llm": "Modelo local"}
         last = ""
         for offer in offers():
@@ -704,6 +724,8 @@ class TrayApp:
             self.dictation.set_paused(paused)
         if self.kroko is not None:
             self.kroko.set_paused(paused)
+        if self.offline is not None:
+            self.offline.set_paused(paused)
 
     def _sync_ear(self) -> None:
         want_windows = self.hub.brain.settings.recognizer == "windows" and not self.user_paused
@@ -726,6 +748,21 @@ class TrayApp:
         if not want_kroko and self.kroko is not None:
             self.kroko.stop()
             self.kroko = None
+        kind = self.hub.brain.settings.recognizer
+        want_offline = kind in OFFLINE_KINDS and not self.user_paused
+        if want_offline and (self.offline is None or self.offline.kind != kind):
+            if self.offline is not None:
+                self.offline.stop()
+            ear = OfflineEar(kind, self._heard, self._kroko_status)
+            if ear.start():
+                self.offline = ear
+                self._note(f"cargo {RECOGNIZER_LABELS[kind]}")
+            else:
+                self.offline = None
+                self._note(ear.error or "ese oído no pudo escuchar")
+        if not want_offline and self.offline is not None:
+            self.offline.stop()
+            self.offline = None
 
     def _kroko_status(self, text: str) -> None:
         self.ui.put(lambda text=text: self._note(text))
@@ -819,6 +856,8 @@ class TrayApp:
             self.dictation.stop()
         if self.kroko is not None:
             self.kroko.stop()
+        if self.offline is not None:
+            self.offline.stop()
         self.music.stop()
         if self.tray is not None:
             self.tray.stop()

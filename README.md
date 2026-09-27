@@ -4,19 +4,13 @@
 
 # Grok Assistant
 
-A small voice assistant for an older person who already has a small laptop within reach.
+I waited years for the Amazon Echo to listen better. It stayed a speaker with a light ring, so I made my own for an older person who already has a small laptop nearby.
 
-I waited a long time for the living-room speaker to become a better listener. It stayed the same, so I made my own. This repository is that laptop version: a window, a tray icon, and a log of what was heard. For a house where the laptop should stay closed, I am also building the same assistant on a Raspberry Pi 4 with 4 GB.
+In my case that person is my father. His vision is limited, and he spends many hours alone. I wanted a voice that can hold a conversation and explain things, without a screen to hunt for and without small text to read. That is possible now. Grok on this machine is how more features and integrations will arrive. If someone in the family knows a little more and would rather not leave a laptop open, the same assistant is the one I am building on a Raspberry Pi 4 with 4 GB.
 
 It can stay listening while the program is open. The sound remains on the computer. A phrase is turned into text here, and Grok receives that text only when you meant it for the assistant: a hello, then a question, an order that starts with `comando`, or a song you asked for. Everyday talk is written in a local session and stays there. A muddled order can be checked with Grok, and it still waits for a sí before it runs.
 
 That is the whole idea. The picture below is the path of one phrase.
-
-## Who it is for
-
-An older person, and a small laptop that is already in the house. In my case that person is my father. His vision is limited, and he spends many hours alone. For years I wanted an assistant that could hold a conversation and explain things using only the voice: no screen to hunt for, no small text to read. That is possible now. I will add more features and more integrations. Grok, on this machine, is what makes those next steps practical.
-
-If someone in the family knows a little more, and wants the same assistant without a laptop open on the table, the other body is a Raspberry Pi 4 with 4 GB of RAM. Same rules. The microphone stays in the room. The laptop stays in the drawer.
 
 ![How a phrase moves: the ear stays local, and only a question or a repaired order sends text to Grok](docs/img/flow.svg)
 

@@ -64,7 +64,7 @@ HELP_TOPICS = (
         "Si falta, la línea Windows español… instalar y el botón del Mercado lo bajan: Windows pide permiso de administrador. "
         "Kroko es el micrófono en español: el audio se queda en este PC y una frase sale tras unos 3,5 segundos de silencio. "
         "Si el teclado era el único oído y Kroko ya está en el disco, al arrancar se elige Kroko. "
-        "Whisper pequeño, Whisper base y Canary aparecen cuando su modelo está en el disco. Si no está, el menú lo marca como no instalado.",
+        "Whisper pequeño, Whisper base y Canary están en Mercado, al principio de la lista. Descargar los deja listos y entonces el menú permite elegirlos.",
         "comando reconocedor teclado",
     ),
     (

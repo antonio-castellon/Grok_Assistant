@@ -34,6 +34,12 @@ def test_catalog_covers_voices_ears_and_the_local_model():
     assert all(item.title and item.size and item.detail for item in offers())
 
 
+def test_menu_ears_are_in_the_market():
+    engines = {item.engine_id for item in offers() if item.kind == "stt"}
+    assert engines == {"windows", "kroko", "whisper", "base", "canary"}
+    assert offers()[0].kind == "stt"
+
+
 def test_windows_spanish_is_an_installable_ear():
     item = next(item for item in offers() if item.id == "windows-es")
     assert item.local == "windows-speech"

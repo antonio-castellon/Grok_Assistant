@@ -35,6 +35,7 @@ a = Analysis(
         "grok_assistant.grok_cli",
         "grok_assistant.helptext",
         "grok_assistant.kroko_ear",
+        "grok_assistant.offline_ear",
         "sherpa_onnx",
         "sherpa_onnx.lib._sherpa_onnx",
         "sounddevice",

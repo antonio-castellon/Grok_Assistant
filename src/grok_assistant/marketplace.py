@@ -12,7 +12,6 @@ from grok_assistant.paths import default_data_dir
 
 PIPER = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0"
 SHERPA = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models"
-WHISPER_CPP = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main"
 QWEN = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf"
 
 
@@ -41,7 +40,8 @@ class Offer:
 
 
 def offers() -> list[Offer]:
-    voices = [
+    """Speech models first. Those are the ears the menu shows as not installed."""
+    ears = [
         ("davefx", "Dave · España", "es/es_ES/davefx/medium/es_ES-davefx-medium", "63 MB"),
         ("sharvard", "Sharvard · España", "es/es_ES/sharvard/medium/es_ES-sharvard-medium", "77 MB"),
         ("carlfm", "Carlfm · España", "es/es_ES/carlfm/x_low/es_ES-carlfm-x_low", "28 MB"),
@@ -50,21 +50,6 @@ def offers() -> list[Offer]:
         ("mls10246", "MLS 10246 · España", "es/es_ES/mls_10246/low/es_ES-mls_10246-low", "63 MB"),
     ]
     items = [
-        Offer(
-            id=key,
-            kind="voice",
-            title=title,
-            detail="Voz Piper en español. Se usa en el menú Voz.",
-            size=size,
-            use_label=title,
-            files=(
-                (f"{PIPER}/{path}.onnx", f"voices/{path.rsplit('/', 1)[-1]}.onnx"),
-                (f"{PIPER}/{path}.onnx.json", f"voices/{path.rsplit('/', 1)[-1]}.onnx.json"),
-            ),
-        )
-        for key, title, path, size in voices
-    ]
-    items.extend([
         Offer(
             id="windows-es",
             kind="stt",
@@ -105,23 +90,34 @@ def offers() -> list[Offer]:
             files=((f"{SHERPA}/sherpa-onnx-whisper-base.tar.bz2", "models/sherpa-onnx-whisper-base.tar.bz2"),),
         ),
         Offer(
-            id="ggml-tiny",
+            id="canary",
             kind="stt",
-            title="Whisper.cpp tiny",
-            detail="Modelo ggml para whisper.cpp. Ligero, para una frase corta.",
-            size="75 MB",
-            engine_id="whisper",
-            files=((f"{WHISPER_CPP}/ggml-tiny.bin", "models/whisper-cpp/ggml-tiny.bin"),),
+            title="Canary",
+            detail="Oído local en español, inglés, francés y alemán. Una frase se cierra tras el silencio. El audio no sale de este PC.",
+            size="~200 MB",
+            engine_id="canary",
+            files=((
+                f"{SHERPA}/sherpa-onnx-nemo-canary-180m-flash-en-es-de-fr-int8.tar.bz2",
+                "models/sherpa-onnx-nemo-canary-180m-flash-en-es-de-fr-int8.tar.bz2",
+            ),),
         ),
+    ]
+    items.extend(
         Offer(
-            id="ggml-base",
-            kind="stt",
-            title="Whisper.cpp base",
-            detail="Modelo ggml más capaz para whisper.cpp.",
-            size="150 MB",
-            engine_id="base",
-            files=((f"{WHISPER_CPP}/ggml-base.bin", "models/whisper-cpp/ggml-base.bin"),),
-        ),
+            id=key,
+            kind="voice",
+            title=title,
+            detail="Voz Piper en español. Se usa en el menú Voz.",
+            size=size,
+            use_label=title,
+            files=(
+                (f"{PIPER}/{path}.onnx", f"voices/{path.rsplit('/', 1)[-1]}.onnx"),
+                (f"{PIPER}/{path}.onnx.json", f"voices/{path.rsplit('/', 1)[-1]}.onnx.json"),
+            ),
+        )
+        for key, title, path, size in ears
+    )
+    items.append(
         Offer(
             id="local-llm",
             kind="llm",
@@ -129,8 +125,8 @@ def offers() -> list[Offer]:
             detail="Modelo pequeño en este PC. Lee la frase y decide si es orden, pregunta o ruido antes de llamar a la nube.",
             size="~400 MB + llama.cpp",
             files=((QWEN, "llm/qwen2.5-0.5b-instruct-q4_k_m.gguf"),),
-        ),
-    ])
+        )
+    )
     return items
 
 

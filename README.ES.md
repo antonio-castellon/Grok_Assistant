@@ -4,19 +4,13 @@
 
 # Grok Assistant
 
-Un asistente de voz pequeño para una persona mayor que ya tiene un portátil pequeño a mano.
+Llevaba años esperando a que el Amazon Echo escuchara mejor. Siguió siendo un altavoz con un anillo de luz, así que hice el mío para una persona mayor que ya tiene un portátil pequeño cerca.
 
-Esperé mucho tiempo a que el altavoz del salón escuchara mejor. No cambió, así que hice el mío. Este repositorio es la versión para ese portátil: una ventana, un icono en la bandeja y un registro de lo que se oyó. Para una casa en la que el portátil debería quedarse cerrado, también estoy montando el mismo asistente en una Raspberry Pi 4 de 4 GB.
+En mi caso esa persona es mi padre. Tiene la vista limitada y pasa muchas horas solo. Quería una voz que pueda conversar y explicar las cosas, sin una pantalla que buscar y sin letra pequeña que leer. Ahora es posible. Grok, en este equipo, es por donde llegarán más funciones e integraciones. Si alguien de la familia sabe un poco más y prefiere no dejar un portátil abierto, el mismo asistente es el que estoy montando en una Raspberry Pi 4 de 4 GB.
 
 Puede seguir escuchando mientras el programa está abierto. El sonido se queda en el ordenador. Una frase se convierte en texto aquí, y Grok recibe ese texto solo cuando iba dirigido al asistente: un saludo, luego una pregunta, una orden que empieza por `comando`, o una canción que se ha pedido. La charla de todos los días se anota en una sesión local y ahí se queda. Una orden mal oída se puede consultar con Grok, y aun así espera un sí antes de ejecutarla.
 
 Esa es la idea. El dibujo de abajo es el camino de una frase.
-
-## Para quién es
-
-Para una persona mayor, y para un portátil pequeño que ya está en casa. En mi caso esa persona es mi padre. Tiene la vista limitada y pasa muchas horas solo. Llevaba años pensando en un asistente que pudiera conversar y explicar las cosas usando solo la voz: sin una pantalla que buscar y sin letra pequeña que leer. Ahora es posible. Seguiré añadiendo funciones e integraciones. Grok, en este equipo, es lo que hace prácticos esos pasos.
-
-Si alguien de la familia sabe un poco más y quiere lo mismo sin un portátil abierto sobre la mesa, el otro cuerpo es una Raspberry Pi 4 con 4 GB de RAM. Las mismas reglas. El micrófono se queda en la habitación. El portátil se queda en el cajón.
 
 ![Cómo se mueve una frase: el oído se queda en local, y solo una pregunta o una orden reparada envía texto a Grok](docs/img/flow.svg)
 
