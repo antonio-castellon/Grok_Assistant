@@ -18,7 +18,7 @@ That is the basic idea. Below you can see the listening window and the tray menu
 
 ![The information window in English, waiting, with the live log underneath](docs/img/en/app-window.png)
 
-![The tray menu in English](docs/img/en/tray-menu.png)
+<img src="docs/img/en/tray-menu.png" alt="The tray menu in English" width="194">
 
 The diagram below shows what happens to a spoken phrase from the moment it is heard.
 

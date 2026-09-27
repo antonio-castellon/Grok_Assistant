@@ -16,7 +16,7 @@ Esa es la idea básica. Debajo se puede ver la ventana mientras escucha y el men
 
 ![La ventana en español, en espera, con el registro en vivo debajo](docs/img/es/app-window.png)
 
-![El menú de la bandeja en español](docs/img/es/tray-menu.png)
+<img src="docs/img/es/tray-menu.png" alt="El menú de la bandeja en español" width="260">
 
 El diagrama de abajo muestra qué ocurre con una frase desde que se pronuncia.
 

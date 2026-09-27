@@ -16,7 +16,7 @@ Das ist die Grundidee. Unten sieht man das Fenster während des Zuhörens sowie 
 
 ![Das Fenster auf Deutsch, im Warten, mit dem laufenden Protokoll](docs/img/de/app-window.png)
 
-![Das Menü der Taskleiste auf Deutsch](docs/img/de/tray-menu.png)
+<img src="docs/img/de/tray-menu.png" alt="Das Menü der Taskleiste auf Deutsch" width="203">
 
 Die folgende Grafik zeigt, was mit einem gesprochenen Satz passiert.
 

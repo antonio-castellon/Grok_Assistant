@@ -16,7 +16,7 @@ C'est l'idée générale. Ci-dessous, on voit la fenêtre pendant l'écoute ains
 
 ![La fenêtre en français, en attente, avec le journal en direct](docs/img/fr/app-window.png)
 
-![Le menu de la barre en français](docs/img/fr/tray-menu.png)
+<img src="docs/img/fr/tray-menu.png" alt="Le menu de la barre en français" width="227">
 
 Le schéma ci-dessous montre ce qui arrive à une phrase à partir du moment où elle est prononcée.
 
