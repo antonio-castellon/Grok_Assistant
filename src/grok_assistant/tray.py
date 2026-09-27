@@ -156,9 +156,9 @@ class TrayApp:
         )
 
     def _build_window(self) -> None:
-        self.root.title(f"Grok Assistant — {_version_line()}")
-        self.root.geometry("860x680")
-        self.root.minsize(640, 480)
+        self.root.title("Grok Assistant")
+        self.root.geometry("980x760")
+        self.root.minsize(720, 560)
         icon = bundle_root() / "docs" / "img" / "grok.ico"
         if icon.exists():
             try:
@@ -169,11 +169,7 @@ class TrayApp:
 
         head = ttk.Frame(self.root)
         head.pack(fill="x", padx=18, pady=(16, 4))
-        name = ttk.Frame(head)
-        name.pack(side="left")
-        ttk.Label(name, text="Grok Assistant", style="Status.TLabel").pack(anchor="w")
-        self.version_label = ttk.Label(name, text=_version_line(), style="Muted.TLabel")
-        self.version_label.pack(anchor="w")
+        ttk.Label(head, text="Grok Assistant", style="Status.TLabel").pack(side="left")
         corner = tk.Frame(head, bg=BG)
         corner.pack(side="right")
         self.state_var = tk.StringVar(value=_ui("status.banner_wait", "ESPERA"))
@@ -185,10 +181,52 @@ class TrayApp:
         self.usage_label.pack(anchor="e")
         ttk.Label(self.root, textvariable=self.detail_var, style="Muted.TLabel").pack(anchor="w", padx=18)
 
-        self.debug_label = ttk.Label(self.root, text=_ui("window.debug", "Depuración — lo que oye y lo que hace después"), style="Muted.TLabel")
-        self.debug_label.pack(anchor="w", padx=18, pady=(12, 4))
-        log_wrap = tk.Frame(self.root, bg=PANEL, padx=1, pady=1)
-        log_wrap.pack(fill="both", expand=True, padx=18, pady=(0, 8))
+        self.footer = tk.Frame(self.root, bg=PANEL, height=46)
+        self.footer.pack(side="bottom", fill="x")
+        self.footer.pack_propagate(False)
+        self.version_label = tk.Label(
+            self.footer, text=_version_line(), bg=PANEL, fg=INK,
+            font=("Segoe UI", 12), anchor="w",
+        )
+        self.version_label.pack(fill="both", padx=18)
+
+        self.pages = ttk.Notebook(self.root, style="Market.TNotebook")
+        self.pages.pack(fill="both", expand=True, padx=18, pady=(10, 12))
+        self.page_simple = ttk.Frame(self.pages)
+        self.page_debug = ttk.Frame(self.pages)
+        self.page_flow = ttk.Frame(self.pages)
+        self.pages.add(self.page_simple, text=_ui("window.tab_simple", "Simple"))
+        self.pages.add(self.page_debug, text=_ui("window.tab_debug", "Depuración"))
+        self.pages.add(self.page_flow, text=_ui("window.tab_flow", "Flujo"))
+        self.pages.select(self.page_simple)
+
+        simple = tk.Frame(self.page_simple, bg=BG)
+        simple.pack(expand=True)
+        row = tk.Frame(simple, bg=BG)
+        row.pack()
+        big = {
+            "font": ("Segoe UI", 28, "bold"),
+            "relief": "flat",
+            "padx": 48,
+            "pady": 28,
+            "cursor": "hand2",
+            "borderwidth": 0,
+        }
+        self.simple_pause = tk.Button(
+            row, text=_ui("window.big_pause", "Pausar"), command=self._toggle_from_ui,
+            bg="#1c3a36", fg=TEAL, activebackground="#24564e", activeforeground=TEAL, **big,
+        )
+        self.simple_pause.pack(side="left", padx=14)
+        self.simple_quit = tk.Button(
+            row, text=_ui("window.big_quit", "Salir"), command=lambda: self._quit(None, None),
+            bg="#3a2a22", fg=AMBER, activebackground="#5a4030", activeforeground=AMBER, **big,
+        )
+        self.simple_quit.pack(side="left", padx=14)
+
+        self.debug_label = ttk.Label(self.page_debug, text=_ui("window.debug", "Depuración — lo que oye y lo que hace después"), style="Muted.TLabel")
+        self.debug_label.pack(anchor="w", padx=12, pady=(12, 4))
+        log_wrap = tk.Frame(self.page_debug, bg=PANEL, padx=1, pady=1)
+        log_wrap.pack(fill="both", expand=True, padx=12, pady=(0, 8))
         self.debug_text = tk.Text(
             log_wrap, height=18, wrap="word", bg=FIELD, fg=INK, insertbackground=INK,
             font=MONO, relief="flat", padx=12, pady=10, borderwidth=0,
@@ -200,22 +238,27 @@ class TrayApp:
         self.debug_text.tag_configure("sigue", foreground=TEAL)
         self.debug_text.configure(state="disabled")
 
-        bar = ttk.Frame(self.root)
-        bar.pack(fill="x", padx=18, pady=(0, 8))
+        bar = ttk.Frame(self.page_debug)
+        bar.pack(fill="x", padx=12, pady=(0, 8))
         self.entry = ttk.Entry(bar)
         self.entry.pack(side="left", fill="x", expand=True, ipady=4)
         self.entry.bind("<Return>", self._send)
         self.send_button = ttk.Button(bar, text=_ui("window.send", "Enviar"), command=self._send)
         self.send_button.pack(side="left", padx=(8, 0))
 
-        actions = ttk.Frame(self.root)
-        actions.pack(fill="x", padx=18, pady=(0, 16))
+        actions = ttk.Frame(self.page_debug)
+        actions.pack(fill="x", padx=12, pady=(0, 12))
         self.pause_button = ttk.Button(actions, text=_ui("menu.pause", "Pausar escucha"), command=self._toggle_from_ui)
         self.pause_button.pack(side="left")
         self.clear_button = ttk.Button(actions, text=_ui("window.clear", "Limpiar registro"), command=self._clear_view)
         self.clear_button.pack(side="left", padx=8)
         self.quit_button = ttk.Button(actions, text=_ui("menu.quit", "Salir"), command=lambda: self._quit(None, None))
         self.quit_button.pack(side="right")
+
+        self.flow = tk.Canvas(self.page_flow, bg=BG, highlightthickness=0)
+        self.flow.pack(fill="both", expand=True)
+        self._flow_snap = None
+        self.flow.bind("<Configure>", lambda _event: self._draw_flow(None))
         self._build_menus()
 
     def _start_tray(self) -> None:
@@ -1129,16 +1172,26 @@ class TrayApp:
         setattr(self, attr, None)
         return alive
 
+    def _pause_caption(self, big: bool = False) -> str:
+        if self.user_paused:
+            return _ui("window.big_resume" if big else "menu.resume", "Seguir")
+        return _ui("window.big_pause" if big else "menu.pause", "Pausar")
+
     def _apply_chrome(self) -> None:
-        line = _version_line()
-        self.root.title(f"Grok Assistant — {line}")
-        self.version_label.configure(text=line)
+        self.root.title("Grok Assistant")
+        self.version_label.configure(text=_version_line())
+        self.pages.tab(0, text=_ui("window.tab_simple", "Simple"))
+        self.pages.tab(1, text=_ui("window.tab_debug", "Depuración"))
+        self.pages.tab(2, text=_ui("window.tab_flow", "Flujo"))
         self.debug_label.configure(text=_ui("window.debug", "Depuración — lo que oye y lo que hace después"))
         self.send_button.configure(text=_ui("window.send", "Enviar"))
         self.clear_button.configure(text=_ui("window.clear", "Limpiar registro"))
-        self.quit_button.configure(text=_ui("menu.quit", "Salir"))
-        paused = _ui("menu.resume", "Seguir escuchando") if self.user_paused else _ui("menu.pause", "Pausar escucha")
-        self.pause_button.configure(text=paused)
+        quit_label = _ui("menu.quit", "Salir")
+        self.quit_button.configure(text=quit_label)
+        self.simple_quit.configure(text=_ui("window.big_quit", "Salir"))
+        self.pause_button.configure(text=self._pause_caption(False))
+        self.simple_pause.configure(text=self._pause_caption(True))
+        self._draw_flow(None)
         self._show_usage()
 
     def _show_usage(self) -> None:
@@ -1835,6 +1888,137 @@ class TrayApp:
     def _refresh(self) -> None:
         self.ui.put(self._paint)
 
+    def _draw_flow(self, snap: dict | None) -> None:
+        canvas = getattr(self, "flow", None)
+        if canvas is None:
+            return
+        if snap is None:
+            snap = self._flow_snap
+        if snap is None:
+            return
+        self._flow_snap = snap
+        width = canvas.winfo_width()
+        height = canvas.winfo_height()
+        if width < 80 or height < 80:
+            return
+        canvas.delete("all")
+        ear = self.hub.brain.settings.recognizer
+        kind = snap.get("banner_kind") or "wait"
+        paused = kind == "pause"
+        testing = kind == "test"
+        talking = kind == "talk"
+        keyboard = ear == "teclado"
+        alive = not paused
+
+        def clip(value: str, limit: int = 46) -> str:
+            value = value or ""
+            return value if len(value) <= limit else value[: limit - 1] + "…"
+
+        def library_for_ear() -> str:
+            if ear == "windows":
+                return _ui("flow.lib_speech", "Windows Speech")
+            if ear == "teclado":
+                return _ui("flow.skip", "no entra")
+            return "sherpa-onnx"
+
+        voice_raw = snap.get("voice") or ""
+        voice_name = voice_raw.split(". ", 1)[-1] if ". " in voice_raw else voice_raw
+        try:
+            from grok_assistant.speech import _piper_by_label
+
+            piper = voice_name in _piper_by_label()
+        except Exception:
+            piper = False
+        if piper:
+            voice_lib = "Piper"
+        elif os.name == "nt":
+            voice_lib = _ui("flow.lib_speech", "Windows Speech")
+        else:
+            voice_lib = "espeak"
+        local_name = snap.get("identifier") or ""
+        if local_name == _ui("status.no_identifier", "sin identificador"):
+            local_detail = _ui("flow.lib_none", "sin modelo")
+        else:
+            local_detail = clip(f"{local_name} · llama.cpp")
+
+        pad = 16
+        caption = _ui("flow.caption", "")
+        if paused:
+            caption = _ui("flow.pause", caption)
+        elif testing:
+            caption = _ui("flow.test", caption)
+        canvas.create_text(pad, 8, anchor="nw", text=caption, fill=AMBER if paused or testing else MUTED, font=("Segoe UI", 11))
+        top = 34
+        avail = max(height - top - 8, 240)
+        gap = 8
+        box_h = max(46, min(64, int((avail - gap * 7) / 6.4)))
+        inner = width - pad * 2
+        half = (inner - 12) / 2
+
+        def box(x, y, bw, bh, title, detail, on, size=12):
+            canvas.create_rectangle(x, y, x + bw, y + bh, fill="#16302c" if on else FIELD, outline=TEAL if on else "#2c3844", width=2)
+            canvas.create_text(x + bw / 2, y + bh * 0.34, text=title, fill=INK if on else MUTED, font=("Segoe UI", size, "bold"), width=bw - 14)
+            canvas.create_text(x + bw / 2, y + bh * 0.70, text=detail, fill=TEAL if on else MUTED, font=("Segoe UI", max(9, size - 2)), width=bw - 14)
+
+        def down(x, y1, y2, on):
+            canvas.create_line(x, y1, x, y2, fill=AMBER if on else "#3a4656", width=2, arrow="last", arrowshape=(10, 12, 4))
+
+        y = top
+        mic_on = alive and not keyboard
+        key_on = alive and keyboard
+        box(pad, y, half, box_h, _ui("flow.mic", "Micrófono"), "sounddevice · campplus", mic_on)
+        box(pad + half + 12, y, half, box_h, _ui("flow.keys", "Teclado"), _ui("flow.keys_note", "ya es texto"), key_on)
+        y += box_h
+        down(pad + half / 2, y, y + gap + 2, mic_on)
+        down(pad + half + 12 + half / 2, y, y + gap + 2, key_on)
+        y += gap
+        stt_on = alive and not keyboard and not testing
+        stt_detail = library_for_ear()
+        if ear != "teclado":
+            stt_detail = clip(f"{snap.get('recognizer') or ear} · {stt_detail}")
+        box(pad, y, inner, box_h, _ui("flow.stt", "Motor STT"), stt_detail, stt_on or (testing and not keyboard))
+        y += box_h
+        down(width / 2, y, y + gap + 2, alive)
+        y += gap
+        heard = clip(snap.get("last_heard") or "—")
+        box(pad, y, inner, max(40, box_h - 8), _ui("flow.text", "Texto"), heard, alive)
+        y += max(40, box_h - 8)
+        down(width / 2, y, y + gap + 2, alive and not testing)
+        y += gap
+        ask_detail = _ui("flow.yes", "") if talking else _ui("flow.no", "")
+        box(pad, y, inner, box_h, _ui("flow.ask", "¿Conversación abierta?"), ask_detail, alive and not testing)
+        ask_bottom = y + box_h
+        y = ask_bottom + gap
+        col = (inner - 12) / 2
+        local_on = alive and not testing and not talking
+        grok_on = alive and talking
+        box(pad, y, col, box_h, _ui("flow.local", "Modelo local"), _ui("flow.skip", "no entra") if talking else local_detail, local_on)
+        box(pad + col + 12, y, col, box_h, _ui("flow.grok", "Grok"), clip(f"{snap.get('model') or 'grok'} · {_ui('flow.grok_note', 'solo texto')}"), grok_on)
+        down(pad + col / 2, ask_bottom, y, local_on)
+        down(pad + col + 12 + col / 2, ask_bottom, y, grok_on)
+        y += box_h + gap
+        chip_w = (col - 8) / 3
+        chip_h = max(58, box_h)
+        chips = (
+            (_ui("flow.stay", "Se queda"), _ui("flow.stay_note", ""), local_on),
+            (_ui("flow.command", "Orden"), _ui("flow.command_note", ""), local_on),
+            (_ui("flow.open", "Abre"), _ui("flow.open_note", ""), local_on),
+        )
+        for index, (title, detail, on) in enumerate(chips):
+            box(pad + index * (chip_w + 4), y, chip_w, chip_h, title, detail, on, size=10)
+        abre_x = pad + 2 * (chip_w + 4) + chip_w
+        grok_x = pad + col + 12
+        grok_mid = (y - gap - box_h) + box_h * 0.55
+        canvas.create_line(
+            abre_x - 4, y + 16, grok_x + 10, grok_mid,
+            fill=AMBER if local_on else "#3a4656", width=2, arrow="last", arrowshape=(10, 12, 4),
+        )
+        down(pad + col + 12 + col / 2, y - gap, y, grok_on)
+        box(
+            grok_x, y, col, chip_h,
+            _ui("flow.voice", "Voz"), clip(f"{voice_name} · {voice_lib}"), grok_on,
+        )
+
     def _paint(self) -> None:
         try:
             snap = self.hub.brain.snapshot()
@@ -1848,6 +2032,7 @@ class TrayApp:
         self.detail_var.set(
             f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {snap['recognizer']}  ·  {snap['identifier']}  ·  {snap['session']}  ·  {snap['volume']}%"
         )
+        self._draw_flow(snap)
         if self.tray_ok and self.tray is not None:
             self.tray.set_tip(f"Grok Assistant — {_version_line()} — {snap['status']}")
         if self.debug_text is None:
@@ -1898,9 +2083,8 @@ class TrayApp:
         self.user_paused = not self.user_paused
         self.hub.brain.set_paused(self.user_paused)
         self._sync_ear()
-        self.pause_button.configure(
-            text=_ui("menu.resume", "Seguir escuchando") if self.user_paused else _ui("menu.pause", "Pausar escucha")
-        )
+        self.pause_button.configure(text=self._pause_caption(False))
+        self.simple_pause.configure(text=self._pause_caption(True))
         self._note("escucha en pausa" if self.user_paused else "vuelvo a escuchar")
         self._paint()
 
