@@ -1,4 +1,4 @@
-[Leer en español](README.ES.md)
+[Leer en español](README.ES.md) · [Lire en français](README.FR.md) · [Auf Deutsch lesen](README.DE.md)
 
 ![Grok mark, with Assistance underneath](docs/img/banner.jpg)
 
@@ -10,7 +10,13 @@ In my case that person is my father. His vision is limited, and he spends many h
 
 It can stay listening while the program is open. The sound remains on the computer. A phrase is turned into text here, and Grok receives that text only when you meant it for the assistant: a hello, then a question, an order that starts with `comando`, or a song you asked for. Everyday talk is written in a local session and stays there. A muddled order can be checked with Grok, and it still waits for a sí before it runs.
 
-That is the whole idea. The picture below is the path of one phrase.
+That is the whole idea. This is the window while it is listening, and the tray menu with Idioma open.
+
+![The information window, listening, with the live debug underneath](docs/img/app-window.png)
+
+![The tray menu, with the language list open](docs/img/tray-menu.png)
+
+The picture below is the path of one phrase.
 
 ![How a phrase moves: the ear stays local, and only a question or a repaired order sends text to Grok](docs/img/flow.svg)
 
@@ -20,9 +26,9 @@ The first language is Spanish. That is the language we actually speak at home, s
 
 Answers stay short on purpose. A voice in a noisy house that recites a paragraph has already lost.
 
-French, German, and English come later, as their own versions. Each one means adapting the ear, the mouth, and the voices: the speech-to-text engine, the text-to-speech engine, and the list of voices that `otra voz` walks through. The hellos, the waiting lines, and the command words travel with the language. The rule underneath does not. A phrase still leaves only when it was said to the assistant.
+The Idioma menu switches among Español, Français, Deutsch, and English. Commands, help, and the personalities live in `lang/*.json`, and that menu can edit the commands and the help of the language that is on. Another language is another json file in that folder. The ear still has to match: Kroko listens in Spanish, and Whisper base reads the others. Choosing a language other than Spanish moves the ear to Whisper base when that model is already on disk. The hellos, the waiting lines, and the command words travel with the language. The rule underneath does not. A phrase still leaves only when it was said to the assistant.
 
-On this PC the mouth is whatever Spanish voice Windows already has, or a Piper voice you pick in Mercado, or espeak on Linux. The Pi has its own Piper set. The microphone ear for Spanish is Kroko: a local streaming model. Audio never leaves the machine. Mercado downloads it when you ask; once the folder is on disk and the saved ear was still the keyboard, the assistant starts Kroko on its own. The keyboard in the debug window stays available. Windows Spanish dictation is the desktop recognizer. When that language is missing, Escucha and Mercado install it through Windows itself. Whisper, base, and Canary are the other ears, each one waiting for its own model. A cloud recognizer is not the stand-in. Uploading the room in order to test a noisy room would throw away the experiment.
+On this PC the mouth is whatever Spanish voice Windows already has, or a Piper voice you pick in Voice market, or espeak on Linux. The Pi has its own Piper set. The microphone ear for Spanish is Kroko: a local streaming model. Audio never leaves the machine. Voice market downloads it when you ask; once the folder is on disk and the saved ear was still the keyboard, the assistant starts Kroko on its own. The keyboard in the debug window stays available. Windows Spanish dictation is the desktop recognizer. When that language is missing, Escucha and Voice market install it through Windows itself. Whisper, base, and Canary are the other ears, each one waiting for its own model. A cloud recognizer is not the stand-in. Uploading the room in order to test a noisy room would throw away the experiment.
 
 ## The employee who does not need your hardware
 
@@ -71,7 +77,7 @@ Two different calls exist, and they are not interchangeable.
 
 If an agent is open, the question uses that agent's file and that agent's session. `cerrar agente` returns to the normal assistant. The local notebook stays where it was.
 
-The spoken Spanish lives in a few places, which is what a later language has to replace: `hellos-es.txt`, `waits-es.txt`, the command words in `match.py`, the help lines, and the prompts in `prompts.py`. The recognizer culture and the voice list change with them. `brain.py` and `hub.py` stay. That is the whole plan for French, German, and English. Same door policy. A new ear, a new mouth, and new voices.
+The spoken lines, the command words, the help, and the personalities travel in the language pack under `src/grok_assistant/lang/`. `hellos-es.txt` and `waits-es.txt` are still the Spanish lists the voice rotates through. `brain.py` and `hub.py` stay. Same door policy. A new ear, a new mouth, and new voices, when the language needs them.
 
 Startup speaks the next line from the hello list and then stops talking. A cloud wait speaks the next line from the other list. The two lists are long so the same joke does not return every morning.
 

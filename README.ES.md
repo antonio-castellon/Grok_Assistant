@@ -1,4 +1,4 @@
-[Read in English](README.md)
+[Read in English](README.md) · [Lire en français](README.FR.md) · [Auf Deutsch lesen](README.DE.md)
 
 ![Marca de Grok, con Assistance debajo](docs/img/banner.jpg)
 
@@ -10,7 +10,13 @@ En mi caso esa persona es mi padre. Tiene la vista limitada y pasa muchas horas 
 
 Puede seguir escuchando mientras el programa está abierto. El sonido se queda en el ordenador. Una frase se convierte en texto aquí, y Grok recibe ese texto solo cuando iba dirigido al asistente: un saludo, luego una pregunta, una orden que empieza por `comando`, o una canción que se ha pedido. La charla de todos los días se anota en una sesión local y ahí se queda. Una orden mal oída se puede consultar con Grok, y aun así espera un sí antes de ejecutarla.
 
-Esa es la idea. El dibujo de abajo es el camino de una frase.
+Esa es la idea. Esta es la ventana mientras escucha, y el menú de la bandeja con Idioma abierto.
+
+![La ventana de información, escuchando, con la depuración en vivo debajo](docs/img/app-window.png)
+
+![El menú de la bandeja, con la lista de idiomas abierta](docs/img/tray-menu.png)
+
+El dibujo de abajo es el camino de una frase.
 
 ![Cómo se mueve una frase: el oído se queda en local, y solo una pregunta o una orden reparada envía texto a Grok](docs/img/flow.svg)
 
@@ -20,9 +26,9 @@ El primer idioma es el español. Es el que de verdad se habla en casa, así que 
 
 Las respuestas son cortas a propósito. Una voz en una casa ruidosa que recita un párrafo ya ha perdido.
 
-El francés, el alemán y el inglés llegarán después, cada uno en su versión. Cada idioma supone adaptar el oído, la boca y las voces: el motor de voz a texto, el motor de texto a voz, y la lista de voces que recorre `otra voz`. Los saludos, las frases de espera y las palabras de las órdenes viajan con el idioma. La regla de debajo no. Una frase sale solo cuando se le dijo al asistente.
+El menú Idioma cambia entre Español, Français, Deutsch y English. Las órdenes, la ayuda y las personalidades viven en `lang/*.json`, y ese menú puede editar las órdenes y la ayuda del idioma que está activo. Otro idioma es otro archivo json en esa carpeta. El oído tiene que acompañar: Kroko escucha en español, y Whisper base lee los demás. Al elegir un idioma que no sea el español, el oído pasa a Whisper base si ese modelo ya está en el disco. Los saludos, las frases de espera y las palabras de las órdenes viajan con el idioma. La regla de debajo no. Una frase sale solo cuando se le dijo al asistente.
 
-En este PC la boca es la voz en español que Windows ya tenga, o una voz Piper elegida en Mercado, o espeak en Linux. La Pi tiene su propio conjunto Piper. El oído del micrófono en español es Kroko: un modelo local en streaming. El audio no sale de la máquina. Mercado lo descarga cuando se lo pides; si la carpeta ya está en el disco y el oído guardado seguía siendo el teclado, el asistente arranca Kroko solo. El teclado de la ventana de depuración sigue disponible. El dictado de Windows en español es el reconocedor de escritorio. Si ese idioma falta, Escucha y Mercado lo instalan a través del propio Windows. Whisper, base y Canary son los otros oídos, cada uno a la espera de su modelo. Un reconocedor en la nube no sirve de sustituto. Subir la habitación para probar una habitación ruidosa tiraría el experimento.
+En este PC la boca es la voz en español que Windows ya tenga, o una voz Piper elegida en Voice market, o espeak en Linux. La Pi tiene su propio conjunto Piper. El oído del micrófono en español es Kroko: un modelo local en streaming. El audio no sale de la máquina. Voice market lo descarga cuando se lo pides; si la carpeta ya está en el disco y el oído guardado seguía siendo el teclado, el asistente arranca Kroko solo. El teclado de la ventana de depuración sigue disponible. El dictado de Windows en español es el reconocedor de escritorio. Si ese idioma falta, Escucha y Voice market lo instalan a través del propio Windows. Whisper, base y Canary son los otros oídos, cada uno a la espera de su modelo. Un reconocedor en la nube no sirve de sustituto. Subir la habitación para probar una habitación ruidosa tiraría el experimento.
 
 ## El empleado que no necesita tu hardware
 
@@ -71,7 +77,7 @@ Hay dos llamadas distintas, y no se intercambian.
 
 Si hay un agente abierto, la pregunta usa el archivo de ese agente y la sesión de ese agente. `cerrar agente` vuelve al asistente normal. El cuaderno local se queda donde estaba.
 
-El español hablado vive en unos pocos sitios, que es lo que un idioma posterior tiene que sustituir: `hellos-es.txt`, `waits-es.txt`, las palabras de las órdenes en `match.py`, las líneas de ayuda y los prompts de `prompts.py`. La cultura del reconocedor y la lista de voces cambian con ellos. `brain.py` y `hub.py` se quedan. Ese es el plan entero para el francés, el alemán y el inglés. La misma política de puerta. Un oído nuevo, una boca nueva y voces nuevas.
+Las frases habladas, las palabras de las órdenes, la ayuda y las personalidades viajan en el paquete de idioma, en `src/grok_assistant/lang/`. `hellos-es.txt` y `waits-es.txt` siguen siendo las listas en español que la voz va rotando. `brain.py` y `hub.py` se quedan. La misma política de puerta. Un oído nuevo, una boca nueva y voces nuevas, cuando el idioma los necesita.
 
 Al arrancar dice la siguiente línea de la lista de saludos y luego se calla. Una espera a la nube dice la siguiente línea de la otra lista. Las dos listas son largas para que el mismo chiste no vuelva cada mañana.
 
