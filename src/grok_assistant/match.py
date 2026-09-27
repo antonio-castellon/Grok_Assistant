@@ -7,6 +7,29 @@ from dataclasses import dataclass
 
 from grok_assistant.textutil import edit_distance, loose, normalize, tokenize
 
+
+def _list(key: str, fallback):
+    from grok_assistant.i18n import command_list
+
+    found = command_list(key)
+    if not found:
+        return list(fallback)
+    return found
+
+
+def _groups(key: str, fallback: dict[str, set[str]]) -> dict[str, set[str]]:
+    from grok_assistant.i18n import command_map
+
+    found = command_map(key)
+    return found or fallback
+
+
+def _fixed_rows():
+    from grok_assistant.i18n import fixed_commands
+
+    found = fixed_commands()
+    return found or list(_FIXED)
+
 WAKES = (
     "hola grok",
     "ok grok",
@@ -110,21 +133,26 @@ def words_norm(text: str) -> list[str]:
 
 
 def is_yes(norms: list[str]) -> bool:
-    return len(norms) == 1 and norms[0] in _YES
+    return len(norms) == 1 and norms[0] in set(_list("yes", _YES))
 
 
 def wake_targets(name: str = "grok", extras: tuple[str, ...] | list[str] = ()) -> list[str]:
     called = normalize(name) or "grok"
-    targets = [
-        f"hola {called}",
-        f"ok {called}",
-        f"despierta {called}",
-        f"estas ahi {called}",
-        f"{called} estas ahi",
-        called,
-    ]
+    patterns = _list("wake_patterns", ())
+    if patterns:
+        targets = [normalize(pattern.format(name=called)) for pattern in patterns]
+        targets.append(called)
+    else:
+        targets = [
+            f"hola {called}",
+            f"ok {called}",
+            f"despierta {called}",
+            f"estas ahi {called}",
+            f"{called} estas ahi",
+            called,
+        ]
     if called == "grok":
-        targets.extend(WAKES)
+        targets.extend(_list("wake_aliases", WAKES))
     for extra in extras:
         heard = normalize(extra)
         if heard and heard not in targets:
@@ -145,16 +173,37 @@ def is_exact_wake(norms: list[str], name: str = "grok", extras: tuple[str, ...] 
 
 
 def is_wake(norms: list[str], name: str = "grok", extras: tuple[str, ...] | list[str] = ()) -> bool:
+    return wake_split(norms, name, extras) is not None
+
+
+def wake_split(norms: list[str], name: str = "grok", extras: tuple[str, ...] | list[str] = ()) -> list[str] | None:
+    """Words after a loose greeting. [] is a greeting alone. None is not a greeting."""
     if not norms:
-        return False
+        return None
+    best = 0
+    matched = False
     blob = " ".join(norms)
     for target in wake_targets(name, extras):
         size = len(target.split())
         if len(norms) >= size and loose(" ".join(norms[:size]), target):
-            return True
-        if loose(blob, target):
-            return True
-    return False
+            matched = True
+            if size > best:
+                best = size
+        elif loose(blob, target):
+            matched = True
+            if len(norms) > best:
+                best = len(norms)
+    if not matched:
+        return None
+    return norms[best:]
+
+
+def endpoint_quiet(text: str, wake_name: str = "grok") -> float:
+    """A bare greeting stays open for two seconds so the question can follow."""
+    rest = wake_split(words_norm(text), wake_name)
+    if rest == []:
+        return 2.0
+    return 0.7
 
 
 _PRESENCE = (
@@ -167,15 +216,16 @@ _PRESENCE = (
 )
 
 
+def _presence_phrases() -> tuple[str, ...]:
+    found = _list("presence", _PRESENCE)
+    return tuple(found)
+
+
 def without_wake(norms: list[str], name: str = "grok") -> list[str]:
-    called = normalize(name) or "grok"
-    blob = " ".join(norms)
-    for prefix in (f"hola {called}", f"ok {called}", f"despierta {called}", called):
-        if blob == prefix:
-            return []
-        if blob.startswith(prefix + " "):
-            return blob[len(prefix) + 1:].split()
-    return norms
+    rest = wake_split(norms, name)
+    if rest is None:
+        return list(norms)
+    return rest
 
 
 def is_presence(norms: list[str], name: str = "grok") -> bool:
@@ -183,7 +233,7 @@ def is_presence(norms: list[str], name: str = "grok") -> bool:
     if not rest:
         return False
     blob = " ".join(rest)
-    return any(blob == item or loose(blob, item) for item in _PRESENCE)
+    return any(blob == item or loose(blob, item) for item in _presence_phrases())
 
 
 def wake_is_presence(norms: list[str], name: str = "grok") -> bool:
@@ -214,11 +264,14 @@ def thin_phrase(text: str) -> bool:
 
 
 def is_test_word(norms: list[str]) -> bool:
-    return len(norms) == 1 and (loose(norms[0], "prueba") or loose(norms[0], "test"))
+    if len(norms) != 1:
+        return False
+    return any(loose(norms[0], word) for word in _list("test", ("prueba", "test")))
 
 
 def strip_comando(norms: list[str]) -> tuple[bool, list[str]]:
-    if norms and loose(norms[0], "comando") and abs(len(norms[0]) - len("comando")) <= 1:
+    words = _list("comando", ("comando",))
+    if norms and any(loose(norms[0], word) and abs(len(norms[0]) - len(word)) <= 1 for word in words):
         return True, norms[1:]
     return False, norms
 
@@ -227,22 +280,29 @@ def closer(norms: list[str]) -> str | None:
     """Return adios, denada, or vale when the talk should end locally. None keeps it open."""
     if not norms or len(norms) > 8:
         return None
-    if "gracias" in norms:
+    thanks = set(_list("thanks", ("gracias",)))
+    if any(word in thanks for word in norms):
         return "denada"
     blob = " ".join(norms)
-    if len(norms) <= 3 and (norms[0] in {"ok", "okay", "okey"} or loose(norms[0], "ok")):
+    ok_words = set(_list("ok_words", ("ok", "okay", "okey")))
+    if len(norms) <= 3 and (norms[0] in ok_words or loose(norms[0], "ok")):
         return "vale"
-    if len(norms) <= 3 and norms[0] in {"cierra", "cerrar", "corta", "cortar", "acaba", "acabar", "termina", "terminar"}:
+    close_verbs = set(_list("close_verbs", _CLOSE_VERBS))
+    if len(norms) <= 3 and norms[0] in close_verbs:
         return "adios"
-    if norms[0] in {"adios", "chao", "chau"} and len(norms) <= 3:
+    bye_words = set(_list("bye_words", ("adios", "chao", "chau")))
+    if norms[0] in bye_words and len(norms) <= 3:
         return "adios"
-    if blob in _ADIOS or any(loose(blob, item) for item in _ADIOS):
+    adios = _list("adios", _ADIOS)
+    if blob in adios or any(loose(blob, item) for item in adios):
         return "adios"
-    if blob in _NOTHING or any(loose(blob, item) for item in _NOTHING):
+    nothing = _list("nothing", _NOTHING)
+    if blob in nothing or any(loose(blob, item) for item in nothing):
         return "vale"
-    if "conversacion" in norms and _token_in(norms, _CLOSE_VERBS):
+    conversation = set(_list("conversation_word", ("conversacion",)))
+    if any(word in conversation for word in norms) and _token_in(norms, close_verbs):
         return "adios"
-    if "gracias" in norms:
+    if any(word in thanks for word in norms):
         return "denada"
     if norms == ["vale"]:
         return "vale"
@@ -254,7 +314,7 @@ def song_of(pairs: list[tuple[str, str]]) -> Song:
         return Song()
     norms = [norm for _, norm in pairs]
     raws = [raw for raw, _ in pairs]
-    for prefix in SONG_PREFIXES:
+    for prefix in _list("song_prefixes", SONG_PREFIXES):
         parts = prefix.split()
         size = len(parts)
         if len(norms) < size:
@@ -273,11 +333,11 @@ def parse_order(pairs: list[tuple[str, str]]) -> Hit | None:
     if not pairs:
         return None
     norms = [norm for _, norm in pairs]
-    if "agente" in norms or "agentes" in norms:
+    if any(word in set(_list("agent_words", ("agente", "agentes"))) for word in norms):
         hit = _match_agent(pairs)
         if hit:
             return hit
-    if "sesion" in norms or "sesiones" in norms:
+    if any(word in set(_list("session_words", ("sesion", "sesiones"))) for word in norms):
         hit = _match_session(pairs)
         if hit:
             return hit
@@ -322,19 +382,19 @@ def _leftover(pairs: list[tuple[str, str]], verbs: set[str], keywords: set[str])
         if norm in keywords or _token_in([norm], verbs):
             continue
         kept.append(raw)
-    while kept and normalize(kept[0]) in _LEADING:
+    while kept and normalize(kept[0]) in set(_list("leading", _LEADING)):
         kept.pop(0)
     return " ".join(kept).strip()
 
 
 def _match_session(pairs: list[tuple[str, str]]) -> Hit | None:
     norms = [norm for _, norm in pairs]
-    kind = _first_kind(norms, _SESSION_GROUPS, {"sesion", "sesiones", "de", "del", "la", "el"})
+    kind = _first_kind(norms, _groups("session_groups", _SESSION_GROUPS), set(_list("session_words", ("sesion", "sesiones"))) | {"de", "del", "la", "el"})
     if kind == "listar":
         return Hit("listar sesiones")
     if kind == "cerrar":
         return Hit("cerrar sesion")
-    name = _leftover(pairs, set(_SESSION_GROUPS.get(kind, ())), {"sesion", "sesiones", "comando"})
+    name = _leftover(pairs, set(_groups("session_groups", _SESSION_GROUPS).get(kind, ())), set(_list("session_words", ("sesion", "sesiones"))) | set(_list("comando", ("comando",))))
     if kind == "crear":
         return Hit("crear sesion", name, confirm=True)
     if kind == "abrir":
@@ -348,12 +408,12 @@ def _match_agent(pairs: list[tuple[str, str]]) -> Hit | None:
     norms = [norm for _, norm in pairs]
     if "conversacion" in norms:
         return None
-    kind = _first_kind(norms, _AGENT_GROUPS, {"agente", "agentes", "de", "del", "la", "el"})
+    kind = _first_kind(norms, _groups("agent_groups", _AGENT_GROUPS), set(_list("agent_words", ("agente", "agentes"))) | {"de", "del", "la", "el"})
     if kind == "listar":
         return Hit("listar agentes")
     if kind == "cerrar":
         return Hit("cerrar agente")
-    name = _leftover(pairs, set(_AGENT_GROUPS.get(kind, ())), {"agente", "agentes", "comando"})
+    name = _leftover(pairs, set(_groups("agent_groups", _AGENT_GROUPS).get(kind, ())), set(_list("agent_words", ("agente", "agentes"))) | set(_list("comando", ("comando",))))
     if kind == "crear":
         return Hit("crear agente", name, admin=True)
     if kind == "abrir":
@@ -365,7 +425,7 @@ def _match_fixed(blob: str) -> Hit | None:
     best: Hit | None = None
     best_d = 2
     tie = False
-    for strict, phrases, confirm, admin in _FIXED:
+    for strict, phrases, confirm, admin in _fixed_rows():
         for phrase in phrases:
             dist = edit_distance(blob, phrase, 1)
             if dist < best_d:
@@ -383,8 +443,9 @@ _EARS = ("teclado", "windows", "kroko", "whisper", "base", "canary")
 
 
 def _ear_name(norms: list[str]) -> str | None:
+    ears = _list("ears", _EARS)
     for word in norms:
-        hits = [name for name in _EARS if loose(word, name)]
+        hits = [name for name in ears if loose(word, name) or loose(word, name.split()[0])]
         if len(hits) == 1:
             return hits[0]
     return None
@@ -397,13 +458,13 @@ def _match_prefix(pairs: list[tuple[str, str]]) -> Hit | None:
         return None
     head = norms[0]
     rest = " ".join(raws[1:]).strip()
-    if loose(head, "voz") and len(norms) == 2 and norms[1].isdigit():
+    if any(loose(head, word) for word in _list("voice_word", ("voz",))) and len(norms) == 2 and norms[1].isdigit():
         return Hit("voz", norms[1])
-    if loose(head, "reconocedor"):
+    if any(loose(head, word) for word in _list("recognizer_word", ("reconocedor",))):
         ear = _ear_name(norms[1:])
         if ear:
             return Hit("reconocedor", ear)
-    if loose(head, "borra") or (loose(head, "borrar") and "sesion" not in norms and "agente" not in norms):
+    if any(loose(head, word) for word in _list("delete_words", ("borra", "borrar"))) and "sesion" not in norms and "agente" not in norms:
         if rest:
             return Hit("borra", rest, confirm=True, admin=True)
     return None

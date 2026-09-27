@@ -209,10 +209,15 @@ class Hub:
             return self.brain.finish_error(str(exc))
 
     def _spoken_rules(self, job) -> str:
+        from grok_assistant.i18n import agent_rules, reply_rules
         from grok_assistant.personality import voice_prompt
         from grok_assistant.prompts import AGENT_RULES, VOICE_SYSTEM
 
-        base = AGENT_RULES if job.agent_path else VOICE_SYSTEM
+        if job.agent_path:
+            base = agent_rules() or AGENT_RULES
+        else:
+            language = reply_rules()
+            base = f"{language}\n{VOICE_SYSTEM}" if language else VOICE_SYSTEM
         return voice_prompt(self.brain.settings.personality, base)
 
     def _slot(self, job) -> tuple[str, bool]:
@@ -240,6 +245,9 @@ def build(data_dir: Path | None = None, agents_dir: Path | None = None, cli: Gro
         rules.write_text(_ROOM_RULES, encoding="utf-8")
     config_path = data / "config.json"
     settings = Settings.load(config_path)
+    from grok_assistant.i18n import activate
+
+    activate(getattr(settings, "language", "es"))
 
     def persist() -> None:
         settings.save(config_path)

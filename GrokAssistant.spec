@@ -22,6 +22,7 @@ a = Analysis(
     binaries=sherpa_bins,
     datas=[
         (str(root / "src" / "grok_assistant" / "lines"), "grok_assistant/lines"),
+        (str(root / "src" / "grok_assistant" / "lang"), "grok_assistant/lang"),
         (str(root / "scripts"), "scripts"),
         (str(root / "listeners"), "listeners"),
         (str(root / "docs" / "img"), "docs/img"),
@@ -45,6 +46,7 @@ a = Analysis(
         "cffi",
         "_cffi_backend",
         "grok_assistant.hub",
+        "grok_assistant.i18n",
         "grok_assistant.listen",
         "grok_assistant.local_llm",
         "grok_assistant.marketplace",

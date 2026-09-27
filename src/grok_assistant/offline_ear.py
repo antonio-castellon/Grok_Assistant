@@ -86,20 +86,23 @@ class OfflineEar:
         tokens = _tokens(folder)
         if not all([encoder, decoder, tokens]):
             raise FileNotFoundError("al modelo le faltan archivos")
+        from grok_assistant.i18n import stt_language
+
+        lang = stt_language() if stt_language() in {"en", "es", "de", "fr"} else "es"
         if self.kind == "canary":
             return sherpa_onnx.OfflineRecognizer.from_nemo_canary(
                 encoder=str(encoder),
                 decoder=str(decoder),
                 tokens=str(tokens),
-                src_lang="es",
-                tgt_lang="es",
+                src_lang=lang,
+                tgt_lang=lang,
                 num_threads=2,
             )
         return sherpa_onnx.OfflineRecognizer.from_whisper(
             encoder=str(encoder),
             decoder=str(decoder),
             tokens=str(tokens),
-            language="es",
+            language=lang,
             task="transcribe",
             num_threads=2,
         )

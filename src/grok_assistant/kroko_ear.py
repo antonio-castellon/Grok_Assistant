@@ -27,9 +27,10 @@ def _model(folder: Path, prefix: str) -> Path | None:
 
 
 class KrokoEar:
-    def __init__(self, on_line, on_status=None):
+    def __init__(self, on_line, on_status=None, wake_name=None):
         self.on_line = on_line
         self.on_status = on_status or (lambda _text: None)
+        self._wake_name = wake_name or (lambda: "grok")
         self.error = ""
         self._stop = threading.Event()
         self._paused = threading.Event()
@@ -58,6 +59,22 @@ class KrokoEar:
 
     def stop(self) -> None:
         self._stop.set()
+
+    def _ready(self, text: str, quiet: float, endpoint: bool) -> bool:
+        from grok_assistant.match import endpoint_quiet
+
+        if not text:
+            return False
+        try:
+            name = self._wake_name() or "grok"
+        except Exception:
+            name = "grok"
+        limit = endpoint_quiet(text, name)
+        # A bare "hola grok" waits up to two seconds for the question.
+        # Anything else still closes at 0.7 s, or at the model's own endpoint.
+        if quiet >= limit - 0.051:
+            return True
+        return bool(endpoint) and limit <= 0.7
 
     def _report(self, text: str) -> None:
         self.on_status(text)
@@ -128,14 +145,13 @@ class KrokoEar:
                     text = str(text).strip()
                     loud = float(np.sqrt(np.mean(np.square(chunk)))) > 0.01
                     quiet = 0.0 if loud else quiet + 0.1
-                    # 0.7 s of quiet, or the model's own short endpoint. Either stays under two seconds.
-                    if text and (quiet >= 0.7 or recognizer.is_endpoint(stream)):
+                    if self._ready(text, quiet, recognizer.is_endpoint(stream)):
                         recognizer.reset(stream)
                         quiet = 0.0
                         audio = np.concatenate(heard_audio) if heard_audio else None
                         heard_audio.clear()
                         self.on_line(text, audio)
-                    elif recognizer.is_endpoint(stream):
+                    elif recognizer.is_endpoint(stream) and not text:
                         recognizer.reset(stream)
                         quiet = 0.0
                         heard_audio.clear()

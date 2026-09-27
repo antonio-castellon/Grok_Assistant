@@ -9,7 +9,7 @@ import webbrowser
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 
-from grok_assistant.helptext import HELP_TOPICS
+from grok_assistant.helptext import help_topics
 from grok_assistant.hub import Hub, build
 from grok_assistant.kroko_ear import KrokoEar
 from grok_assistant.offline_ear import OFFLINE_KINDS, OfflineEar
@@ -216,16 +216,20 @@ class TrayApp:
         self.menu_persona = tk.Menu(bar, postcommand=self._fill_persona, **kw)
         self.menu_musica = tk.Menu(bar, **kw)
         self.menu_admin = tk.Menu(bar, postcommand=self._fill_admin, **kw)
-        bar.add_cascade(label="Escucha", menu=self.menu_escucha)
-        bar.add_cascade(label="Voz", menu=self.menu_voz)
-        bar.add_cascade(label="Modelo", menu=self.menu_modelo)
-        bar.add_cascade(label="Sesión", menu=self.menu_sesion)
-        bar.add_cascade(label="Agente", menu=self.menu_agente)
-        bar.add_cascade(label="Personalidad", menu=self.menu_persona)
-        bar.add_cascade(label="Música", menu=self.menu_musica)
-        bar.add_cascade(label="Administrador", menu=self.menu_admin)
-        bar.add_command(label="Voice market", command=self._open_market)
-        bar.add_command(label="Acerca de", command=self._open_about)
+        self.menu_language = tk.Menu(bar, postcommand=self._fill_language, **kw)
+        from grok_assistant.i18n import text
+
+        bar.add_cascade(label=text("menu.listen", "Escucha"), menu=self.menu_escucha)
+        bar.add_cascade(label=text("menu.voice", "Voz"), menu=self.menu_voz)
+        bar.add_cascade(label=text("menu.model", "Modelo"), menu=self.menu_modelo)
+        bar.add_cascade(label=text("menu.session", "Sesión"), menu=self.menu_sesion)
+        bar.add_cascade(label=text("menu.agent", "Agente"), menu=self.menu_agente)
+        bar.add_cascade(label=text("menu.personality", "Personalidad"), menu=self.menu_persona)
+        bar.add_cascade(label=text("menu.music", "Música"), menu=self.menu_musica)
+        bar.add_cascade(label=text("menu.admin", "Administrador"), menu=self.menu_admin)
+        bar.add_cascade(label=text("menu.language", "Idioma"), menu=self.menu_language)
+        bar.add_command(label=text("menu.market", "Voice market"), command=self._open_market)
+        bar.add_command(label=text("menu.about", "Acerca de"), command=self._open_about)
         self.menu_musica.add_command(label="Pausar", command=lambda: self._command("pausa musica"))
         self.menu_musica.add_command(label="Seguir", command=lambda: self._command("seguir musica"))
         self.menu_musica.add_command(label="Parar", command=lambda: self._command("para la musica"))
@@ -399,6 +403,8 @@ class TrayApp:
         menu.add_command(label="Crear agente…", command=self._new_agent)
 
     def _tray_items(self) -> list:
+        from grok_assistant.i18n import text
+
         brain = self.hub.brain
         ears = []
         present = set(brain.recognizers)
@@ -422,15 +428,16 @@ class TrayApp:
             agents = [("cmd", "No hay agentes", "noop", False)]
         agents += [("sep",), ("cmd", "Cerrar agente", "agent-close", False), ("cmd", "Crear agente…", "agent-new", False)]
         return [
-            ("cmd", "Mostrar", "show", False),
-            ("cmd", "Seguir escuchando" if self.user_paused else "Pausar escucha", "pause", self.user_paused),
+            ("cmd", text("menu.show", "Mostrar"), "show", False),
+            ("cmd", text("menu.resume", "Seguir escuchando") if self.user_paused else text("menu.pause", "Pausar escucha"), "pause", self.user_paused),
             ("sub", "Reconocedor", ears),
             ("sub", "Identificador texto", self._identifier_items()),
             ("sub", "Voz", voices + [("sep",), ("cmd", "Subir volumen", "vol-up", False), ("cmd", "Bajar volumen", "vol-down", False)]),
             ("sub", "Modelo", models),
             ("sub", "Sesión", sessions),
             ("sub", "Agente", agents),
-            ("sub", "Personalidad", self._persona_items()),
+            ("sub", text("menu.personality", "Personalidad"), self._persona_items()),
+            ("sub", text("menu.language", "Idioma"), self._language_items()),
             ("sub", "Música", [
                 ("cmd", "Pausar", "music-pause", False),
                 ("cmd", "Seguir", "music-resume", False),
@@ -439,10 +446,10 @@ class TrayApp:
             ("cmd", "Desactivar prueba" if brain.test_mode else "Activar prueba", "test-toggle", brain.test_mode),
             ("cmd", "Cambiar nombre…", "rename", False),
             ("cmd", "Desactivar arranque con Windows" if self._startup_on() else "Activar arranque con Windows", "startup", self._startup_on()),
-            ("cmd", "Voice market", "market", False),
-            ("cmd", "Acerca de", "about", False),
+            ("cmd", text("menu.market", "Voice market"), "market", False),
+            ("cmd", text("menu.about", "Acerca de"), "about", False),
             ("sep",),
-            ("cmd", "Salir", "quit", False),
+            ("cmd", text("menu.quit", "Salir"), "quit", False),
         ]
 
     def _menu_action(self, key: str) -> None:
@@ -496,6 +503,12 @@ class TrayApp:
             self._command("para la musica")
         elif key == "startup":
             self._toggle_startup()
+        elif key.startswith("lang:"):
+            self._set_language(key.split(":", 1)[1])
+        elif key == "edit-commands":
+            self._edit_commands()
+        elif key == "edit-help":
+            self._edit_help()
         elif key.startswith("persona:"):
             self._choose_person(key.split(":", 1)[1])
         elif key == "persona-edit":
@@ -552,7 +565,7 @@ class TrayApp:
             self._command(f"crear agente {name.strip()}")
 
     def _fill_persona(self) -> None:
-        from grok_assistant.personality import PERSONS
+        from grok_assistant.personality import persons
 
         menu = self.menu_persona
         menu.delete(0, "end")
@@ -562,7 +575,7 @@ class TrayApp:
             command=lambda: self._choose_person(""),
         )
         menu.add_separator()
-        for person in PERSONS:
+        for person in persons():
             mark = "✓  " if person.id == current else ""
             menu.add_command(
                 label=f"{mark}{person.name} — {person.label}",
@@ -571,12 +584,135 @@ class TrayApp:
         menu.add_separator()
         menu.add_command(label="Ajustar rasgos y comportamiento…", command=self._open_personality)
 
+    def _fill_language(self) -> None:
+        from grok_assistant.i18n import languages, text
+
+        menu = self.menu_language
+        menu.delete(0, "end")
+        current = self.hub.brain.settings.language
+        for code, name in languages():
+            mark = "✓  " if code == current else ""
+            menu.add_command(label=f"{mark}{name}", command=lambda picked=code: self._set_language(picked))
+        menu.add_separator()
+        menu.add_command(label=text("menu.edit_commands", "Editar comandos…"), command=self._edit_commands)
+        menu.add_command(label=text("menu.edit_help", "Editar ayuda…"), command=self._edit_help)
+
+    def _language_items(self) -> list:
+        from grok_assistant.i18n import languages, text
+
+        current = self.hub.brain.settings.language
+        rows = [("cmd", name, f"lang:{code}", code == current) for code, name in languages()]
+        rows.append(("sep",))
+        rows.append(("cmd", text("menu.edit_commands", "Editar comandos…"), "edit-commands", False))
+        rows.append(("cmd", text("menu.edit_help", "Editar ayuda…"), "edit-help", False))
+        return rows
+
+    def _set_language(self, code: str) -> None:
+        from grok_assistant.i18n import activate, languages
+
+        activate(code)
+        self.hub.brain.settings.language = code
+        installed = set(self.hub.brain.recognizers)
+        ear = self.hub.brain.settings.recognizer
+        if code != "es" and ear in {"kroko", "windows"}:
+            for candidate in ("base", "whisper", "canary"):
+                if candidate in installed:
+                    self.hub.brain.settings.recognizer = candidate
+                    break
+        self.hub.brain.persist()
+        self._build_menus()
+        self._sync_ear()
+        name = dict(languages()).get(code, code)
+        self._note(f"idioma {name}")
+        self._paint()
+
+    def _edit_commands(self) -> None:
+        from grok_assistant.i18n import current, save_section
+
+        window = tk.Toplevel(self.root)
+        window.title(self.hub.brain.settings.language)
+        window.configure(bg=BG)
+        window.geometry("720x560")
+        ttk.Label(window, text="Un comando por línea: id = frase | frase", style="Muted.TLabel").pack(anchor="w", padx=12, pady=8)
+        box = tk.Text(window, wrap="word", bg=FIELD, fg=INK, insertbackground=INK, font=MONO, relief="flat", padx=10, pady=8)
+        box.pack(fill="both", expand=True, padx=12, pady=(0, 8))
+        commands = dict(current().get("commands") or {})
+        lines = []
+        for item in commands.get("fixed") or []:
+            lines.append(str(item.get("id") or "") + " = " + " | ".join(item.get("phrases") or []))
+        box.insert("1.0", "\n".join(lines))
+
+        def save() -> None:
+            fixed = []
+            for line in box.get("1.0", "end").splitlines():
+                if "=" not in line:
+                    continue
+                ident, rest = line.split("=", 1)
+                ident = ident.strip()
+                if not ident:
+                    continue
+                phrases = [piece.strip() for piece in rest.split("|") if piece.strip()]
+                previous = next((item for item in commands.get("fixed") or [] if item.get("id") == ident), {})
+                fixed.append({
+                    "id": ident,
+                    "phrases": phrases,
+                    "confirm": bool(previous.get("confirm")),
+                    "admin": bool(previous.get("admin")),
+                })
+            commands["fixed"] = fixed
+            save_section("commands", commands)
+            self._note("comandos de este idioma guardados")
+            window.destroy()
+
+        ttk.Button(window, text="Aplicar", command=save).pack(anchor="e", padx=12, pady=(0, 12))
+
+    def _edit_help(self) -> None:
+        from grok_assistant.helptext import help_topics
+        from grok_assistant.i18n import save_section
+
+        window = tk.Toplevel(self.root)
+        window.title(self.hub.brain.settings.language)
+        window.configure(bg=BG)
+        window.geometry("720x560")
+        ttk.Label(
+            window,
+            text="Cada ayuda: título, luego example: ejemplo, luego el texto, y una línea ---",
+            style="Muted.TLabel",
+        ).pack(anchor="w", padx=12, pady=8)
+        box = tk.Text(window, wrap="word", bg=FIELD, fg=INK, insertbackground=INK, font=FONT, relief="flat", padx=10, pady=8)
+        box.pack(fill="both", expand=True, padx=12, pady=(0, 8))
+        blocks = []
+        for title, body, example in help_topics():
+            blocks.append(f"{title}\nexample: {example}\n{body}\n---")
+        box.insert("1.0", "\n".join(blocks))
+
+        def save() -> None:
+            topics = []
+            for block in box.get("1.0", "end").split("\n---"):
+                rows = [row for row in block.strip().splitlines() if row.strip()]
+                if len(rows) < 2:
+                    continue
+                title = rows[0].strip()
+                example = ""
+                body_rows = []
+                for row in rows[1:]:
+                    if row.lower().startswith("example:"):
+                        example = row.split(":", 1)[1].strip()
+                    else:
+                        body_rows.append(row)
+                topics.append({"title": title, "body": " ".join(body_rows).strip(), "example": example})
+            save_section("help", topics)
+            self._note("ayuda de este idioma guardada")
+            window.destroy()
+
+        ttk.Button(window, text="Aplicar", command=save).pack(anchor="e", padx=12, pady=(0, 12))
+
     def _persona_items(self) -> list:
-        from grok_assistant.personality import PERSONS
+        from grok_assistant.personality import persons
 
         current = str(self.hub.brain.settings.personality.get("profile") or "")
         rows = [("cmd", "Sin persona — la voz de siempre", "persona:", not current)]
-        for person in PERSONS:
+        for person in persons():
             rows.append(("cmd", f"{person.name} — {person.label}", f"persona:{person.id}", person.id == current))
         rows.append(("sep",))
         rows.append(("cmd", "Ajustar rasgos y comportamiento…", "persona-edit", False))
@@ -609,7 +745,7 @@ class TrayApp:
         self._build_personality()
 
     def _build_personality(self) -> None:
-        from grok_assistant.personality import CULTURES, FORMALITY, PERSONS, TONES, TRAITS, VERBOSITY
+        from grok_assistant.personality import CULTURES, FORMALITY, TONES, TRAITS, VERBOSITY, persons
 
         window = tk.Toplevel(self.root)
         window.title("Personalidad")
@@ -620,7 +756,7 @@ class TrayApp:
         blank_label = "Sin persona — la voz de siempre"
         self._persona_ids = {blank_label: ""}
         self._persona_labels = {"": blank_label}
-        for person in PERSONS:
+        for person in persons():
             shown = f"{person.name} — {person.label}"
             self._persona_ids[shown] = person.id
             self._persona_labels[person.id] = shown
@@ -645,7 +781,10 @@ class TrayApp:
             text="Elige una persona y, si quieres, mueve cada rasgo. El comportamiento es texto libre.",
             style="Muted.TLabel",
         ).pack(anchor="w", padx=16, pady=(0, 8))
-        ttk.Button(window, text="Aplicar", command=self._persona_save).pack(side="bottom", anchor="e", padx=16, pady=12)
+        buttons = ttk.Frame(window)
+        buttons.pack(side="bottom", anchor="e", padx=16, pady=12)
+        ttk.Button(buttons, text="Restaurar", command=self._persona_restore).pack(side="right")
+        ttk.Button(buttons, text="Aplicar", command=self._persona_save).pack(side="right", padx=(0, 8))
         page = ttk.Frame(window)
         page.pack(fill="both", expand=True, padx=8)
         _canvas, inner = self._scroll_page(page)
@@ -728,7 +867,14 @@ class TrayApp:
             self._persona_behavior.insert("1.0", cfg["behavior"])
         self._persona_hold = False
 
-    def _persona_save(self) -> None:
+    def _persona_restore(self) -> None:
+        from grok_assistant.personality import load_person, person_by_id
+
+        person_id = self._persona_ids.get(self._persona_choice.get(), "")
+        self._persona_fill(load_person(person_id, stock=True))
+        self._persona_save(restored=True)
+
+    def _persona_save(self, restored: bool = False) -> None:
         from grok_assistant.personality import normalize_personality, person_by_id
 
         cfg = {
@@ -744,7 +890,9 @@ class TrayApp:
         self.hub.brain.settings.personality = normalize_personality(cfg)
         self.hub.brain.persist()
         person = person_by_id(cfg["profile"])
-        if person is None:
+        if restored and person is not None:
+            self._note(f"persona {person.name} restaurada a sus valores iniciales.")
+        elif person is None:
             self._note("sin persona. La próxima respuesta usa la voz de siempre.")
         else:
             self._note(f"persona {person.name}. La próxima respuesta usa estos rasgos.")
@@ -996,7 +1144,7 @@ class TrayApp:
             "end",
             "Cada orden de abajo se puede decir. Casi todas empiezan por comando. El ejemplo es una frase completa.\n",
         )
-        for title, body, example in HELP_TOPICS:
+        for title, body, example in help_topics():
             text.insert("end", title + "\n", "title")
             text.insert("end", body + "\n")
             text.insert("end", f"Ejemplo: {example}\n", "example")
@@ -1145,7 +1293,7 @@ class TrayApp:
             self.dictation.stop()
             self.dictation = None
         if want_kroko and self.kroko is None:
-            ear = KrokoEar(self._heard, self._kroko_status)
+            ear = KrokoEar(self._heard, self._kroko_status, wake_name=lambda: self.hub.brain.settings.wake_name)
             if ear.start():
                 self.kroko = ear
                 self._note("cargo Kroko, el modelo tarda unos segundos")

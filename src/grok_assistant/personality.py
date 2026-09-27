@@ -282,11 +282,50 @@ _CULTURE_HINT = {
 }
 
 
+def _overlay(person: Person, extra: dict | None) -> Person:
+    if not extra:
+        return person
+    values = {
+        "id": person.id,
+        "name": str(extra.get("name") or person.name),
+        "label": str(extra.get("label") or person.label),
+        "meaning": str(extra.get("meaning") or person.meaning),
+        "behavior": str(extra.get("behavior") or person.behavior),
+        "tone": str(extra.get("tone") or person.tone),
+        "culture": str(extra.get("culture") or person.culture),
+        "verbosity": str(extra.get("verbosity") or person.verbosity),
+        "formality": str(extra.get("formality") or person.formality),
+    }
+    for key, _title, _low, _high in TRAITS:
+        values[key] = int(extra.get(key, getattr(person, key)))
+    return Person(**values)
+
+
 def person_by_id(person_id: str) -> Person | None:
-    for person in PERSONS:
-        if person.id == person_id:
-            return person
-    return None
+    base = next((person for person in PERSONS if person.id == person_id), None)
+    if base is None:
+        return None
+    try:
+        from grok_assistant.i18n import person_pack
+        return _overlay(base, person_pack(person_id))
+    except Exception:
+        return base
+
+
+def persons() -> list[Person]:
+    return [person for person in (person_by_id(item.id) for item in PERSONS) if person is not None]
+
+
+def stock_person(person_id: str) -> Person | None:
+    """Initial numbers and text, before a manual edit in the window."""
+    base = next((person for person in PERSONS if person.id == person_id), None)
+    if base is None:
+        return None
+    try:
+        from grok_assistant.i18n import bundled_person
+        return _overlay(base, bundled_person(person_id))
+    except Exception:
+        return base
 
 
 def blank_personality() -> dict:
@@ -308,9 +347,9 @@ def blank_personality() -> dict:
     }
 
 
-def load_person(person_id: str) -> dict:
+def load_person(person_id: str, stock: bool = False) -> dict:
     cfg = blank_personality()
-    person = person_by_id(person_id)
+    person = stock_person(person_id) if stock else person_by_id(person_id)
     if person is None:
         return cfg
     cfg["profile"] = person.id

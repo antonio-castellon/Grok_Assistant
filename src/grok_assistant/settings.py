@@ -22,6 +22,7 @@ class Settings:
     llm_file: str = ""
     wake_name: str = "grok"
     wake_heard: list = field(default_factory=list)
+    language: str = "es"
     personality: dict = field(default_factory=blank_personality)
 
     @classmethod
@@ -43,6 +44,7 @@ class Settings:
         if not isinstance(item.wake_heard, list):
             item.wake_heard = []
         item.personality = normalize_personality(item.personality)
+        item.language = str(item.language or "es").strip().lower() or "es"
         return item
 
     def save(self, path: Path) -> None:

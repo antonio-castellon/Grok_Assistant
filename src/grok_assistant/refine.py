@@ -10,11 +10,14 @@ _LABELS = {"base": "Whisper base", "whisper": "Whisper pequeño"}
 
 
 def choose_transcript(first: str, second: str) -> str:
-    from grok_assistant.match import noise_phrase
+    from grok_assistant.match import noise_phrase, thin_phrase
 
     cleaned = (second or "").strip()
     primary = (first or "").strip()
     if cleaned and not noise_phrase(cleaned):
+        # A one-token reread such as "1.0" must not erase a real sentence.
+        if primary and thin_phrase(cleaned) and not thin_phrase(primary):
+            return primary
         return cleaned
     return primary or cleaned
 

@@ -10,6 +10,14 @@ def test_no_person_leaves_the_voice_prompt_alone():
     assert voice_prompt(load_person(""), VOICE_SYSTEM) == VOICE_SYSTEM
 
 
+def test_restore_reads_the_original_numbers_and_text():
+    from grok_assistant.personality import load_person
+
+    stock = load_person("ines", stock=True)
+    assert stock["humor"] == 25
+    assert "torpe" in stock["behavior"]
+
+
 def test_a_person_carries_meaning_traits_and_behavior():
     cfg = load_person("ines")
     assert cfg["warmth"] == 80

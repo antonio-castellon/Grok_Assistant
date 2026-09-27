@@ -13,8 +13,10 @@ def test_a_sign_in_prompt_is_not_ready():
 
 
 def test_every_help_topic_has_an_example():
+    from grok_assistant.helptext import help_topics
+
     titles = []
-    for title, body, example in HELP_TOPICS:
+    for title, body, example in help_topics():
         titles.append(title)
         assert body.strip()
         assert example.strip()

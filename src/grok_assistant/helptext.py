@@ -23,7 +23,8 @@ HELP_TOPICS = (
     (
         "Empezar a hablar",
         "Fuera de una conversación el micrófono oye, pero no manda nada a Grok. "
-        "Para abrir la charla di un saludo. Las palabras dichas en el mismo aliento que el saludo no se envían: la pregunta es la frase siguiente. "
+        "Para abrir la charla di un saludo. Si la pregunta va en la misma frase, también se envía. "
+        "Si solo saludas, el oído espera hasta dos segundos por si la pregunta sigue. "
         "El nombre de fábrica es grok. Cambiar nombre pide el nombre y luego lo repites seis veces. "
         "Cada vez se enseña lo que se entendió, y esas variaciones también abren la charla.",
         "hola grok",
@@ -123,9 +124,19 @@ HELP_TOPICS = (
 )
 
 
+def help_topics() -> tuple:
+    from grok_assistant.i18n import help_topics as packed
+
+    rows = packed()
+    return tuple(rows) if rows else HELP_TOPICS
+
+
 def spoken_help() -> str:
+    from grok_assistant.i18n import screen_help
+
+    source = screen_help() or SCREEN_HELP
     lines = []
-    for line in SCREEN_HELP.splitlines():
+    for line in source.splitlines():
         clean = line.replace("¦", ",").replace('"', "")
         lines.append(clean)
     return ". ".join(lines)

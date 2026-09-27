@@ -75,12 +75,12 @@ def test_room_chatter_stays_home(world):
     assert "partido" in saved["heard"]
 
 
-def test_wake_does_not_upload_the_same_breath(world):
+def test_a_question_in_the_same_breath_is_sent(world):
     hub, cli, _clock = world
     result = hub.run("hola grok qué hora es")
-    assert result.spoken == ["Hola."]
-    assert cli.calls == []
+    assert any(call[0] == "converse" and "hora" in call[1] for call in cli.calls)
     assert hub.brain.in_conversation
+    assert result.spoken[0] != "Hola."
 
 
 def test_misheard_wake_and_presence(world):
@@ -463,6 +463,50 @@ def test_unmatched_text_stays_home_until_a_conversation_starts(world):
     assert cli.calls == []
     assert not hub.brain.in_conversation
     assert result.spoken == []
+
+
+def test_ola_grok_still_wakes_when_the_identifier_says_no(world):
+    hub, cli, _clock = world
+
+    class Nope:
+        def available(self):
+            return True
+
+        def interpret(self, phrase, in_conversation):
+            return {"accion": "texto", "orden": "", "texto": ""}
+
+    hub.mind = Nope()
+    hub.brain.settings.local_llm = True
+    heard = hub.run("Ola Grok")
+    assert heard.spoken == ["Hola."]
+    assert hub.brain.in_conversation
+    assert cli.calls == []
+    asked = hub.run("Ola Grok qué hora es")
+    assert any(call[0] == "converse" and "hora" in call[1] for call in cli.calls)
+    assert asked.spoken[0] != "Hola."
+
+
+def test_a_short_reread_does_not_erase_the_sentence():
+    from grok_assistant.match import endpoint_quiet
+    from grok_assistant.refine import choose_transcript
+
+    assert endpoint_quiet("Ola Grok", "grok") == 2.0
+    assert endpoint_quiet("Ola Grok qué hora es", "grok") == 0.7
+    assert choose_transcript("qué tiempo hace mañana", "1.0") == "qué tiempo hace mañana"
+
+
+def test_french_pack_greets_and_plays_a_song(world):
+    from grok_assistant.i18n import activate
+
+    hub, _cli, _clock = world
+    activate("fr")
+    try:
+        assert hub.run("bonjour grok").spoken == ["Bonjour."]
+        song = hub.run("mets la chanson luna")
+        assert any(item[0] == "play" and item[1] == "luna" for item in song.effects)
+        assert song.spoken == ["Je mets luna."]
+    finally:
+        activate("es")
 
 
 def test_hola_grok_me_escuchas_is_answered_here(world):

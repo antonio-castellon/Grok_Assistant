@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 from grok_assistant.auth import AdminAuth
 from grok_assistant.helptext import SCREEN_HELP, spoken_help
+from grok_assistant.i18n import say
 from grok_assistant.match import (
     Hit,
     Song,
@@ -15,7 +16,6 @@ from grok_assistant.match import (
     closer,
     display_order,
     blank_phrase,
-    is_exact_wake,
     is_presence,
     noise_phrase,
     is_test_word,
@@ -321,8 +321,10 @@ class Brain:
         if not self.in_conversation:
             if not is_cmd and is_presence(norms, self.settings.wake_name):
                 return self._presence(heard)
-            if not is_cmd and self._is_wake(norms):
-                return self._wake(heard, norms, speaker_id)
+            if not is_cmd:
+                woken = self._wake_question(heard, norms, pairs, speaker_id)
+                if woken is not None:
+                    return woken
             if song.too_long:
                 self._record(heard, "ignorar", False, "canción larga")
                 self.last_heard = heard
@@ -331,7 +333,7 @@ class Brain:
                 self._touch()
                 self._record(heard, "comando", False, "pon cancion")
                 self.last_heard = heard
-                return self._said(["¿Qué canción?"])
+                return self._said([say("what_song", "¿Qué canción?")])
             if song.title and len(norms) <= 16:
                 self._touch()
                 return self._song(heard, song)
@@ -356,8 +358,10 @@ class Brain:
 
         if not is_cmd and is_presence(norms, self.settings.wake_name):
             return self._presence(heard)
-        if not is_cmd and self._is_wake(norms):
-            return self._wake(heard, norms, speaker_id)
+        if not is_cmd:
+            woken = self._wake_question(heard, norms, pairs, speaker_id)
+            if woken is not None:
+                return woken
         kind = closer([norm for _, norm in body] if is_cmd else norms)
         if kind and not (is_cmd and ("sesion" in norms or "agente" in norms)):
             self._touch()
@@ -367,7 +371,7 @@ class Brain:
             self._touch()
             self._record(heard, "comando", False, "pon cancion")
             self.last_heard = heard
-            return self._said(["¿Qué canción?"])
+            return self._said([say("what_song", "¿Qué canción?")])
         if song.title and len(norms) <= 16:
             self._touch()
             return self._song(heard, song)
@@ -393,10 +397,10 @@ class Brain:
         orden = str((data or {}).get("orden") or "")
         hit = canonicalize(orden) if accion == "comando" else None
         if hit is None:
-            return self._said(["No conozco ese comando."])
+            return self._said([say("unknown", "No conozco ese comando.")])
         self.pending = ("yesno", hit)
         self._log(f"a confirmar: {display_order(hit)}")
-        return self._said([f"Has dicho: {display_order(hit)}. ¿Sí o no?"])
+        return self._said([say("confirm", "Has dicho: {order}. ¿Sí o no?", order=display_order(hit))])
 
     def finish_converse(self, answer: str) -> Turn:
         self.phase = ""
@@ -423,13 +427,13 @@ class Brain:
                 continue
             if hit.confirm or (hit.admin and not self.is_admin()):
                 self.pending = ("yesno", hit)
-                spoken.append(f"Has dicho: {display_order(hit)}. ¿Sí o no?")
+                spoken.append(say("confirm", "Has dicho: {order}. ¿Sí o no?", order=display_order(hit)))
                 break
             follow = self._run(hit)
             spoken.extend(follow.speak)
             effects.extend(follow.effects)
         if speech and len(speech.split()) >= 28 and not commands and not self.detail_used:
-            spoken.append("¿Quieres que te lo cuente con más detalle?")
+            spoken.append(say("more_detail", "¿Quieres que te lo cuente con más detalle?"))
             self.pending = ("detail", self.last_question)
         return Turn(speak=spoken, effects=effects, status=self.status_label())
 
@@ -437,7 +441,7 @@ class Brain:
         self.phase = ""
         self.effort_now = "low"
         self._log(f"error: {message}".replace("\n", " ")[:240])
-        return self._said(["Ahora mismo no llego a la nube."])
+        return self._said([say("cloud_down", "Ahora mismo no llego a la nube.")])
 
     def submit_password(self, password: str) -> Turn:
         if not self.pending or self.pending[0] != "password":
@@ -539,9 +543,27 @@ class Brain:
 
     def _is_wake(self, norms: list[str]) -> bool:
         heard = self.settings.wake_heard or []
-        if self.identifier_ready:
-            return is_exact_wake(norms, self.settings.wake_name, heard)
+        # One changed letter ("Ola Grok") is still the greeting. The small model was dropping it.
         return is_wake(norms, self.settings.wake_name, heard)
+
+    def _wake_question(self, heard: str, norms: list[str], pairs: list[tuple[str, str]], speaker_id: str | None) -> Turn | None:
+        from grok_assistant.match import wake_split
+
+        rest = wake_split(norms, self.settings.wake_name, self.settings.wake_heard or [])
+        if rest is None:
+            return None
+        if not rest:
+            return self._wake(heard, norms, speaker_id)
+        question = " ".join(raw for raw, _norm in pairs[len(norms) - len(rest):]).strip()
+        if not question:
+            return self._wake(heard, norms, speaker_id)
+        self._record(heard, "conversacion", True, "pregunta tras el saludo")
+        self.in_conversation = True
+        self.detail_used = False
+        self.last_heard = heard
+        self._touch()
+        self.opener = speaker_id
+        return self._cloud(question)
 
     def _name_take(self, heard: str, norms: list[str]) -> Turn:
         self._record(heard, "ignorar", False, "nombre")
@@ -578,7 +600,7 @@ class Brain:
         self.in_conversation = True
         self.detail_used = False
         self._touch()
-        return self._said(["Sí, te escucho."], status="Conversación")
+        return self._said([say("presence", "Sí, te escucho.")], status="Conversación")
 
     def _wake(self, heard: str, norms: list[str], speaker_id: str | None, logged: bool = True) -> Turn:
         if logged:
@@ -592,8 +614,8 @@ class Brain:
             return self._said([self._greet_known(speaker_id)], status="Conversación")
         self.opener = speaker_id
         if wake_is_presence(norms, self.settings.wake_name):
-            return self._said(["Sí, aquí estoy."], status="Conversación")
-        return self._said(["Hola."], status="Conversación")
+            return self._said([say("here", "Sí, aquí estoy.")], status="Conversación")
+        return self._said([say("hello", "Hola.")], status="Conversación")
 
     def _greet_known(self, name: str) -> str:
         person = self.speakers.people.get(name) or {}
@@ -618,7 +640,7 @@ class Brain:
         self.detail_used = False
         if self.pending and self.pending[0] in {"detail", "yesno"}:
             self.pending = None
-        said = {"denada": "De nada.", "vale": "Vale."}.get(kind, "Adiós.")
+        said = {"denada": say("thanks", "De nada."), "vale": say("ok", "Vale.")}.get(kind, say("bye", "Adiós."))
         return self._said([said], status="Escuchando")
 
     def _song(self, heard: str, song: Song) -> Turn:
@@ -717,18 +739,18 @@ class Brain:
             return f"¿Borro la sesión {hit.arg}? ¿Sí o no?"
         if hit.strict == "borra":
             return f"¿Borro a {hit.arg}? ¿Sí o no?"
-        return f"Has dicho: {display_order(hit)}. ¿Sí o no?"
+        return say("confirm", "Has dicho: {order}. ¿Sí o no?", order=display_order(hit))
 
     def _run(self, hit: Hit) -> Turn:
         name = hit.strict
         if name == "subir volumen":
             self.settings.volume = min(100, int(self.settings.volume) + 5)
             self.persist()
-            return self._said([f"Volumen al {self.settings.volume} por ciento."], effects=[("volume", self.settings.volume)])
+            return self._said([say("volume", "Volumen al {n} por ciento.", n=self.settings.volume)], effects=[("volume", self.settings.volume)])
         if name == "bajar volumen":
             self.settings.volume = max(0, int(self.settings.volume) - 5)
             self.persist()
-            return self._said([f"Volumen al {self.settings.volume} por ciento."], effects=[("volume", self.settings.volume)])
+            return self._said([say("volume", "Volumen al {n} por ciento.", n=self.settings.volume)], effects=[("volume", self.settings.volume)])
         if name == "otra voz":
             if len(self.voices) <= 1:
                 return self._said(["Solo tengo una voz."])
@@ -763,13 +785,13 @@ class Brain:
             self.persist()
             return self._said([f"Reconocedor {hit.arg}."], effects=[("recognizer", hit.arg)])
         if name == "pon cancion":
-            return self._said([f"Pongo {hit.arg}."], effects=[("play", hit.arg)])
+            return self._said([say("play", "Pongo {title}.", title=hit.arg)], effects=[("play", hit.arg)])
         if name == "pausa musica":
-            return self._said(["Pauso."], effects=[("pause_music",)])
+            return self._said([say("pause", "Pauso.")], effects=[("pause_music",)])
         if name == "seguir musica":
-            return self._said(["Sigo."], effects=[("resume_music",)])
+            return self._said([say("resume", "Sigo.")], effects=[("resume_music",)])
         if name == "para la musica":
-            return self._said(["Paro la música."], effects=[("stop_music",)])
+            return self._said([say("stop_music", "Paro la música.")], effects=[("stop_music",)])
         if name == "listar sesiones":
             names = self.sessions.names()
             return self._said(["Tengo " + ", ".join(names) + "."])
@@ -839,20 +861,20 @@ class Brain:
             return self._said([f"Borro a {deleted}.{extra}"])
         if name == "modo administrador":
             return self._said(["Modo administrador."])
-        return self._said(["No conozco ese comando."])
+        return self._said([say("unknown", "No conozco ese comando.")])
 
     def _enter_test(self, heard: str) -> Turn:
         self.test_mode = True
         self._record(heard, "comando", False, "prueba")
         return self._said(
-            ["Modo prueba. Anoto lo que oigo y no hago nada. Para salir, di salir, o desactívalo en el menú."],
+            [say("test_enter", "Modo prueba. Anoto lo que oigo y no hago nada. Para salir, di salir, o desactívalo en el menú.")],
             status="Prueba",
         )
 
     def _leave_test(self, heard: str) -> Turn:
         self.test_mode = False
         self._record(heard, "comando", False, "salir de la prueba")
-        return self._said(["Salgo de la prueba. Vuelvo a escuchar."])
+        return self._said([say("test_leave", "Salgo de la prueba. Vuelvo a escuchar.")])
 
     def _test(self, heard: str, norms: list[str]) -> Turn:
         bare = [word for word in norms if word != "comando"]
