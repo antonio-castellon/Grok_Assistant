@@ -56,6 +56,7 @@ a = Analysis(
         "grok_assistant.settings",
         "grok_assistant.setup_grok",
         "grok_assistant.speech",
+        "grok_assistant.startup",
         "grok_assistant.store",
         "grok_assistant.textutil",
         "grok_assistant.tray",

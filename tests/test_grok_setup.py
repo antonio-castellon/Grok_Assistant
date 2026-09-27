@@ -23,6 +23,14 @@ def test_every_help_topic_has_an_example():
     assert len(titles) >= 12
 
 
+def test_startup_command_points_at_the_program():
+    from grok_assistant.startup import quoted_command
+
+    assert quoted_command(r"C:\DEV.Personal\Grok_Assistant\dist\GrokAssistant.exe") == (
+        r'"C:\DEV.Personal\Grok_Assistant\dist\GrokAssistant.exe"'
+    )
+
+
 def test_account_percent_is_the_allowance_already_used():
     from grok_assistant.account_usage import percent_used
 

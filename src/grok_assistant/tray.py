@@ -214,7 +214,7 @@ class TrayApp:
         self.menu_sesion = tk.Menu(bar, postcommand=self._fill_sesion, **kw)
         self.menu_agente = tk.Menu(bar, postcommand=self._fill_agente, **kw)
         self.menu_musica = tk.Menu(bar, **kw)
-        self.menu_admin = tk.Menu(bar, **kw)
+        self.menu_admin = tk.Menu(bar, postcommand=self._fill_admin, **kw)
         bar.add_cascade(label="Escucha", menu=self.menu_escucha)
         bar.add_cascade(label="Voz", menu=self.menu_voz)
         bar.add_cascade(label="Modelo", menu=self.menu_modelo)
@@ -227,10 +227,31 @@ class TrayApp:
         self.menu_musica.add_command(label="Pausar", command=lambda: self._command("pausa musica"))
         self.menu_musica.add_command(label="Seguir", command=lambda: self._command("seguir musica"))
         self.menu_musica.add_command(label="Parar", command=lambda: self._command("para la musica"))
-        self.menu_admin.add_command(label="Modo administrador", command=lambda: self._command("modo administrador"))
-        self.menu_admin.add_command(label="Contraseña…", command=self._password_dialog)
-        self.menu_admin.add_separator()
-        self.menu_admin.add_command(label="Apagar el equipo…", command=self._confirm_shutdown)
+
+    def _fill_admin(self) -> None:
+        from grok_assistant.startup import enabled
+
+        menu = self.menu_admin
+        menu.delete(0, "end")
+        menu.add_command(label="Modo administrador", command=lambda: self._command("modo administrador"))
+        menu.add_command(label="Contraseña…", command=self._password_dialog)
+        menu.add_separator()
+        if enabled():
+            menu.add_command(label="✓  Desactivar arranque con Windows", command=self._toggle_startup)
+        else:
+            menu.add_command(label="Activar arranque con Windows", command=self._toggle_startup)
+        menu.add_separator()
+        menu.add_command(label="Apagar el equipo…", command=self._confirm_shutdown)
+
+    def _toggle_startup(self) -> None:
+        from grok_assistant.startup import enabled, set_enabled
+
+        turn_on = not enabled()
+        set_enabled(turn_on)
+        if turn_on:
+            self._note("el programa arrancará con Windows")
+        else:
+            self._note("el programa ya no arranca con Windows")
 
     def _fill_escucha(self) -> None:
         menu = self.menu_escucha
@@ -416,6 +437,7 @@ class TrayApp:
             ]),
             ("cmd", "Desactivar prueba" if brain.test_mode else "Activar prueba", "test-toggle", brain.test_mode),
             ("cmd", "Cambiar nombre…", "rename", False),
+            ("cmd", "Desactivar arranque con Windows" if self._startup_on() else "Activar arranque con Windows", "startup", self._startup_on()),
             ("cmd", "Mercado", "market", False),
             ("cmd", "Acerca de + Ayuda", "about", False),
             ("sep",),
@@ -471,12 +493,19 @@ class TrayApp:
             self._command("seguir musica")
         elif key == "music-stop":
             self._command("para la musica")
+        elif key == "startup":
+            self._toggle_startup()
         elif key == "market":
             self._open_market()
         elif key == "help":
             self._open_about()
         elif key == "about":
             self._open_about()
+
+    def _startup_on(self) -> bool:
+        from grok_assistant.startup import enabled
+
+        return enabled()
 
     def _toggle_test(self) -> None:
         self._command("salir" if self.hub.brain.test_mode else "prueba")
