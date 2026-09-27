@@ -9,6 +9,7 @@ import subprocess
 from pathlib import Path
 
 from grok_assistant.prompts import AGENT_RULES, CLASSIFY_SYSTEM, VOICE_SYSTEM
+from grok_assistant.quiet import no_window
 
 CLASSIFY_SCHEMA = json.dumps({
     "type": "object",
@@ -103,6 +104,7 @@ class GrokCLI:
                 text=True,
                 timeout=timeout,
                 check=False,
+                **no_window(),
             )
         except subprocess.TimeoutExpired as exc:
             raise GrokError("tiempo agotado") from exc

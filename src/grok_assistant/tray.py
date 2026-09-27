@@ -12,6 +12,7 @@ from tkinter import messagebox, simpledialog, ttk
 from grok_assistant.hub import Hub, build
 from grok_assistant.listen import Dictation, windows_spanish_available
 from grok_assistant.music import Music
+from grok_assistant.paths import bundle_root
 from grok_assistant.speech import Speaker
 
 
@@ -39,6 +40,7 @@ class TrayApp:
         self.music = Music()
         self.user_paused = False
         self.jobs: queue.Queue = queue.Queue()
+        self.ui: queue.Queue = queue.Queue()
         self.view_from = 0
         self.info = None
         self.debug = None
@@ -58,20 +60,18 @@ class TrayApp:
         threading.Thread(target=self._worker, daemon=True).start()
         self.jobs.put(("startup", ""))
         self._build_tray()
+        self.root.after(400, self._open_info)
         self.root.after(500, self._pulse)
         self._sync_ear()
 
     def _build_tray(self) -> None:
         try:
             import pystray
-            from PIL import Image, ImageDraw
+            from PIL import Image
         except ImportError:
             self._fallback_window()
             return
-        image = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(image)
-        draw.ellipse((4, 4, 60, 60), fill=(18, 28, 36, 255))
-        draw.ellipse((20, 20, 44, 44), fill=(232, 160, 48, 255))
+        image = self._tray_image()
         menu = pystray.Menu(
             pystray.MenuItem(lambda item: "Seguir escuchando" if self.user_paused else "Pausar escucha", self._toggle_pause),
             pystray.MenuItem("Información", self._show_info, default=True),
@@ -84,8 +84,25 @@ class TrayApp:
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Salir", self._quit),
         )
-        self.icon = pystray.Icon("grok-assistant", image, "Grok", menu)
-        self.icon.run_detached()
+        self.icon = pystray.Icon("grok-assistant", image, "Grok Assistant", menu)
+        try:
+            self.icon.run_detached()
+        except Exception:
+            self.icon = None
+            self._fallback_window()
+
+    def _tray_image(self):
+        from PIL import Image, ImageDraw
+
+        mark = bundle_root() / "docs" / "img" / "grok-mark.png"
+        if mark.exists():
+            image = Image.open(mark).convert("RGBA")
+            return image.resize((64, 64), Image.Resampling.LANCZOS)
+        image = Image.new("RGBA", (64, 64), (0, 0, 0, 255))
+        draw = ImageDraw.Draw(image)
+        draw.ellipse((8, 8, 56, 56), outline=(255, 255, 255, 255), width=6)
+        draw.line((10, 54, 54, 10), fill=(255, 255, 255, 255), width=6)
+        return image
 
     def _fallback_window(self) -> None:
         self.root.deiconify()
@@ -102,12 +119,10 @@ class TrayApp:
                 break
             if kind == "startup":
                 self.say(self.hub.startup())
-                self._refresh()
                 continue
             if kind == "tick":
                 result = self.hub.tick(speaker=self.say)
                 self._apply(result)
-                self._refresh()
                 continue
             if kind == "phrase":
                 self._hold_mic(True)
@@ -120,7 +135,6 @@ class TrayApp:
                         self._apply(follow)
                 finally:
                     self._hold_mic(False)
-                self._refresh()
 
     def say(self, text: str) -> None:
         if not text:
@@ -183,32 +197,40 @@ class TrayApp:
         self.jobs.put(("phrase", text))
 
     def _pulse(self) -> None:
-        if not self._closing:
-            self.jobs.put(("tick", ""))
-            self._refresh()
-            self.root.after(1000, self._pulse)
+        if self._closing:
+            return
+        while True:
+            try:
+                job = self.ui.get_nowait()
+            except queue.Empty:
+                break
+            job()
+        self.jobs.put(("tick", ""))
+        self._paint()
+        self.root.after(1000, self._pulse)
 
     def _refresh(self) -> None:
-        def paint() -> None:
-            snap = self.hub.brain.snapshot()
-            if self.icon is not None:
-                self.icon.title = f"Grok — {snap['status']}"
-            for key, var in self.vars.items():
-                value = snap.get(key, "")
-                if key == "shared":
-                    value = "sí, la compartida" if snap["shared"] else "no, una con nombre"
-                var.set(str(value))
-            if self.debug_text is not None:
-                shown = self.hub.brain.logs[self.view_from:]
-                self.debug_text.configure(state="normal")
-                self.debug_text.delete("1.0", "end")
-                self.debug_text.insert("end", "\n".join(shown))
-                self.debug_text.configure(state="disabled")
-                self.debug_text.see("end")
+        self.ui.put(self._paint)
+
+    def _paint(self) -> None:
         try:
-            self.root.after(0, paint)
+            snap = self.hub.brain.snapshot()
         except tk.TclError:
-            pass
+            return
+        if self.icon is not None:
+            self.icon.title = f"Grok — {snap['status']}"
+        for key, var in self.vars.items():
+            value = snap.get(key, "")
+            if key == "shared":
+                value = "sí, la compartida" if snap["shared"] else "no, una con nombre"
+            var.set(str(value))
+        if self.debug_text is not None:
+            shown = self.hub.brain.logs[self.view_from:]
+            self.debug_text.configure(state="normal")
+            self.debug_text.delete("1.0", "end")
+            self.debug_text.insert("end", "\n".join(shown))
+            self.debug_text.configure(state="disabled")
+            self.debug_text.see("end")
 
     def _window(self, title: str) -> tk.Toplevel:
         window = tk.Toplevel(self.root)
@@ -217,7 +239,7 @@ class TrayApp:
         return window
 
     def _show_info(self, icon, item) -> None:
-        self.root.after(0, self._open_info)
+        self.ui.put(self._open_info)
 
     def _open_info(self) -> None:
         if self.info is None or not self.info.winfo_exists():
@@ -251,7 +273,7 @@ class TrayApp:
         self._refresh()
 
     def _show_debug(self, icon, item) -> None:
-        self.root.after(0, self._open_debug)
+        self.ui.put(self._open_debug)
 
     def _open_debug(self) -> None:
         if self.debug is None or not self.debug.winfo_exists():
@@ -370,7 +392,7 @@ class TrayApp:
         )
 
     def _set_password(self, icon, item) -> None:
-        self.root.after(0, self._password_dialog)
+        self.ui.put(self._password_dialog)
 
     def _password_dialog(self) -> None:
         first = simpledialog.askstring("Administrador", "Nueva contraseña:", show="*", parent=self.root)
@@ -390,7 +412,7 @@ class TrayApp:
             box["value"] = simpledialog.askstring(title, "Contraseña:", show="*", parent=self.root)
             event.set()
 
-        self.root.after(0, show)
+        self.ui.put(show)
         event.wait(timeout=180)
         return box["value"]
 
@@ -405,4 +427,4 @@ class TrayApp:
         self.music.stop()
         if self.icon is not None:
             self.icon.stop()
-        self.root.after(0, self.root.destroy)
+        self.ui.put(self.root.destroy)

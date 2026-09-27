@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 
 from grok_assistant.paths import bundle_root
+from grok_assistant.quiet import no_window
 
 
 class Speaker:
@@ -37,6 +38,7 @@ def _windows_voices() -> list[str]:
             text=True,
             timeout=30,
             check=False,
+            **no_window(),
         )
     except (OSError, subprocess.TimeoutExpired):
         return []
@@ -70,6 +72,7 @@ def _windows_say(text: str, voice: str | None, volume: int) -> bool:
             text=True,
             timeout=120,
             check=False,
+            **no_window(),
         )
         return done.returncode == 0
     except (OSError, subprocess.TimeoutExpired):
@@ -101,6 +104,7 @@ def _linux_say(text: str, voice: str | None, volume: int) -> bool:
             text=True,
             timeout=120,
             check=False,
+            **no_window(),
         )
     except (OSError, subprocess.TimeoutExpired):
         return False

@@ -8,6 +8,7 @@ import threading
 from pathlib import Path
 
 from grok_assistant.paths import bundle_root
+from grok_assistant.quiet import no_window
 
 
 def dictation_script() -> Path:
@@ -25,6 +26,7 @@ def windows_spanish_available() -> bool:
             text=True,
             timeout=25,
             check=False,
+            **no_window(),
         )
     except (OSError, subprocess.TimeoutExpired):
         return False
@@ -49,6 +51,7 @@ class Dictation:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
                 text=True,
+                **no_window(),
             )
         except OSError:
             self._proc = None

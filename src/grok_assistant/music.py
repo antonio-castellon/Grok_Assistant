@@ -6,6 +6,8 @@ import os
 import shutil
 import subprocess
 
+from grok_assistant.quiet import no_window
+
 _PIPE = r"\\.\pipe\grok-assistant-mpv" if os.name == "nt" else "/tmp/grok-assistant-mpv"
 
 
@@ -30,6 +32,7 @@ class Music:
                 text=True,
                 timeout=40,
                 check=False,
+                **no_window(),
             )
         except (OSError, subprocess.TimeoutExpired):
             return "No encuentro esa canción."
@@ -79,7 +82,7 @@ class Music:
         command = ["mpv", "--no-video", "--really-quiet", f"--input-ipc-server={_PIPE}", url]
         if volume is not None:
             command.insert(-1, f"--volume={max(0, min(100, int(volume)))}")
-        self.proc = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        self.proc = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **no_window())
         self.url = url
         self.loaded = True
         self.user_paused = False

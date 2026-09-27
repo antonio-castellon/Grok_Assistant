@@ -13,6 +13,7 @@ a = Analysis(
         (str(root / "src" / "grok_assistant" / "lines"), "grok_assistant/lines"),
         (str(root / "scripts"), "scripts"),
         (str(root / "listeners"), "listeners"),
+        (str(root / "docs" / "img"), "docs/img"),
     ],
     hiddenimports=[
         "grok_assistant",
@@ -26,6 +27,7 @@ a = Analysis(
         "grok_assistant.match",
         "grok_assistant.music",
         "grok_assistant.paths",
+        "grok_assistant.quiet",
         "grok_assistant.prompts",
         "grok_assistant.settings",
         "grok_assistant.setup_grok",

@@ -12,6 +12,7 @@ from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
 from grok_assistant.grok_cli import GrokCLI, interpret_models
+from grok_assistant.quiet import no_window
 
 INSTALL_COMMAND = "irm https://x.ai/cli/install.ps1 | iex"
 
@@ -34,6 +35,7 @@ def probe() -> GrokStatus:
             text=True,
             timeout=40,
             check=False,
+            **no_window(),
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         return GrokStatus("broken", binary, str(exc))
@@ -123,6 +125,7 @@ def _window(status: GrokStatus) -> None:
                     text=True,
                     timeout=300,
                     check=False,
+                    **no_window(),
                 )
                 text = ((done.stdout or "") + "\n" + (done.stderr or "")).strip()
                 root.after(0, lambda: write(text or f"El instalador terminó con código {done.returncode}."))
