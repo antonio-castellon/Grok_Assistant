@@ -13,7 +13,13 @@ from tkinter import messagebox, simpledialog, ttk
 from grok_assistant.helptext import HELP_TOPICS
 from grok_assistant.hub import Hub, build
 from grok_assistant.kroko_ear import KrokoEar
-from grok_assistant.listen import RECOGNIZER_LABELS, Dictation, discover_recognizers, preferred_recognizer
+from grok_assistant.listen import (
+    RECOGNIZER_LABELS,
+    Dictation,
+    discover_recognizers,
+    install_windows_speech,
+    preferred_recognizer,
+)
 from grok_assistant.marketplace import Offer, download, offers
 from grok_assistant.music import Music
 from grok_assistant.paths import bundle_root
@@ -226,6 +232,8 @@ class TrayApp:
             if name in present:
                 shown = ("✓  " if name == current else "") + label
                 self.menu_ear.add_command(label=shown, command=lambda picked=name: self._command(f"reconocedor {picked}"))
+            elif name == "windows":
+                self.menu_ear.add_command(label="Windows español… instalar", command=self._install_windows)
             else:
                 self.menu_ear.add_command(label=f"{label}  (no instalado)", state="disabled")
         menu.add_cascade(label="Reconocedor", menu=self.menu_ear)
@@ -289,6 +297,8 @@ class TrayApp:
         for name, label in RECOGNIZER_LABELS.items():
             if name in present:
                 ears.append(("cmd", label, f"ear:{name}", name == brain.settings.recognizer))
+            elif name == "windows":
+                ears.append(("cmd", "Windows español… instalar", "install-windows", False))
             else:
                 ears.append(("cmd", f"{label} (no instalado)", "noop", False))
         voices = []
@@ -336,6 +346,8 @@ class TrayApp:
             return
         elif key.startswith("voice:"):
             self._command(f"voz {key.split(':', 1)[1]}")
+        elif key == "install-windows":
+            self._install_windows()
         elif key.startswith("ear:"):
             self._command(f"reconocedor {key.split(':', 1)[1]}")
         elif key.startswith("model:"):
@@ -457,6 +469,26 @@ class TrayApp:
                 self.ui.put(lambda: status.set(str(exc)[:180]))
 
         status.set(f"descargando {offer.title}…")
+        threading.Thread(target=work, daemon=True).start()
+
+    def _install_windows(self) -> None:
+        def work() -> None:
+            self.ui.put(lambda: self._note("instalo el reconocedor de Windows. Windows pedirá permiso."))
+            message = install_windows_speech()
+
+            def done() -> None:
+                self._refresh_devices()
+                if "windows" in self.hub.brain.recognizers:
+                    self.hub.brain.settings.recognizer = "windows"
+                    self.hub.brain.persist()
+                    self._sync_ear()
+                    self._note("Windows español está listo")
+                else:
+                    self._note(message.removeprefix("ERR:"))
+                self._paint()
+
+            self.ui.put(done)
+
         threading.Thread(target=work, daemon=True).start()
 
     def _refresh_devices(self) -> None:

@@ -23,11 +23,16 @@ class Offer:
     title: str
     detail: str
     size: str
-    files: tuple[tuple[str, str], ...]
+    files: tuple[tuple[str, str], ...] = ()
     use_label: str = ""
     engine_id: str = ""
+    local: str = ""
 
     def ready(self, root: Path | None = None) -> bool:
+        if self.local == "windows-speech":
+            from grok_assistant.listen import windows_spanish_available
+
+            return windows_spanish_available()
         base = root or default_data_dir()
         if self.kind == "llm":
             folder = base / "llm"
@@ -60,6 +65,15 @@ def offers() -> list[Offer]:
         for key, title, path, size in voices
     ]
     items.extend([
+        Offer(
+            id="windows-es",
+            kind="stt",
+            title="Windows español",
+            detail="Dictado de escritorio de Windows. El audio se queda en este PC. Si falta, el botón lo instala y Windows pide permiso.",
+            size="idioma de Windows",
+            engine_id="windows",
+            local="windows-speech",
+        ),
         Offer(
             id="kroko",
             kind="stt",
@@ -121,6 +135,14 @@ def offers() -> list[Offer]:
 
 
 def download(offer: Offer, on_status, root: Path | None = None) -> None:
+    if offer.local == "windows-speech":
+        from grok_assistant.listen import install_windows_speech
+
+        on_status("instalo el idioma de voz de Windows")
+        message = install_windows_speech()
+        if message != "OK":
+            raise RuntimeError(message.removeprefix("ERR:"))
+        return
     base = root or default_data_dir()
     base.mkdir(parents=True, exist_ok=True)
     for url, rel in offer.files:

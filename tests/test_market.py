@@ -34,6 +34,12 @@ def test_catalog_covers_voices_ears_and_the_local_model():
     assert all(item.title and item.size and item.detail for item in offers())
 
 
+def test_windows_spanish_is_an_installable_ear():
+    item = next(item for item in offers() if item.id == "windows-es")
+    assert item.local == "windows-speech"
+    assert item.engine_id == "windows"
+
+
 def test_keyboard_steps_aside_when_kroko_is_installed():
     from grok_assistant.listen import preferred_recognizer
 

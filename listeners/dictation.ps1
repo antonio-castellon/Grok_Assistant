@@ -5,12 +5,26 @@ param(
 )
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Speech
+# The string constructor wants a recognizer id such as MS-3082-80-DESK, not a culture name.
 try {
-    $engine = New-Object System.Speech.Recognition.SpeechRecognitionEngine($Culture)
+    $cultureInfo = [System.Globalization.CultureInfo]::new($Culture)
+    $engine = New-Object System.Speech.Recognition.SpeechRecognitionEngine($cultureInfo)
 } catch {
-    [Console]::Out.WriteLine("ERR:no-recognizer")
-    [Console]::Out.Flush()
-    exit 2
+    $info = [System.Speech.Recognition.SpeechRecognitionEngine]::InstalledRecognizers() |
+        Where-Object { $_.Culture.Name -eq $Culture } |
+        Select-Object -First 1
+    if (-not $info) {
+        [Console]::Out.WriteLine("ERR:no-recognizer")
+        [Console]::Out.Flush()
+        exit 2
+    }
+    try {
+        $engine = New-Object System.Speech.Recognition.SpeechRecognitionEngine($info)
+    } catch {
+        [Console]::Out.WriteLine("ERR:no-recognizer")
+        [Console]::Out.Flush()
+        exit 2
+    }
 }
 if ($Probe) {
     [Console]::Out.WriteLine("READY")

@@ -58,6 +58,44 @@ def discover_recognizers() -> list[str]:
     return found
 
 
+def install_windows_speech() -> str:
+    """Install the Spanish speech language. Windows shows its own permission prompt."""
+    if os.name != "nt":
+        return "ERR:el reconocedor de Windows solo existe en Windows"
+    script = bundle_root() / "listeners" / "install_speech.ps1"
+    if not script.exists():
+        return "ERR:falta el instalador del idioma de voz"
+    log = default_data_dir() / "speech-install.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    if log.exists():
+        log.unlink()
+
+    def quoted(value: str) -> str:
+        return "'" + value.replace("'", "''") + "'"
+
+    command = (
+        "Start-Process -FilePath powershell -Verb RunAs -Wait -ArgumentList "
+        f"'-NoProfile','-ExecutionPolicy','Bypass','-File',{quoted(str(script))},'-Log',{quoted(str(log))}"
+    )
+    try:
+        subprocess.run(
+            ["powershell", "-NoProfile", "-Command", command],
+            capture_output=True,
+            text=True,
+            timeout=900,
+            check=False,
+            **no_window(),
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return f"ERR:{exc}"
+    if not log.exists():
+        return "ERR:instalación cancelada"
+    text = log.read_text(encoding="utf-8-sig").strip() or "ERR:Windows no escribió el resultado"
+    if text == "OK" and not windows_spanish_available():
+        return "ERR:Windows descargó el idioma, pero el reconocedor de escritorio aún no aparece"
+    return text
+
+
 def windows_spanish_available() -> bool:
     script = dictation_script()
     if os.name != "nt" or not script.exists():
