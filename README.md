@@ -6,7 +6,7 @@
 
 I waited years for the Amazon Echo to listen better. It stayed a speaker with a light ring, so I made my own for an older person who already has a small laptop nearby.
 
-In my case that person is my father. His vision is limited, and he spends many hours alone. I wanted a voice that can hold a conversation and explain things, without a screen to hunt for and without small text to read. That is possible now. Grok on this machine is how more features and integrations will arrive. If someone in the family knows a little more and would rather not leave a laptop open, the same assistant is the one I am building on a Raspberry Pi 4 with 4 GB.
+In my case that person is my father. His vision is limited, and he spends many hours alone. I wanted a voice that can hold a conversation and explain things, without a screen to hunt for and without small text to read. That is possible now. Grok on this machine is how more features and integrations will arrive. If someone in the family knows a little more and would rather not leave a laptop open, the same assistant is the one I am building on a Raspberry Pi 4 with 4 GB, and I will publish that code soon as well, so it can be cloned by someone who would rather have a device of their own.
 
 It can stay listening while the program is open. The sound remains on the computer. A phrase is turned into text here, and Grok receives that text only when you meant it for the assistant: a hello, then a question, an order that starts with `comando`, or a song you asked for. Everyday talk is written in a local session and stays there. A muddled order can be checked with Grok, and it still waits for a sí before it runs.
 
