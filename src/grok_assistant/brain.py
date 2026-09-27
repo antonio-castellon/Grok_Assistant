@@ -288,7 +288,7 @@ class Brain:
         if self.test_mode:
             return self._test(heard, norms)
         if not speaker_id and vector and self.embedder_ready:
-            speaker_id = self.speakers.closest(vector)
+            speaker_id = self.speakers.closest(vector, self.settings.recognizer)
         if self._silent_stranger(speaker_id, vector):
             return Turn()
         if not norms:
@@ -535,7 +535,7 @@ class Brain:
             return False
         if vector is None and not speaker_id:
             return False
-        if not self.speakers.has_prints():
+        if not self.speakers.has_prints(self.settings.recognizer):
             return True
         if self.speakers.locked:
             return speaker_id != self.speakers.locked
@@ -904,7 +904,7 @@ class Brain:
             if not name:
                 return self._said(["Di otro nombre."])
             self.enroll["spoken"] = name
-            voice_match = self.speakers.closest(vector) if vector else None
+            voice_match = self.speakers.closest(vector, self.settings.recognizer) if vector else None
             named = self.speakers.resolve(name)
             who = named or voice_match
             if who:
@@ -947,7 +947,8 @@ class Brain:
         name = self.enroll["target"] or self.enroll["spoken"]
         if len(vectors) < 12:
             return self._said([f"Solo tengo {len(vectors)} de 12. Repite."])
-        stored = self.speakers.add(name, vectors, lock=True)
+        ear = self.enroll.get("ear") or self.settings.recognizer
+        stored = self.speakers.add(name, vectors, True, ear)
         self.enroll = None
         return self._said(
             [f"Listo, {stored}. A partir de ahora te oigo a ti."],
@@ -981,14 +982,16 @@ class Brain:
         if decision == "comando" and detail:
             self._step(f"orden: {detail}")
 
-    def start_capture(self, name: str) -> Turn:
-        """Record twelve takes for this person. The menu uses it for a new print or a recapture."""
+    def start_capture(self, name: str, ear: str | None = None) -> Turn:
+        """Record twelve takes for this person on one listener."""
         clean = " ".join((name or "").split())
+        chosen = ear if ear and ear != "teclado" else self.settings.recognizer
         if not clean:
-            self.enroll = {"stage": "name", "target": None, "spoken": "", "take": 0, "vectors": []}
+            self.enroll = {"stage": "name", "target": None, "spoken": "", "take": 0, "vectors": [], "ear": chosen}
             return self._said(["¿Cómo te llamas?"], effects=[("enroll", "¿Cómo te llamas?", "")])
         found = self.speakers.resolve(clean) or clean
-        self.enroll = {"stage": "takes", "target": found, "spoken": found, "take": 0, "vectors": []}
+        ear = chosen
+        self.enroll = {"stage": "takes", "target": found, "spoken": found, "take": 0, "vectors": [], "ear": ear}
         return self._prompt_take()
 
     def note(self, line: str) -> None:

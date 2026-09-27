@@ -485,11 +485,16 @@ def test_a_take_without_audio_does_not_erase_the_print(world):
     missed = hub.brain.handle("hola grok")
     assert "huella" in missed.speak[0].lower()
     assert hub.brain.enroll["take"] == 0
-    assert hub.brain.speakers.people["Ana"]["prints"] == [[1.0, 0.0]]
+    assert hub.brain.speakers.count("Ana", "teclado") == 1
+    hub.brain.enroll["ear"] = "whisper"
+    hub.brain.settings.recognizer = "whisper"
     for _number in range(12):
         hub.brain.handle("hola grok", vector=[0.2, 0.9])
     assert hub.brain.enroll is None
-    assert len(hub.brain.speakers.people["Ana"]["prints"]) == 12
+    assert hub.brain.speakers.count("Ana", "whisper") == 12
+    assert hub.brain.speakers.count("Ana", "teclado") == 1
+    assert hub.brain.speakers.closest([0.2, 0.9], "teclado") is None
+    assert hub.brain.speakers.closest([0.2, 0.9], "whisper") == "Ana"
     assert hub.brain.speakers.locked == "Ana"
 
 

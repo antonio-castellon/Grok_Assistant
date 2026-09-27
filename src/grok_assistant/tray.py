@@ -278,6 +278,25 @@ class TrayApp:
         else:
             menu.add_command(label=_ui("menu.startup_on", "Activar arranque con Windows"), command=self._toggle_startup)
 
+    def _listener_rows(self) -> list[tuple[str, str, bool]]:
+        from grok_assistant.listen import RECOGNIZER_LABELS
+
+        present = set(self.hub.brain.recognizers)
+        rows = []
+        for key, fallback in RECOGNIZER_LABELS.items():
+            if key == "teclado":
+                continue
+            rows.append((key, _ui(f"ear.{key}", fallback), key in present))
+        return rows
+
+    def _listener_label(self, name: str, ear: str, title: str, installed: bool) -> str:
+        if not installed:
+            return f"{title} · {_ui('menu.not_installed', '(no instalado)')}"
+        count = self.hub.brain.speakers.count(name, ear)
+        if count:
+            return f"{title} · {count}"
+        return f"{title} · {_ui('menu.no_print', '(sin huella)')}"
+
     def _fill_prints(self) -> None:
         menu = self.menu_prints
         menu.delete(0, "end")
@@ -286,13 +305,21 @@ class TrayApp:
         if not names:
             menu.add_command(label=_ui("menu.no_prints", "No hay huellas"), state="disabled")
         for name in names:
-            person = book.people.get(name) or {}
             child = tk.Menu(menu, **self._menu_kw())
+            for ear, title, installed in self._listener_rows():
+                label = self._listener_label(name, ear, title, installed)
+                if installed:
+                    child.add_command(
+                        label=label,
+                        command=lambda picked=name, heard=ear: self._recapture_print(picked, heard),
+                    )
+                else:
+                    child.add_command(label=label, state="disabled")
+            child.add_separator()
             child.add_command(label=_ui("menu.print_rename", "Renombrar…"), command=lambda picked=name: self._rename_print(picked))
-            child.add_command(label=_ui("menu.print_recapture", "Volver a grabar"), command=lambda picked=name: self._recapture_print(picked))
             child.add_command(label=_ui("menu.print_delete", "Borrar"), command=lambda picked=name: self._delete_print(picked))
             label = _used(name == book.locked) + name
-            if not person.get("prints"):
+            if not any(book.count(name, ear) for ear, _title, _installed in self._listener_rows()):
                 label += "  " + _ui("menu.no_print", "(sin huella)")
             menu.add_cascade(label=label, menu=child)
         menu.add_separator()
@@ -305,13 +332,20 @@ class TrayApp:
         if not names:
             rows.append(("cmd", _ui("menu.no_prints", "No hay huellas"), "noop", False))
         for name in names:
-            person = book.people.get(name) or {}
-            label = _used(name == book.locked) + (name if person.get("prints") else f"{name}  {_ui('menu.no_print', '(sin huella)')}")
-            rows.append(("sub", label, [
-                ("cmd", _ui("menu.print_rename", "Renombrar…"), f"print-rename:{name}", False),
-                ("cmd", _ui("menu.print_recapture", "Volver a grabar"), f"print-again:{name}", False),
-                ("cmd", _ui("menu.print_delete", "Borrar"), f"print-delete:{name}", False),
-            ]))
+            children = []
+            for ear, title, installed in self._listener_rows():
+                label = self._listener_label(name, ear, title, installed)
+                if installed:
+                    children.append(("cmd", label, f"print-again:{name}:{ear}", False))
+                else:
+                    children.append(("cmd", label, "noop", False))
+            children.append(("sep",))
+            children.append(("cmd", _ui("menu.print_rename", "Renombrar…"), f"print-rename:{name}", False))
+            children.append(("cmd", _ui("menu.print_delete", "Borrar"), f"print-delete:{name}", False))
+            bare = _used(name == book.locked) + name
+            if not any(book.count(name, ear) for ear, _title, _installed in self._listener_rows()):
+                bare += "  " + _ui("menu.no_print", "(sin huella)")
+            rows.append(("sub", bare, children))
         rows.append(("sep",))
         rows.append(("cmd", _ui("menu.print_new", "Nueva huella…"), "print-new", False))
         return rows
@@ -323,7 +357,7 @@ class TrayApp:
             parent=self.root,
         )
         if name and name.strip():
-            self.jobs.put(("capture", name.strip()))
+            self._recapture_print(name.strip(), self.hub.brain.settings.recognizer)
 
     def _rename_print(self, name: str) -> None:
         new = simpledialog.askstring(
@@ -340,8 +374,16 @@ class TrayApp:
         else:
             self._note("ese nombre ya está")
 
-    def _recapture_print(self, name: str) -> None:
-        self.jobs.put(("capture", name))
+    def _recapture_print(self, name: str, ear: str | None = None) -> None:
+        chosen = ear or self.hub.brain.settings.recognizer
+        if chosen == "teclado" or chosen not in self.hub.brain.recognizers:
+            self._note("ese oído no está instalado")
+            return
+        if self.hub.brain.settings.recognizer != chosen:
+            self.hub.brain.settings.recognizer = chosen
+            self.hub.brain.persist()
+            self._sync_ear()
+        self.jobs.put(("capture", name, None, chosen))
 
     def _delete_print(self, name: str) -> None:
         title = _ui("dialog.print_name", "Huella")
@@ -597,7 +639,8 @@ class TrayApp:
         elif key.startswith("print-rename:"):
             self._rename_print(key.split(":", 1)[1])
         elif key.startswith("print-again:"):
-            self._recapture_print(key.split(":", 1)[1])
+            _tag, person, heard = key.split(":", 2)
+            self._recapture_print(person, heard)
         elif key.startswith("print-delete:"):
             self._delete_print(key.split(":", 1)[1])
         elif key == "install-windows":
@@ -1568,7 +1611,7 @@ class TrayApp:
             self._refresh()
             return
         if kind == "capture":
-            turn = self.hub.brain.start_capture(payload)
+            turn = self.hub.brain.start_capture(payload, speaker_id)
             for line in turn.speak:
                 self.say(line)
             self._refresh()
@@ -1714,12 +1757,13 @@ class TrayApp:
             return True, None
         if brain.pending and brain.pending[0] == "new_name":
             return True, None
-        who = brain.speakers.closest(embedding) if embedding else None
+        ear = brain.settings.recognizer
+        who = brain.speakers.closest(embedding, ear) if embedding else None
         if not brain.embedder_ready:
             if self.music.loaded and not who:
                 return False, None
             return True, who
-        if not brain.speakers.has_prints():
+        if not brain.speakers.has_prints(ear):
             return False, None
         if brain.speakers.locked and who != brain.speakers.locked:
             return False, None

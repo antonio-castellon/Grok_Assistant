@@ -1,0 +1,21 @@
+[← README.ES.md](../../README.ES.md)
+
+# Ejecutarlo desde el código
+
+```powershell
+cd C:\DEV.Personal\Grok_Assistant
+py -3 -m venv .venv
+.venv\Scripts\python -m pip install -e ".[dev]"
+.venv\Scripts\python -m pytest
+.venv\Scripts\python -m grok_assistant
+```
+
+`--console` permite escribir el texto que normalmente llegaría desde el micrófono. Es útil para probar el sistema de voz y también para esos momentos en los que no apetece hablarle al escritorio.
+
+```powershell
+.venv\Scripts\python -m grok_assistant --console
+```
+
+Las huellas viven en `dist/data/speakers.json`, junto al ejecutable, una por oído. El resto de los datos, las sesiones, el hash de la contraseña y el registro del oído viven en `%APPDATA%\GrokAssistant` en Windows y en `~/.config/grok-assistant` en Linux. Los archivos de los agentes van a `~/.grok/agents`, la carpeta de la cuenta de Grok, no esta copia de git. El asistente usa su propia carpeta de datos. No trabaja dentro de un árbol de código lleno de proyectos.
+
+La música necesita `yt-dlp` y `mpv`. Si faltan, la primera canción los descarga. Si eso falla, el asistente lo dice en una frase.

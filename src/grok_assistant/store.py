@@ -182,11 +182,29 @@ class SpeakerBook:
     def names(self) -> list[str]:
         return sorted(self.people)
 
-    def has_prints(self) -> bool:
+    def _book(self, person: dict) -> dict[str, list]:
+        raw = person.get("prints")
+        if isinstance(raw, list):
+            return {"teclado": raw} if raw else {}
+        if isinstance(raw, dict):
+            return {str(ear): list(rows) for ear, rows in raw.items() if isinstance(rows, list) and rows}
+        return {}
+
+    def has_prints(self, ear: str | None = None) -> bool:
         for person in self.people.values():
-            if person.get("prints"):
+            book = self._book(person)
+            if ear:
+                if book.get(ear):
+                    return True
+            elif book:
                 return True
         return False
+
+    def count(self, name: str, ear: str) -> int:
+        found = self.resolve(name)
+        if not found:
+            return 0
+        return len(self._book(self.people[found]).get(ear) or [])
 
     def resolve(self, name: str) -> str | None:
         key = " ".join(name.split()).casefold()
@@ -213,11 +231,18 @@ class SpeakerBook:
         self.save()
         return said
 
-    def add(self, name: str, prints: list[list[float]] | None, lock: bool) -> str:
+    def add(self, name: str, prints: list[list[float]] | None, lock: bool, ear: str = "teclado") -> str:
+        """Store this listener's print. Other listeners keep their own."""
         clean = " ".join(name.split())
         found = self.resolve(clean)
         key = found or clean
-        self.people[key] = {"prints": prints or [], "last": time.time()}
+        person = self.people.get(key) or {"prints": {}, "last": None}
+        book = self._book(person)
+        if prints:
+            book[ear or "teclado"] = list(prints)
+        person["prints"] = book
+        person["last"] = time.time()
+        self.people[key] = person
         if lock and prints:
             self.locked = key
         self.save()
@@ -250,13 +275,14 @@ class SpeakerBook:
         self.save()
         return found
 
-    def closest(self, vector: list[float] | None, threshold: float = 0.55) -> str | None:
-        if not vector:
+    def closest(self, vector: list[float] | None, ear: str | None = None, threshold: float = 0.55) -> str | None:
+        """Match only the prints recorded with this listener."""
+        if not vector or not ear:
             return None
         best_name = None
         best = threshold
         for name, person in self.people.items():
-            for print_ in person.get("prints") or []:
+            for print_ in self._book(person).get(ear) or []:
                 score = _cosine(vector, print_)
                 if score > best:
                     best = score
