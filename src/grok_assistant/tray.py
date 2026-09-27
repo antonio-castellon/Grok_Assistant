@@ -9,7 +9,7 @@ import threading
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 
-from grok_assistant.helptext import SCREEN_HELP
+from grok_assistant.helptext import HELP_TOPICS
 from grok_assistant.hub import Hub, build
 from grok_assistant.listen import RECOGNIZER_LABELS, Dictation, discover_recognizers
 from grok_assistant.music import Music
@@ -60,7 +60,6 @@ class TrayApp:
         self.ui: queue.Queue = queue.Queue()
         self.view_from = 0
         self.debug_text = None
-        self.help_text = None
         self.status_var = tk.StringVar(value="Arrancando")
         self.detail_var = tk.StringVar(value="")
         self.tray: WinTray | None = None
@@ -130,15 +129,6 @@ class TrayApp:
         self.debug_text.tag_configure("sigue", foreground=TEAL)
         self.debug_text.configure(state="disabled")
 
-        ttk.Label(self.root, text="Ayuda — no es el registro", style="Muted.TLabel").pack(anchor="w", padx=18, pady=(4, 2))
-        self.help_text = tk.Text(
-            self.root, height=6, wrap="word", bg=PANEL, fg=MUTED, font=("Segoe UI", 10),
-            relief="flat", padx=12, pady=8, borderwidth=0,
-        )
-        self.help_text.insert("end", SCREEN_HELP.strip())
-        self.help_text.configure(state="disabled")
-        self.help_text.pack(fill="x", padx=18, pady=(0, 8))
-
         bar = ttk.Frame(self.root)
         bar.pack(fill="x", padx=18, pady=(0, 8))
         self.entry = ttk.Entry(bar)
@@ -191,6 +181,7 @@ class TrayApp:
         self.menu_agente = tk.Menu(bar, postcommand=self._fill_agente, **kw)
         self.menu_musica = tk.Menu(bar, **kw)
         self.menu_admin = tk.Menu(bar, **kw)
+        self.menu_about = tk.Menu(bar, **kw)
         bar.add_cascade(label="Escucha", menu=self.menu_escucha)
         bar.add_cascade(label="Voz", menu=self.menu_voz)
         bar.add_cascade(label="Modelo", menu=self.menu_modelo)
@@ -198,6 +189,9 @@ class TrayApp:
         bar.add_cascade(label="Agente", menu=self.menu_agente)
         bar.add_cascade(label="Música", menu=self.menu_musica)
         bar.add_cascade(label="Administrador", menu=self.menu_admin)
+        bar.add_cascade(label="Acerca de + Ayuda", menu=self.menu_about)
+        self.menu_about.add_command(label="Comandos…", command=self._open_help)
+        self.menu_about.add_command(label="Acerca de…", command=self._open_about)
         self.menu_musica.add_command(label="Pausar", command=lambda: self._command("pausa musica"))
         self.menu_musica.add_command(label="Seguir", command=lambda: self._command("seguir musica"))
         self.menu_musica.add_command(label="Parar", command=lambda: self._command("para la musica"))
@@ -311,6 +305,10 @@ class TrayApp:
                 ("cmd", "Seguir", "music-resume", False),
                 ("cmd", "Parar", "music-stop", False),
             ]),
+            ("sub", "Acerca de + Ayuda", [
+                ("cmd", "Comandos…", "help", False),
+                ("cmd", "Acerca de…", "about", False),
+            ]),
             ("sep",),
             ("cmd", "Salir", "quit", False),
         ]
@@ -354,6 +352,10 @@ class TrayApp:
             self._command("seguir musica")
         elif key == "music-stop":
             self._command("para la musica")
+        elif key == "help":
+            self._open_help()
+        elif key == "about":
+            self._open_about()
 
     def _command(self, words: str) -> None:
         self.jobs.put(("phrase", f"comando {words}"))
@@ -390,6 +392,65 @@ class TrayApp:
         name = simpledialog.askstring("Agente", "Nombre del agente:", parent=self.root)
         if name and name.strip():
             self._command(f"crear agente {name.strip()}")
+
+    def _password_dialog(self) -> None:
+        first = simpledialog.askstring("Administrador", "Nueva contraseña:", show="*", parent=self.root)
+        if not first:
+            return
+        second = simpledialog.askstring("Administrador", "Repite la contraseña:", show="*", parent=self.root)
+        if first != second:
+            messagebox.showinfo("Administrador", "No coinciden.", parent=self.root)
+            return
+        self.hub.brain.auth.set_password(first)
+        self._note("contraseña de administrador guardada. En el disco solo está el hash.")
+        self._paint()
+
+    def _open_help(self) -> None:
+        self._open_text(
+            "Comandos",
+            "Cada orden de abajo se puede decir. Casi todas empiezan por comando. "
+            "El ejemplo es una frase completa.\n\n"
+            + "\n\n".join(
+                f"{title}\n{body}\nEjemplo: {example}"
+                for title, body, example in HELP_TOPICS
+            ),
+        )
+
+    def _open_about(self) -> None:
+        self._open_text(
+            "Acerca de",
+            "Grok Assistant escucha en casa. El audio no sale. "
+            "A Grok solo se le manda el texto de una pregunta o de una orden, y solo cuando las reglas lo permiten. "
+            "Lo demás se queda en el cuaderno de este equipo.\n\n"
+            "Esta ventana es el registro: lo que se oyó y lo que se hizo después. "
+            "Cerrarla esconde el programa. El icono de Grok en la bandeja lo vuelve a abrir. Salir lo cierra.",
+        )
+
+    def _open_text(self, title: str, body: str) -> None:
+        window = tk.Toplevel(self.root)
+        window.title(title)
+        window.configure(bg=BG)
+        window.geometry("720x560")
+        text = tk.Text(
+            window, wrap="word", bg=FIELD, fg=INK, font=("Segoe UI", 12),
+            relief="flat", padx=18, pady=16, insertbackground=INK,
+        )
+        text.pack(fill="both", expand=True)
+        text.tag_configure("title", font=("Segoe UI", 14, "bold"), foreground=AMBER, spacing1=14, spacing3=4)
+        text.tag_configure("example", font=("Consolas", 12), foreground=TEAL, spacing3=8)
+        if title == "Comandos":
+            intro, _, rest = body.partition("\n\n")
+            text.insert("end", intro + "\n")
+            for block in rest.split("\n\n"):
+                lines = block.split("\n")
+                text.insert("end", lines[0] + "\n", "title")
+                for line in lines[1:]:
+                    tag = "example" if line.startswith("Ejemplo:") else ""
+                    text.insert("end", line + "\n", tag)
+        else:
+            text.insert("end", body)
+        text.configure(state="disabled")
+        window.protocol("WM_DELETE_WINDOW", window.destroy)
 
     def _confirm_shutdown(self) -> None:
         if messagebox.askyesno("Apagar", "¿Apago el equipo?", parent=self.root):
