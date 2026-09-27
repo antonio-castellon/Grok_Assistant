@@ -20,19 +20,21 @@ You can argue about football, the dying plant, the neighbor, or whether the Echo
 
 A garbled order can be shown to Grok for a repair, and even then it does not run until you say sí. The cloud is allowed to be clever. It is not allowed to be spontaneous with the power button.
 
-```
-sala  ->  oído local  ->  ¿me lo dijiste a mí?
-                | no                 | sí
-                v                    v
-         cuaderno de casa     texto, y solo el texto
-         (no viaja)           a tu cuenta de Grok
-```
+![How a phrase moves: the ear stays local, and only a question or a repaired order sends text to Grok](docs/img/flow.svg)
 
 ## Two bodies, one unreasonable request
 
 The Pi is the other body of the same idea: a box in the room that does not have to ask an operating system for permission to exist. This repository does not contain that box. It does not contain the little screen, the fan that cannot be slowed down, the Wi-Fi boot opera, or the Pi's administrator key. Shutdown here, after you say sí, is the normal shutdown of the computer you are sitting at. The password is one you type in the tray. The file on disk is a salted hash. There is no password in the source, and there will not be a clever default. Clever defaults are how cylinders get into your shopping list.
 
-Spoken language is Spanish. Answers are short, because this is a voice in a room and not a blog. The PC edition speaks with whatever Spanish voice the machine already has (Windows speech, or espeak on Linux). The Pi has a particular set of Piper voices. If you install local recognizers later, the names match: Kroko, Whisper, base, Canary. Until then the ear you can always use is the keyboard in the debug window, and Windows Spanish dictation if that language pack is actually installed. A cloud recognizer is not a fallback. That would make the whole privacy story a joke, and not the funny kind.
+## Spanish first, because the house is loud
+
+The first language is Spanish. That is the language we actually speak at home, so it is the honest place to start an experiment. A quiet desk and a headset would make any assistant look clever. The kitchen does not. People talk across each other, the television stays on, someone asks for a song while someone else is already in the middle of a sentence. I want that noise. The test is whether a wake and a short order still survive a real room, and whether everything else stays on the machine when the room is messy.
+
+Answers stay short on purpose. A voice in a noisy house that recites a paragraph has already lost.
+
+French, German, and English come later, as their own versions. Each one means adapting the ear, the mouth, and the voices: the speech-to-text engine, the text-to-speech engine, and the list of voices that `otra voz` walks through. The hellos, the waiting lines, and the command words travel with the language. The rule underneath does not. A phrase still leaves only when it was said to the assistant.
+
+On this PC the mouth is whatever Spanish voice Windows already has, or espeak on Linux. The Pi has its own Piper set. Recognizer names that already exist for a later install are Kroko, Whisper, base, and Canary. Until one of those is installed, the ear you can always use is the keyboard in the debug window, and Windows Spanish dictation when that language pack is present. A cloud recognizer is not the stand-in. Uploading the room in order to test a noisy room would throw away the experiment.
 
 ## The employee who does not need your hardware
 
@@ -53,6 +55,37 @@ What I wanted is the shape of [OpenClaw](https://github.com/openclaw/openclaw): 
 That is also why the thing can configure itself once the install is done. There is no API key to go hunting for, and no form that asks which model the internet is excited about this week. The assistant finds `grok` on the path, asks that command which models it can really run, and uses the Spanish voice the computer already has. The configuration is the fact that Grok is installed. After that, anyone who can follow the steps further down can open this folder with Grok and say, in ordinary language, what the house still needs. A louder greeting. A new order. A recognizer. Grok writes the change locally and produces the new program here. The source is public so they can have it. The local agent is what makes "anyone" include people who have never opened a programming book. They install it. They talk. The claws do the development.
 
 A question about the weather still does not get to rewrite the computer. That would be the cylinder's bad idea with better grammar. The workshop has its own door, and you open it on purpose, the same way you open an agent. One install, then the assistant can grow without a software career in the room. That is the whole bet.
+
+## What is actually running
+
+The diagram further up is the whole product. These are the pieces that implement it.
+
+| Piece | Where it lives | What it is allowed to do |
+| --- | --- | --- |
+| Ear | `listen.py`, `listeners/dictation.ps1` | Turn sound into text on this PC. Windows Spanish dictation, if the language pack is there, or the keyboard. |
+| Rules | `brain.py`, `match.py`, `textutil.py` | Decide ignore, local order, or cloud. One wrong character still matches a local order. Two do not. |
+| Notebook | `store.py`, `%APPDATA%\GrokAssistant` | Keep sessions, speaker names, and the debug history. The shared session is replaced after 24 hours. |
+| Password | `auth.py` | Store a salted hash. The password itself is never written. |
+| Mouth | `speech.py`, `scripts/speak.ps1` | Speak with a local voice. Spanish voices are offered first. |
+| Music | `music.py` | Play audio through `yt-dlp` and `mpv` when both exist. The ear closes while a song is playing. |
+| Cloud door | `hub.py`, `grok_cli.py` | Call the local `grok` command with a finished line of text. There is no audio argument. |
+| Agents | `~/.grok/agents` | Definitions on this account. Opening one is a choice. Their memory is not the local notebook. |
+| Shell | `tray.py` | Tray icon, information window, debug transcript. Closing a window leaves the program running. |
+
+A phrase ends when the recognizer decides the person has stopped. The Windows ear uses about 3.5 seconds of trailing silence. While the assistant is speaking, that ear is paused, so the reply is not heard as a new order. The same pause holds for music.
+
+Outside a conversation the rules are narrow. More than six words is dropped, unless the line is a real wake or `pon la canción` plus a title, up to sixteen words. Inside a conversation the six-word gate is gone. Sixty seconds with nothing new ends the talk. Time spent waiting for the cloud does not count. Administrator mode lasts five minutes.
+
+Two different calls exist, and they are not interchangeable.
+
+- A garbled order is a classification. One turn, no web search, no tools, a single JSON object (`accion`, `orden`, `texto`). If the repaired line is a known order, the assistant asks sí or no and only then runs it.
+- A real question is a conversation. The model may search the web. Tools are limited to that search. The working directory is the assistant's own data folder, so a voice in the kitchen is not standing inside a source tree. The first turn creates a session id. Later turns resume it. Ignored lines are never in that session, because they were never sent.
+
+If an agent is open, the question uses that agent's file and that agent's session. `cerrar agente` returns to the normal assistant. The local notebook stays where it was.
+
+The spoken Spanish lives in a few places, which is what a later language has to replace: `hellos-es.txt`, `waits-es.txt`, the command words in `match.py`, the help lines, and the prompts in `prompts.py`. The recognizer culture and the voice list change with them. `brain.py` and `hub.py` stay. That is the whole plan for French, German, and English. Same door policy. A new ear, a new mouth, and new voices.
+
+Startup speaks the next line from the hello list and then stops talking. A cloud wait speaks the next line from the other list. The two lists are long so the same joke does not return every morning.
 
 ## What you can say
 
