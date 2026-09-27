@@ -60,6 +60,9 @@ def run() -> None:
             ctypes_shell.SetCurrentProcessExplicitAppUserModelID("xai.GrokAssistant")
         except Exception:
             pass
+        from grok_assistant.win_tray import install_white_submenu_arrows
+
+        install_white_submenu_arrows()
     root = tk.Tk()
     app = TrayApp(root, build())
     app.start()
