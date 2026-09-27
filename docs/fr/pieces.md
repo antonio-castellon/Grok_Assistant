@@ -6,7 +6,7 @@ Le schéma ci-dessus résume le produit dans son ensemble. Voici les composants 
 
 | Pièce | Où elle vit | Ce qu'elle a le droit de faire |
 | --- | --- | --- |
-| Oreille | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Transformer le son en texte sur ce PC. Kroko diffuse l'espagnol en local. Dictée Windows en espagnol quand ce reconnaisseur est là. Le clavier est toujours là. |
+| Moteur STT | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Transformer le son en texte sur ce PC. Le moteur STT en flux diffuse l'espagnol en local. Dictée Windows en espagnol quand ce moteur est là. Le clavier est toujours là. |
 | Règles | `brain.py`, `match.py`, `textutil.py` | Décider d'ignorer, d'un ordre local, ou du nuage. Une lettre fausse correspond encore à un ordre local. Deux, non. |
 | Cahier | `store.py`, `%APPDATA%\GrokAssistant` | Garder les sessions, les noms et l'historique de dépuration. La session partagée est remplacée au bout de 24 heures. |
 | Mot de passe | `auth.py` | Garder un hash salé. Le mot de passe lui-même n'est jamais écrit. |
@@ -16,7 +16,7 @@ Le schéma ci-dessus résume le produit dans son ensemble. Voici les composants 
 | Agents | `~/.grok/agents` | Définitions sur ce compte. En ouvrir un est un choix. Leur mémoire n'est pas le cahier local. |
 | Coque | `tray.py` | Icône de barre, fenêtre d'information, journal. Fermer une fenêtre laisse le programme tourner. |
 
-Une phrase se termine quand la personne s'est arrêtée. Kroko et l'oreille Windows la ferment en moins de deux secondes. Un bonjour seul reste ouvert deux secondes, au cas où la question suit dans le même souffle. Pendant que l'assistant parle, cette oreille est en pause, pour que la réponse ne soit pas prise pour un nouvel ordre. Pendant une chanson le micro reste ouvert et ne suit qu'une empreinte de l'oreille active. Voir [Empreintes et oreilles](empreintes.md). Dans une conversation, ce qui a été entendu va droit à Grok jusqu'à l'au revoir.
+Une phrase se termine quand la personne s'est arrêtée. Le moteur STT et l'oreille Windows la ferment en moins de deux secondes. Un bonjour seul reste ouvert deux secondes, au cas où la question suit dans le même souffle. Pendant que l'assistant parle, cette oreille est en pause, pour que la réponse ne soit pas prise pour un nouvel ordre. Pendant une chanson le micro reste ouvert et ne suit qu'une empreinte de l'oreille active. Voir [Empreintes et oreilles](empreintes.md). Dans une conversation, ce qui a été entendu va droit à Grok jusqu'à l'au revoir.
 
 Hors conversation, les règles sont étroites. Plus de six mots est laissé, sauf si la ligne est un vrai appel ou `mets la chanson` plus un titre, jusqu'à seize mots. Dans une conversation, la barrière des six mots n'est plus là. Soixante secondes sans rien de nouveau terminent la discussion. Le temps passé à attendre le nuage ne compte pas. Le mode administrateur dure cinq minutes.
 

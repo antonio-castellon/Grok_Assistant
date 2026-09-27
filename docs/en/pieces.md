@@ -6,7 +6,7 @@ The diagram above captures the whole product at a glance. Underneath it are the 
 
 | Piece | Where it lives | What it is allowed to do |
 | --- | --- | --- |
-| Ear | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Turn sound into text on this PC. Kroko streams Spanish locally. Windows Spanish dictation when that recognizer is present. The keyboard is always there. |
+| STT engine | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Turn sound into text on this PC. The streaming STT engine handles Spanish locally. Windows Spanish dictation when that engine is present. The keyboard is always there. |
 | Rules | `brain.py`, `match.py`, `textutil.py` | Decide ignore, local order, or cloud. One wrong character still matches a local order. Two do not. |
 | Notebook | `store.py`, `%APPDATA%\GrokAssistant` | Keep sessions, speaker names, and the debug history. The shared session is replaced after 24 hours. |
 | Password | `auth.py` | Store a salted hash. The password itself is never written. |
@@ -16,7 +16,7 @@ The diagram above captures the whole product at a glance. Underneath it are the 
 | Agents | `~/.grok/agents` | Definitions on this account. Opening one is a choice. Their memory is not the local notebook. |
 | Shell | `tray.py` | Tray icon, information window, debug transcript. Closing a window leaves the program running. |
 
-A phrase is considered finished once the speaker stops. Kroko and Windows speech recognition usually close it in under two seconds. The microphone pauses while the assistant is speaking, so its own voice is not mistaken for a new command. While a song plays it stays open and only follows a print from the active listener. See [Voice prints and listeners](prints.md). Once a conversation has started, recognized speech goes directly to Grok until the user says goodbye.
+A phrase is considered finished once the speaker stops. The STT engine and Windows speech recognition usually close it in under two seconds. The microphone pauses while the assistant is speaking, so its own voice is not mistaken for a new command. While a song plays it stays open and only follows a print from the active listener. See [Voice prints and listeners](prints.md). Once a conversation has started, recognized speech goes directly to Grok until the user says goodbye.
 
 Outside an active conversation, the assistant is intentionally conservative. Phrases longer than six words are ignored unless they are a valid wake phrase or `pon la canción` followed by a title, which may be up to sixteen words. Once a conversation is active, the six-word limit disappears. Sixty seconds of inactivity ends the conversation; time spent waiting for a cloud response does not count toward that timeout. Administrator mode remains active for five minutes.
 

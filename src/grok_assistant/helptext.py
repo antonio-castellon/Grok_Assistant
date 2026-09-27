@@ -60,12 +60,12 @@ HELP_TOPICS = (
         "comando voz 2",
     ),
     (
-        "Reconocedor",
-        "Elige el oído. Teclado es escribir en esta ventana. Windows español es el dictado de escritorio de Windows y el audio se queda aquí. "
+        "Motor STT",
+        "Elige el motor de STT, el que convierte la voz en texto. Teclado es escribir en esta ventana. Windows español es el dictado de escritorio de Windows y el audio se queda aquí. "
         "Si falta, la línea Windows español… instalar y el botón del Mercado lo bajan: Windows pide permiso de administrador. "
-        "Kroko es el micrófono en español: el audio se queda en este PC y la frase queda lista en menos de dos segundos después de callarte. "
+        "El motor de STT en streaming para español deja el audio en este PC y cierra la frase en menos de dos segundos después de callarte. "
         "Dentro de una conversación, lo que se oye pasa directo a Grok hasta un adiós. "
-        "Si el teclado era el único oído y Kroko ya está en el disco, al arrancar se elige Kroko. "
+        "Si el teclado era el único oído y ese motor ya está en el disco, al arrancar se elige él. "
         "Whisper pequeño, Whisper base y Canary están en Mercado, al principio de la lista. Descargar los deja listos y entonces el menú permite elegirlos.",
         "comando reconocedor teclado",
     ),

@@ -2,7 +2,7 @@
 
 # Voice prints and listeners
 
-A voice print is a measurement of the microphone clip, not of the words. Each listener cuts that clip in its own way. Kroko, Whisper tiny, Whisper base, Canary, and Windows speech do not hand the same audio to the print, so a print recorded with one listener does not identify the person when another listener is active.
+A voice print is a measurement of the microphone clip, not of the words. Each listener cuts that clip in its own way. Each STT engine — Whisper tiny, Whisper base, Canary, and Windows speech — does not hand the same audio to the print, so a print recorded with one listener does not identify the person when another listener is active.
 
 **Administrador → Huellas** lists every person. Under the name, every listener shows how many takes are saved, or *sin huella* when that listener has none. A listener that is not installed is marked and cannot be recorded yet. Choosing a listener switches the ear and records twelve takes for that ear only.
 

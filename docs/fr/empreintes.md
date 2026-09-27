@@ -2,7 +2,7 @@
 
 # Empreintes et oreilles
 
-Une empreinte mesure le morceau de micro, pas les mots. Chaque oreille coupe ce morceau à sa façon. Kroko, Whisper petit, Whisper base, Canary et la dictée Windows ne donnent pas le même audio, donc une empreinte enregistrée avec une oreille n'identifie pas la personne quand une autre oreille est active.
+Une empreinte mesure le morceau de micro, pas les mots. Chaque oreille coupe ce morceau à sa façon. Chaque moteur STT — Whisper petit, Whisper base, Canary et la dictée Windows — ne donne pas le même audio, donc une empreinte enregistrée avec une oreille n'identifie pas la personne quand une autre oreille est active.
 
 **Administrador → Huellas** liste chaque personne. Sous le nom, chaque oreille montre combien de prises sont gardées, ou *sin huella* s'il n'y en a aucune. Une oreille qui n'est pas installée est marquée et ne peut pas encore être enregistrée. La choisir bascule l'écoute et enregistre douze prises pour cette oreille seulement.
 

@@ -6,7 +6,7 @@ El diagrama anterior resume el producto completo. Estas son las piezas que hacen
 
 | Pieza | Dónde vive | Qué tiene permitido hacer |
 | --- | --- | --- |
-| Oído | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Convertir el sonido en texto en este PC. Kroko transmite el español en local. El dictado de Windows en español, cuando ese reconocedor está. El teclado está siempre. |
+| Motor de STT | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Convertir el sonido en texto en este PC. El motor de STT en streaming transmite el español en local. El dictado de Windows en español, cuando ese motor está. El teclado está siempre. |
 | Reglas | `brain.py`, `match.py`, `textutil.py` | Decidir si se ignora, si es una orden local o si va a la nube. Un carácter mal puesto sigue coincidiendo con una orden local. Dos, no. |
 | Cuaderno | `store.py`, `%APPDATA%\GrokAssistant` | Guardar sesiones, nombres de quien habla y el historial de depuración. La sesión compartida se sustituye a las 24 horas. |
 | Contraseña | `auth.py` | Guardar un hash con sal. La contraseña en sí no se escribe nunca. |
@@ -16,7 +16,7 @@ El diagrama anterior resume el producto completo. Estas son las piezas que hacen
 | Agentes | `~/.grok/agents` | Definiciones de esta cuenta. Abrir uno es una elección. Su memoria no es el cuaderno local. |
 | Carcasa | `tray.py` | Icono de bandeja, ventana de información, transcripción de depuración. Cerrar una ventana deja el programa en marcha. |
 
-Una frase se considera terminada cuando la persona deja de hablar. Kroko y el reconocimiento de Windows suelen cerrarla en menos de dos segundos. Mientras el asistente responde, el micrófono se pausa para no tomar su propia voz por una orden nueva. Mientras suena una canción sigue abierto y solo atiende una huella del oído activo. Véase [Huellas y oídos](huellas.md). Una vez iniciada una conversación, el texto reconocido pasa directamente a Grok hasta que se dice adiós.
+Una frase se considera terminada cuando la persona deja de hablar. El motor de STT y el reconocimiento de Windows suelen cerrarla en menos de dos segundos. Mientras el asistente responde, el micrófono se pausa para no tomar su propia voz por una orden nueva. Mientras suena una canción sigue abierto y solo atiende una huella del oído activo. Véase [Huellas y oídos](huellas.md). Una vez iniciada una conversación, el texto reconocido pasa directamente a Grok hasta que se dice adiós.
 
 Fuera de una conversación activa, el asistente es deliberadamente estricto. Las frases de más de seis palabras se ignoran, salvo que sean una activación válida o `pon la canción` seguido de un título, que puede llegar hasta dieciséis palabras. Durante una conversación desaparece el límite de seis palabras. Sesenta segundos de inactividad terminan la charla; el tiempo empleado esperando una respuesta de la nube no cuenta para ese límite. El modo administrador permanece activo durante cinco minutos.
 

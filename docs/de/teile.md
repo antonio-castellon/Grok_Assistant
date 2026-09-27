@@ -6,7 +6,7 @@ Die Grafik oben fasst das gesamte Produkt zusammen. Diese Komponenten setzen es 
 
 | Teil | Wo es lebt | Was es darf |
 | --- | --- | --- |
-| Ohr | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Ton auf diesem PC in Text verwandeln. Kroko streamt Spanisch lokal. Windows-Diktat auf Spanisch, wenn der Erkenner da ist. Die Tastatur ist immer da. |
+| STT-Motor | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Ton auf diesem PC in Text verwandeln. Der STT-Motor im Streaming spricht Spanisch lokal. Windows-Diktat auf Spanisch, wenn der Motor da ist. Die Tastatur ist immer da. |
 | Regeln | `brain.py`, `match.py`, `textutil.py` | Entscheiden: ignorieren, lokaler Auftrag, oder Wolke. Ein falscher Buchstabe trifft einen lokalen Auftrag noch. Zwei nicht. |
 | Heft | `store.py`, `%APPDATA%\GrokAssistant` | Sitzungen, Namen und das Debug-Protokoll halten. Die geteilte Sitzung wird nach 24 Stunden ersetzt. |
 | Passwort | `auth.py` | Einen gesalzenen Hash speichern. Das Passwort selbst wird nie geschrieben. |
@@ -16,7 +16,7 @@ Die Grafik oben fasst das gesamte Produkt zusammen. Diese Komponenten setzen es 
 | Agenten | `~/.grok/agents` | Definitionen auf diesem Konto. Einen zu öffnen ist eine Wahl. Ihr Gedächtnis ist nicht das lokale Heft. |
 | Hülle | `tray.py` | Symbol in der Leiste, Informationsfenster, Debug-Protokoll. Ein Fenster zu schließen lässt das Programm laufen. |
 
-Ein Satz endet, wenn die Person aufgehört hat. Kroko und das Windows-Ohr schließen ihn in unter zwei Sekunden. Ein Gruß allein bleibt zwei Sekunden offen, falls die Frage im selben Atem folgt. Während der Assistent spricht, ist dieses Ohr pausiert, damit die Antwort nicht als neuer Auftrag gilt. Während ein Lied läuft, bleibt das Mikrofon offen und folgt nur einem Abdruck des aktiven Ohrs. Siehe [Stimmabdrücke und Ohren](abdruecke.md). In einem Gespräch geht das Gehörte geradewegs an Grok, bis zum Abschied.
+Ein Satz endet, wenn die Person aufgehört hat. Der STT-Motor und das Windows-Ohr schließen ihn in unter zwei Sekunden. Ein Gruß allein bleibt zwei Sekunden offen, falls die Frage im selben Atem folgt. Während der Assistent spricht, ist dieses Ohr pausiert, damit die Antwort nicht als neuer Auftrag gilt. Während ein Lied läuft, bleibt das Mikrofon offen und folgt nur einem Abdruck des aktiven Ohrs. Siehe [Stimmabdrücke und Ohren](abdruecke.md). In einem Gespräch geht das Gehörte geradewegs an Grok, bis zum Abschied.
 
 Außerhalb eines Gesprächs sind die Regeln eng. Mehr als sechs Wörter fällt weg, außer die Zeile ist ein echter Anruf oder `spiel das lied` plus ein Titel, bis zu sechzehn Wörter. Im Gespräch ist das Sechs-Wörter-Tor weg. Sechzig Sekunden ohne Neues beenden das Reden. Die Zeit, die man auf die Wolke wartet, zählt nicht. Der Administrator-Modus dauert fünf Minuten.
 
