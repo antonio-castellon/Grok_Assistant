@@ -22,33 +22,27 @@ El dibujo de abajo es el camino de una frase.
 
 ## Español primero, porque la casa es ruidosa
 
-El primer idioma es el español. Es el que de verdad se habla en casa, así que es el sitio honesto para empezar el experimento. Un escritorio en silencio y unos auriculares harían quedar bien a cualquier asistente. La cocina no. La gente habla a la vez, la televisión sigue encendida, alguien pide una canción mientras otro está a mitad de una frase. Quiero ese ruido. La prueba es si un aviso y una orden corta siguen funcionando en una habitación real, y si todo lo demás se queda en la máquina cuando la habitación está desordenada.
+El español es el idioma de casa, así que el asistente empieza ahí. Las respuestas son cortas. Un discurso largo se sigue mal cuando hay ruido.
 
-Las respuestas son cortas a propósito. Una voz en una casa ruidosa que recita un párrafo ya ha perdido.
+La parte difícil es el STT, de voz a texto. Es el paso que convierte la voz en palabras, en este ordenador. El audio no sale. Los modelos locales que lo hacen, Kroko y Whisper, oyen mal una palabra con facilidad. «Hola» puede llegar como «ola». Un nombre en inglés puede llegar en español. El resto de la aplicación depende de ese texto. Si las palabras fallan, la orden falla, y la pregunta no llega a Grok.
 
-El menú Idioma cambia entre Español, Français, Deutsch y English. Las órdenes, la ayuda y las personalidades viven en `lang/*.json`, y ese menú puede editar las órdenes y la ayuda del idioma que está activo. Otro idioma es otro archivo json en esa carpeta. El oído tiene que acompañar: Kroko escucha en español, y Whisper base lee los demás. Al elegir un idioma que no sea el español, el oído pasa a Whisper base si ese modelo ya está en el disco. Los saludos, las frases de espera y las palabras de las órdenes viajan con el idioma. La regla de debajo no. Una frase sale solo cuando se le dijo al asistente.
+Kroko es el oído en español. Whisper base guarda los nombres en inglés, y lee francés, alemán e inglés. El menú Idioma ya cambia el idioma. Voice market baja un oído cuando se lo pides.
 
-En este PC la boca es la voz en español que Windows ya tenga, o una voz Piper elegida en Voice market, o espeak en Linux. La Pi tiene su propio conjunto Piper. El oído del micrófono en español es Kroko: un modelo local en streaming. El audio no sale de la máquina. Voice market lo descarga cuando se lo pides; si la carpeta ya está en el disco y el oído guardado seguía siendo el teclado, el asistente arranca Kroko solo. El teclado de la ventana de depuración sigue disponible. El dictado de Windows en español es el reconocedor de escritorio. Si ese idioma falta, Escucha y Voice market lo instalan a través del propio Windows. Whisper, base y Canary son los otros oídos, cada uno a la espera de su modelo. Un reconocedor en la nube no sirve de sustituto. Subir la habitación para probar una habitación ruidosa tiraría el experimento.
+## Sesiones y agentes
 
-## El empleado que no necesita tu hardware
+Una sesión es el cuaderno de la charla. Se queda en este ordenador. El cuaderno compartido vuelve a empezar a las 24 horas. Un cuaderno con nombre se queda hasta que lo borras. Ese cuaderno no es la cuenta de Grok.
 
-Una sesión local es un cuaderno. Vive en la carpeta de datos de esta máquina. La compartida se tira y empieza de nuevo a las 24 horas. Una con nombre se queda hasta que la borras. Nada de ese cuaderno es la cuenta de Grok.
+Un agente es un Grok de tu cuenta. Se abre a propósito con `comando abrir agente …`. Puede recordar fechas, sitios y listas, y puede buscar. Esa memoria se queda en la cuenta, así que el mismo agente se abre en otro ordenador donde ya hayas iniciado sesión. Crearlo pide la contraseña de administrador.
 
-Un agente es la otra criatura. Se abre a propósito (`comando abrir agente …`). Crearlo pide la contraseña de administrador, porque «poner en marcha a alguien que recuerda cosas y puede mirar internet» no es un truco para quien pasa por delante del micrófono. El agente es un agente de Grok en tu cuenta, no una sesión con otro nombre. Puede guardar fechas, sitios y listas, y puede buscar. Esa memoria se queda en la cuenta, así que otra máquina en la que ya hayas iniciado sesión puede abrir el mismo agente.
+Decir adiós (`gracias`, `vale`, `adiós`) cierra la charla. No cierra la sesión. Cerrar la sesión vuelve al cuaderno compartido. `comando cerrar agente` vuelve al asistente normal. No borra el agente. El agente no necesita que este portátil siga encendido. Hay que hablarle a propósito.
 
-Esta es la parte que el Echo nunca ofreció y que el teléfono no va a alojar. El agente no necesita el ventilador de la Pi, este icono de la bandeja, ni un micrófono que un sistema operativo haya aceptado desbloquear. El ordenador del salón es un timbre. El empleado vive con la cuenta. Desconectas el timbre y el empleado sigue en nómina: llegas a él desde cualquier otro Grok con la sesión iniciada, cuando te apetezca trabajar, también a una hora en la que todos los aparatos de la casa hacen su mejor imitación de un ladrillo. El timbre no tiene que seguir despierto para que la oficina exista. La oficina, con poca educación, no oye la habitación. Hay que hablarle a propósito. Estar siempre encendido nunca quiso decir estar siempre compartiendo. El cilindro tenía una idea sobre eso. Era la idea equivocada, y venía con un anillo de luz.
+## Por qué Grok, y no otra ventana de chat
 
-`comando cerrar agente` vuelve al asistente normal. No borra el agente y no termina la conversación. Cerrar la conversación (`gracias`, `vale`, `adiós`, `cierra conversación`) no cierra la sesión. Cerrar la sesión vuelve al cuaderno compartido y, si estabas hablando, se detiene. La pantalla, o la bandeja, vuelve a esperar. La vida normal sigue, sin haberse subido.
+Un chat normal puede escribir un programa y devolverlo como texto. Alguien tiene que poner ese texto en la carpeta correcta y hacer que se ejecute.
 
-## Por qué Grok, que es un taller y no otra ventana de chat
+Grok Build ya está en este ordenador, con la sesión iniciada. No hay una clave de API que pegar. Abres esta carpeta y puede leer el asistente, cambiarlo, pasar las pruebas y dejar aquí el programa nuevo. La idea es la de [OpenClaw](https://github.com/openclaw/openclaw): las instrucciones son archivos sencillos, así que un paso nuevo se puede escribir como un archivo.
 
-ChatGPT escribe un programa. Claude escribe uno cuidadoso. Los dos lo hacen en una ventana que vive en otro sitio, y luego devuelven el resultado como texto. Alguien tiene que saber qué es una carpeta, cuál es el archivo de verdad y qué comando convierte una sugerencia educada en un programa que de verdad se ejecuta. Ese alguien iba a ser yo, y ya estaba cansado.
-
-Lo que quería es la forma de [OpenClaw](https://github.com/openclaw/openclaw): un agente que se queda en el ordenador, crece escribiendo sus propias instrucciones y hace aquí el trabajo de software. Las habilidades de OpenClaw son archivos sencillos, y por eso el agente puede aprender un truco nuevo escribiéndolo. Grok Build es esa idea con las garras ya en esta máquina. El comando `grok` está instalado aquí. Tiene la sesión iniciada. Apúntalo a esta carpeta y puede leer el asistente, cambiarlo, ejecutar las pruebas y dejar la siguiente versión en el mismo sitio. El programa de voz es el timbre. Grok Build es el taller detrás de la casa.
-
-Por eso se puede seguir añadiendo sin empezar de cero. No hay una clave de API que buscar, ni un formulario que pregunte qué modelo entusiasma a internet esta semana. El asistente encuentra `grok` en la ruta, le pregunta a ese comando qué modelos puede ejecutar de verdad y usa la voz en español que el ordenador ya tiene. La configuración es el hecho de que Grok está instalado. Después puedo abrir esta carpeta con Grok y decir, en lenguaje normal, lo que todavía le falta a la casa. Un saludo más alto. Una orden nueva. Un reconocedor. Otra integración. Grok escribe el cambio en local y produce aquí el programa nuevo.
-
-Una pregunta sobre el tiempo no puede reescribir el ordenador. Eso sería la mala idea del cilindro, con mejor gramática. El taller tiene su propia puerta, y se abre a propósito, igual que se abre un agente.
+Una pregunta sobre el tiempo no cambia el programa. Cambiar el programa es otro paso, y se abre a propósito.
 
 ## Qué está funcionando de verdad
 
@@ -77,15 +71,15 @@ Hay dos llamadas distintas, y no se intercambian.
 
 Si hay un agente abierto, la pregunta usa el archivo de ese agente y la sesión de ese agente. `cerrar agente` vuelve al asistente normal. El cuaderno local se queda donde estaba.
 
-Las frases habladas, las palabras de las órdenes, la ayuda y las personalidades viajan en el paquete de idioma, en `src/grok_assistant/lang/`. `hellos-es.txt` y `waits-es.txt` siguen siendo las listas en español que la voz va rotando. `brain.py` y `hub.py` se quedan. La misma política de puerta. Un oído nuevo, una boca nueva y voces nuevas, cuando el idioma los necesita.
+Las frases habladas, las palabras de las órdenes, la ayuda y las personalidades están en `src/grok_assistant/lang/`. `hellos-es.txt` y `waits-es.txt` son las frases en español que la voz va rotando. `brain.py` y `hub.py` siguen igual.
 
-Al arrancar dice la siguiente línea de la lista de saludos y luego se calla. Una espera a la nube dice la siguiente línea de la otra lista. Las dos listas son largas para que el mismo chiste no vuelva cada mañana.
+Al arrancar dice el siguiente saludo y se calla. Mientras espera a la nube dice la siguiente frase corta de la otra lista. Las listas son largas para que la misma frase no vuelva cada mañana.
 
 ## Qué se puede decir
 
-Se despierta con `hola grok` o `¿estás ahí?`. Fuera de una conversación, el resto de órdenes empieza por `comando`, y una frase terminada de más de seis palabras se ignora salvo que sea un aviso de verdad o `pon la canción` más un título (hasta dieciséis palabras). Dentro de una conversación no hay límite de seis palabras. Una canción se puede pedir sin la palabra `comando`. El adiós es local e inmediato. Mientras se busca una respuesta, se oye una línea corta de una lista larga que va rotando, el micrófono descansa y luego se oye la respuesta. Al arrancar dice la siguiente línea de otra lista, los saludos, y después se calla. Sin visita guiada. Sin soltar la lista de órdenes. La ventana de información tiene la lista, para quien prefiere leer antes que recibir una charla del altavoz.
+Se empieza con `hola grok` o `¿estás ahí?`. Fuera de una conversación, las demás órdenes empiezan por `comando`. Una frase de más de seis palabras se ignora, salvo que sea un saludo de verdad o `pon la canción` más un título (hasta dieciséis palabras). Dentro de una conversación no hay límite de seis palabras. Una canción no necesita la palabra `comando`. El adiós se queda en este ordenador y es inmediato. Mientras llega la respuesta se oye una frase corta, el micrófono descansa y luego se oye la respuesta. La ventana de información tiene la lista de órdenes.
 
-La bandeja es la aplicación. El clic izquierdo abre la ventana de información. El clic derecho abre el menú: pausa, información, depuración, reconocedor, voz, modelo, sesiones, contraseña de administrador, salir. Cerrar una ventana no sale. Salir es una opción del menú, porque algunos llevamos años entrenados por el «¿seguro que quieres esconder la ventana y fingir que eso es una salida?».
+El icono de la bandeja es el programa. El clic izquierdo abre la ventana. El clic derecho abre el menú. Cerrar la ventana la esconde. Salir es el botón, en la ventana o en el menú.
 
 ## Ejecutar el programa
 
@@ -121,9 +115,9 @@ py -3 -m venv .venv
 .venv\Scripts\python -m grok_assistant --console
 ```
 
-Los datos, las sesiones, el hash de la contraseña y el registro local del oído viven en `%APPDATA%\GrokAssistant` en Windows y en `~/.config/grok-assistant` en Linux. Las definiciones de los agentes se escriben en `~/.grok/agents`, que es la carpeta de la cuenta de Grok, no esta copia de git. No apuntes el directorio de trabajo del asistente a un árbol de código lleno de proyectos. Ya se niega, y usa su propia carpeta de datos, porque una voz en la cocina no debería descubrir de pronto un interés por refactorizar.
+Los datos, las sesiones, el hash de la contraseña y el registro del oído viven en `%APPDATA%\GrokAssistant` en Windows y en `~/.config/grok-assistant` en Linux. Los archivos de los agentes van a `~/.grok/agents`, la carpeta de la cuenta de Grok, no esta copia de git. El asistente usa su propia carpeta de datos. No trabaja dentro de un árbol de código lleno de proyectos.
 
-La música quiere `yt-dlp` y `mpv` en el PATH. Si no están, el asistente lo dice, en una frase, y no finge tararear.
+La música necesita `yt-dlp` y `mpv`. Si faltan, la primera canción los descarga. Si eso falla, el asistente lo dice en una frase.
 
 ## Qué es esto
 
