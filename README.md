@@ -1,4 +1,4 @@
-![Project banner](docs/img/banner.jpg)
+![Grok mark, with Assistance underneath](docs/img/banner.jpg)
 
 # Grok Assistant
 
