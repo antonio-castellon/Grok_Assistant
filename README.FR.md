@@ -22,6 +22,7 @@ Le schéma ci-dessous montre ce qui arrive à une phrase à partir du moment où
 
 ## Lire la suite
 
+- [Mode d'emploi](docs/fr/guide.md)
 - [L'espagnol d'abord, parce qu'il a été développé et essayé d'abord en espagnol](docs/fr/ecoute.md)
 - [Empreintes et oreilles](docs/fr/empreintes.md)
 - [Sessions et agents](docs/fr/sessions.md)

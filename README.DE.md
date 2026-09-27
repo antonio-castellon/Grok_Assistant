@@ -22,6 +22,7 @@ Die folgende Grafik zeigt, was mit einem gesprochenen Satz passiert.
 
 ## Weiterlesen
 
+- [Kurze Anleitung](docs/de/anleitung.md)
 - [Spanisch zuerst, weil es zuerst auf Spanisch entwickelt und geprüft wurde](docs/de/hoeren.md)
 - [Stimmabdrücke und Ohren](docs/de/abdruecke.md)
 - [Sitzungen und Agenten](docs/de/sitzungen.md)

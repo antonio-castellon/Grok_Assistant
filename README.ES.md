@@ -22,6 +22,7 @@ El diagrama de abajo muestra qué ocurre con una frase desde que se pronuncia.
 
 ## Seguir leyendo
 
+- [Guía de uso](docs/es/guia.md)
 - [Español primero, porque inicialmente se desarrolló y se probó en español](docs/es/escucha.md)
 - [Huellas y oídos](docs/es/huellas.md)
 - [Sesiones y agentes](docs/es/sesiones.md)
