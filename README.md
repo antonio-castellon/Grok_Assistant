@@ -2,23 +2,13 @@
 
 # Grok Assistant
 
-I waited years for the Echo to improve.
+A small voice assistant for the house.
 
-It did not. The light ring changed color a few times, the shopping suggestions got more confident, and the thing on the shelf remained a cylinder with the conversational range of a polite toaster. Meanwhile the phone, which already lives in my pocket and hears everything it is allowed to hear, still treats a microphone like a controlled substance. An app may listen for a moment, if it asks nicely, if the operating system is in the mood, and if nobody in Cupertino or Mountain View has decided that “always” is a dirty word.
+I waited a long time for the living-room speaker to become a better listener. It stayed the same, so I made my own. The first one runs on a Raspberry Pi. This repository is the PC version: a window, a tray icon, and a log of what was heard.
 
-So this is another experiment. The first one sits on a Raspberry Pi, because apparently the way to get a microphone that stays awake is to give a tiny computer a fan and a grudge. This repository is the same assistant standing up on a normal PC. No framebuffer. No touchscreen the size of a sandwich. No GPIO pins. A tray icon, an information window, and a debug transcript. The pins are imaginary. The attitude is not.
+It can stay listening while the program is open. The sound remains on the computer. A phrase is turned into text here, and Grok receives that text only when you meant it for the assistant: a hello, then a question, an order that starts with `comando`, or a song you asked for. Everyday talk is written in a local session and stays there. A muddled order can be checked with Grok, and it still waits for a sí before it runs.
 
-## The scandal, which is also the point
-
-It listens all the time.
-
-That is the whole feature the phones will not sell you. The microphone stays open while the program is running. Audio does not go anywhere. There is no stream to Grok, no stream to a speech corporation, no “short clip uploaded for quality.” A phrase ends here, on the machine, and then a very suspicious little set of rules decides whether **the text** may leave.
-
-Most of the time the answer is no.
-
-You can argue about football, the dying plant, the neighbor, or whether the Echo still deserves the shelf. That stays in the local session, a notebook on this computer. It does not get a boarding pass. Grok in the cloud hears a phrase only when you actually talked to the assistant: you woke it (`hola grok`, or the close mishearings, or “¿estás ahí?”), and the next thing you said was a question, or you gave an order that starts with `comando`, or you asked for a song. The wake itself is not uploaded. Words spoken in the same breath as the wake are not uploaded either. The assistant says “Hola.” and waits, like someone who was taught manners by a person who was tired of chatbots.
-
-A garbled order can be shown to Grok for a repair, and even then it does not run until you say sí. The cloud is allowed to be clever. It is not allowed to be spontaneous with the power button.
+That is the whole idea. The picture below is the path of one phrase.
 
 ![How a phrase moves: the ear stays local, and only a question or a repaired order sends text to Grok](docs/img/flow.svg)
 
