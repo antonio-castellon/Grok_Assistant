@@ -47,6 +47,12 @@ def _ui(key: str, fallback: str = "") -> str:
     return text(key, fallback)
 
 
+def _version_line() -> str:
+    from grok_assistant import __version__
+
+    return f"{__version__} · {_ui('about.channel', 'still a release candidate')}"
+
+
 def _used(active: bool) -> str:
     if not active:
         return ""
@@ -150,7 +156,7 @@ class TrayApp:
         )
 
     def _build_window(self) -> None:
-        self.root.title("Grok Assistant")
+        self.root.title(f"Grok Assistant — {_version_line()}")
         self.root.geometry("860x680")
         self.root.minsize(640, 480)
         icon = bundle_root() / "docs" / "img" / "grok.ico"
@@ -163,7 +169,11 @@ class TrayApp:
 
         head = ttk.Frame(self.root)
         head.pack(fill="x", padx=18, pady=(16, 4))
-        ttk.Label(head, text="Grok Assistant", style="Status.TLabel").pack(side="left")
+        name = ttk.Frame(head)
+        name.pack(side="left")
+        ttk.Label(name, text="Grok Assistant", style="Status.TLabel").pack(anchor="w")
+        self.version_label = ttk.Label(name, text=_version_line(), style="Muted.TLabel")
+        self.version_label.pack(anchor="w")
         corner = tk.Frame(head, bg=BG)
         corner.pack(side="right")
         self.state_var = tk.StringVar(value=_ui("status.banner_wait", "ESPERA"))
@@ -1120,6 +1130,9 @@ class TrayApp:
         return alive
 
     def _apply_chrome(self) -> None:
+        line = _version_line()
+        self.root.title(f"Grok Assistant — {line}")
+        self.version_label.configure(text=line)
         self.debug_label.configure(text=_ui("window.debug", "Depuración — lo que oye y lo que hace después"))
         self.send_button.configure(text=_ui("window.send", "Enviar"))
         self.clear_button.configure(text=_ui("window.clear", "Limpiar registro"))
@@ -1522,6 +1535,7 @@ class TrayApp:
         self._link_tag(body, "github", "https://github.com/antonio-castellon")
         self._link_tag(body, "site", "https://www.castellon.ch")
         body.insert("end", "Antonio Castellon\n", "name")
+        body.insert("end", _version_line() + "\n", "quiet")
         body.insert("end", "Castellon.CH\n", "quiet")
         body.insert("end", "GitHub  ")
         body.insert("end", "antonio-castellon", "github")
@@ -1835,7 +1849,7 @@ class TrayApp:
             f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {snap['recognizer']}  ·  {snap['identifier']}  ·  {snap['session']}  ·  {snap['volume']}%"
         )
         if self.tray_ok and self.tray is not None:
-            self.tray.set_tip(f"Grok Assistant — {snap['status']}")
+            self.tray.set_tip(f"Grok Assistant — {_version_line()} — {snap['status']}")
         if self.debug_text is None:
             return
         shown = self.hub.brain.logs[-500:]

@@ -121,6 +121,7 @@
     "trait.culture_intensity": "Couleur locale",
     "trait.culture_intensity.low": "Neutre",
     "trait.culture_intensity.high": "Très marquée",
+    "about.channel": "encore une version candidate",
     "about.title": "À propos",
     "about.commands": "Commandes",
     "about.lead": "Chaque ordre ci-dessous peut se dire. Presque tous commencent par commande. L'exemple est une phrase complète.",

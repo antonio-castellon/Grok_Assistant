@@ -4,6 +4,8 @@
 
 # Grok Assistant
 
+Version 0.1.0, still a release candidate.
+
 This is a voice companion for the moments when reading is difficult and the house is quiet. The laptop version is for an older person who already has a small computer nearby. The Raspberry Pi 4 version, with 4 GB of RAM, is the same assistant as a dedicated device, for a family that would rather not leave a laptop open. I plan to publish that code soon. The microphone can stay ready. The audio stays on the computer. Only text that was meant for the assistant is sent out.
 
 I spent years waiting for the Amazon Echo to become a better listener. It never really became more than a speaker with a light ring, so I decided to build my own.

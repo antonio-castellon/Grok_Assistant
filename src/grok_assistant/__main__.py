@@ -93,6 +93,7 @@ def _write_check() -> None:
     status = probe()
     lines = [
         f"version={__version__}",
+        "channel=release-candidate",
         f"hellos={len(load_lines('hellos-es.txt'))}",
         f"scripts={(bundle_root() / 'scripts' / 'speak.ps1').exists()}",
         f"listeners={(bundle_root() / 'listeners' / 'dictation.ps1').exists()}",

@@ -4,6 +4,8 @@
 
 # Grok Assistant
 
+Version 0.1.0, noch ein Release-Kandidat.
+
 Jahrelang habe ich darauf gewartet, dass der Amazon Echo wirklich besser zuhören lernt. Am Ende blieb er vor allem ein Lautsprecher mit einem Lichtring. Also habe ich beschlossen, meinen eigenen Assistenten zu bauen – für einen älteren Menschen, der bereits einen kleinen Laptop in der Nähe hat.
 
 In meinem Fall ist dieser Mensch mein Vater. Seine Sehkraft ist eingeschränkt, und er verbringt viele Stunden allein. Ich wollte, dass er einfach mit einer Stimme sprechen kann, die antwortet, ein Gespräch führt und Dinge erklärt – ohne erst einen Bildschirm suchen oder kleine Schrift lesen zu müssen. Das ist inzwischen möglich. Grok auf diesem Rechner bildet außerdem die Grundlage für weitere Funktionen und Integrationen, die noch dazukommen sollen. Für Familien, die technisch etwas versierter sind und keinen Laptop offen stehen lassen möchten, baue ich denselben Assistenten auch für einen Raspberry Pi 4 mit 4 GB RAM. Diesen Code möchte ich ebenfalls veröffentlichen, damit sich bei Bedarf ein eigenes, dediziertes Gerät bauen lässt.

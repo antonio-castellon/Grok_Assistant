@@ -121,6 +121,7 @@
     "trait.culture_intensity": "Sabor cultural",
     "trait.culture_intensity.low": "Neutro",
     "trait.culture_intensity.high": "Muy marcado",
+    "about.channel": "todavía candidata",
     "about.title": "Acerca de",
     "about.commands": "Comandos",
     "about.lead": "Cada orden de abajo se puede decir. Casi todas empiezan por comando. El ejemplo es una frase completa.",

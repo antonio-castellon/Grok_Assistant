@@ -4,6 +4,8 @@
 
 # Grok Assistant
 
+Version 0.1.0, encore une version candidate.
+
 J'ai attendu pendant des années que l'Amazon Echo apprenne vraiment à mieux écouter. Il est finalement resté surtout un haut-parleur avec un anneau lumineux, alors j'ai décidé de construire mon propre assistant pour une personne âgée qui a déjà un petit ordinateur portable à proximité.
 
 Dans mon cas, cette personne est mon père. Sa vue est limitée et il passe de longues heures seul. Je voulais qu'il puisse simplement parler à une voix capable de répondre, de discuter et d'expliquer les choses, sans avoir à chercher un écran ni à lire de petits caractères. C'est désormais possible. Grok, sur cette machine, sert aussi de base aux fonctions et intégrations que j'ajouterai ensuite. Pour les familles un peu plus à l'aise techniquement et qui préfèrent ne pas laisser un ordinateur portable ouvert, je prépare le même assistant sur un Raspberry Pi 4 avec 4 Go de RAM. Je publierai également ce code afin que chacun puisse construire son propre appareil dédié.

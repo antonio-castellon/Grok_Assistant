@@ -27,6 +27,22 @@ class FakeCLI:
         return "Son las tres."
 
 
+def test_the_app_is_version_0_1_0_and_still_a_candidate():
+    from grok_assistant import __version__
+    from grok_assistant.i18n import activate, code, text
+
+    previous = code()
+    try:
+        assert __version__ == "0.1.0"
+        for language in ("es", "en", "fr", "de"):
+            activate(language)
+            channel = text("about.channel")
+            assert channel
+            assert "0.1.0" not in channel
+    finally:
+        activate(previous)
+
+
 def test_language_packs_share_the_same_labels():
     import json
     from grok_assistant.i18n import bundled_dir

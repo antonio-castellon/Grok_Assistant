@@ -93,5 +93,6 @@ exe = EXE(
     upx=False,
     console=False,
     icon=str(root / "docs" / "img" / "grok.ico"),
+    version=str(root / "packaging" / "version-info.txt"),
     disable_windowed_traceback=False,
 )

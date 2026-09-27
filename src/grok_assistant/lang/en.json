@@ -121,6 +121,7 @@
     "trait.culture_intensity": "Local color",
     "trait.culture_intensity.low": "Neutral",
     "trait.culture_intensity.high": "Strong",
+    "about.channel": "still a release candidate",
     "about.title": "About",
     "about.commands": "Commands",
     "about.lead": "Each order below can be spoken. Most start with command. The example is a full phrase.",
