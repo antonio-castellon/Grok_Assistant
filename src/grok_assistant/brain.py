@@ -206,14 +206,17 @@ class Brain:
         return "modo escucha"
 
     def identifier_label(self) -> str:
-        if not self.settings.local_llm or not self.settings.llm_file:
-            return "sin identificador"
         from grok_assistant.marketplace import offers
 
-        for offer in offers():
-            if offer.kind == "llm" and offer.files and offer.files[0][1].rsplit("/", 1)[-1] == self.settings.llm_file:
+        ready = [offer for offer in offers() if offer.kind == "llm" and offer.ready()]
+        if not self.settings.local_llm or not ready:
+            return "sin identificador"
+        wanted = self.settings.llm_file
+        for offer in ready:
+            filename = offer.files[0][1].rsplit("/", 1)[-1]
+            if filename == wanted:
                 return offer.title
-        return self.settings.llm_file
+        return ready[0].title
 
     def status_label(self) -> str:
         return self.mode_label()

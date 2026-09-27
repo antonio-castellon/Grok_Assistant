@@ -95,6 +95,7 @@ class TrayApp:
         self.jobs.put(("startup", ""))
         self._start_tray()
         self._sync_ear()
+        self._ensure_identifier()
         self._poll_usage()
         self._note("ventana lista")
         self.root.after(200, self._pulse)
@@ -300,6 +301,15 @@ class TrayApp:
             if offer.kind == "llm" and offer.files and offer.files[0][1].rsplit("/", 1)[-1] == filename:
                 self._pick_identifier(offer)
                 return
+
+    def _ensure_identifier(self) -> None:
+        if not self.hub.brain.settings.local_llm or self.hub.brain.settings.llm_file:
+            return
+        from grok_assistant.marketplace import offers
+
+        ready = [offer for offer in offers() if offer.kind == "llm" and offer.ready()]
+        if ready:
+            self._pick_identifier(ready[0])
 
     def _pick_identifier(self, offer: Offer | None) -> None:
         if offer is None:
