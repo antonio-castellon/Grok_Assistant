@@ -94,6 +94,48 @@ def test_personality_window_saves_a_free_behavior(tmp_path):
         root.destroy()
 
 
+def test_windows_follow_the_selected_language(tmp_path):
+    import tkinter as tk
+
+    from grok_assistant.hub import build
+    from grok_assistant.i18n import activate
+    from grok_assistant.tray import GREEN, TrayApp
+
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        hub = build(tmp_path, tmp_path / "agents")
+        activate("en")
+        app = TrayApp(root, hub)
+        root.update()
+        bar = app.root.nametowidget(app.root["menu"])
+        labels = [bar.entrycget(index, "label") for index in range(bar.index("end") + 1)]
+        assert "Personality" in labels
+        assert "Session" in labels
+        assert "Agent" in labels
+        assert "About" in labels
+        assert app.pause_button.cget("text") == "Pause listening"
+        assert app.send_button.cget("text") == "Send"
+        app._build_personality()
+        root.update()
+        assert app._persona_win.title() == "Personality"
+        assert app._persona_choice.get().startswith("No person")
+        assert app._persona_tone.get() == "Automatic, from the phrase"
+        app._build_about()
+        root.update()
+        assert app._about_win.title() == "About"
+        app.hub.brain.settings.recognizer = "kroko"
+        app._build_market()
+        root.update()
+        used = [mark.cget("text") for _offer, mark in app._market_marks if "IN USE" in mark.cget("text")]
+        assert used
+        assert used[0].startswith("✓")
+        assert app._market_marks[0][1].cget("fg") == GREEN
+    finally:
+        activate("es")
+        root.destroy()
+
+
 def test_an_old_config_without_personality_still_loads(tmp_path):
     path = tmp_path / "config.json"
     path.write_text('{"model": "grok-4.7", "volume": 40}', encoding="utf-8")

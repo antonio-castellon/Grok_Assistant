@@ -34,10 +34,23 @@ INK = "#e7eef2"
 MUTED = "#8ea0ab"
 AMBER = "#e8a030"
 TEAL = "#8fd0c4"
+GREEN = "#3ddc97"
 FIELD = "#0e1216"
 FONT = ("Segoe UI", 12)
 FONT_BOLD = ("Segoe UI", 18, "bold")
 MONO = ("Consolas", 12)
+
+
+def _ui(key: str, fallback: str = "") -> str:
+    from grok_assistant.i18n import text
+
+    return text(key, fallback)
+
+
+def _used(active: bool) -> str:
+    if not active:
+        return ""
+    return "✓  " + _ui("market.used", "EN USO") + "  "
 
 
 def run() -> None:
@@ -68,9 +81,11 @@ class TrayApp:
         self.view_from = 0
         self._debug_cache: list[str] = []
         self.debug_text = None
-        self.status_var = tk.StringVar(value="Arrancando")
+        self.status_var = tk.StringVar(value=_ui("status.starting", "Arrancando"))
         self.detail_var = tk.StringVar(value="")
-        self.usage_var = tk.StringVar(value="cuenta …")
+        self._usage_percent: int | None = None
+        self._usage_known = False
+        self.usage_var = tk.StringVar(value=_ui("window.account", "cuenta {n}%").replace("{n}", "…"))
         self.tray: WinTray | None = None
         self.tray_ok = False
         self.dictation: Dictation | None = None
@@ -97,6 +112,7 @@ class TrayApp:
         self._poll_usage()
         threading.Thread(target=self._arm_voiceprint, daemon=True).start()
         threading.Thread(target=self._arm_refiner, daemon=True).start()
+        threading.Thread(target=self._warm_piper, daemon=True).start()
         self._note("ventana lista")
         self.root.after(200, self._pulse)
 
@@ -115,6 +131,8 @@ class TrayApp:
         style.configure("Status.TLabel", background=BG, foreground=AMBER, font=FONT_BOLD)
         style.configure("TButton", background="#2a3340", foreground=INK, font=FONT, padding=(12, 6), borderwidth=0)
         style.map("TButton", background=[("active", "#3a4656")])
+        style.configure("Compact.TButton", background="#2a3340", foreground=INK, font=("Segoe UI", 10), padding=(10, 2), borderwidth=0)
+        style.map("Compact.TButton", background=[("active", "#3a4656")])
         style.configure("TEntry", fieldbackground=FIELD, foreground=INK, insertcolor=INK, font=FONT)
         style.configure("Market.TNotebook", background=BG, borderwidth=0)
         style.configure("Market.TNotebook.Tab", background=PANEL, foreground=INK, padding=(14, 8), font=("Segoe UI", 11))
@@ -148,7 +166,8 @@ class TrayApp:
         ttk.Label(head, textvariable=self.status_var, font=FONT).pack(side="right", padx=(0, 18))
         ttk.Label(self.root, textvariable=self.detail_var, style="Muted.TLabel").pack(anchor="w", padx=18)
 
-        ttk.Label(self.root, text="Depuración — lo que oye y lo que hace después", style="Muted.TLabel").pack(anchor="w", padx=18, pady=(12, 4))
+        self.debug_label = ttk.Label(self.root, text=_ui("window.debug", "Depuración — lo que oye y lo que hace después"), style="Muted.TLabel")
+        self.debug_label.pack(anchor="w", padx=18, pady=(12, 4))
         log_wrap = tk.Frame(self.root, bg=PANEL, padx=1, pady=1)
         log_wrap.pack(fill="both", expand=True, padx=18, pady=(0, 8))
         self.debug_text = tk.Text(
@@ -167,14 +186,17 @@ class TrayApp:
         self.entry = ttk.Entry(bar)
         self.entry.pack(side="left", fill="x", expand=True, ipady=4)
         self.entry.bind("<Return>", self._send)
-        ttk.Button(bar, text="Enviar", command=self._send).pack(side="left", padx=(8, 0))
+        self.send_button = ttk.Button(bar, text=_ui("window.send", "Enviar"), command=self._send)
+        self.send_button.pack(side="left", padx=(8, 0))
 
         actions = ttk.Frame(self.root)
         actions.pack(fill="x", padx=18, pady=(0, 16))
-        self.pause_button = ttk.Button(actions, text="Pausar escucha", command=self._toggle_from_ui)
+        self.pause_button = ttk.Button(actions, text=_ui("menu.pause", "Pausar escucha"), command=self._toggle_from_ui)
         self.pause_button.pack(side="left")
-        ttk.Button(actions, text="Limpiar registro", command=self._clear_view).pack(side="left", padx=8)
-        ttk.Button(actions, text="Salir", command=lambda: self._quit(None, None)).pack(side="right")
+        self.clear_button = ttk.Button(actions, text=_ui("window.clear", "Limpiar registro"), command=self._clear_view)
+        self.clear_button.pack(side="left", padx=8)
+        self.quit_button = ttk.Button(actions, text=_ui("menu.quit", "Salir"), command=lambda: self._quit(None, None))
+        self.quit_button.pack(side="right")
         self._build_menus()
 
     def _start_tray(self) -> None:
@@ -230,22 +252,22 @@ class TrayApp:
         bar.add_cascade(label=text("menu.language", "Idioma"), menu=self.menu_language)
         bar.add_command(label=text("menu.market", "Voice market"), command=self._open_market)
         bar.add_command(label=text("menu.about", "Acerca de"), command=self._open_about)
-        self.menu_musica.add_command(label="Pausar", command=lambda: self._command("pausa musica"))
-        self.menu_musica.add_command(label="Seguir", command=lambda: self._command("seguir musica"))
-        self.menu_musica.add_command(label="Parar", command=lambda: self._command("para la musica"))
+        self.menu_musica.add_command(label=_ui("menu.music_pause", "Pausar"), command=lambda: self._command("pausa musica"))
+        self.menu_musica.add_command(label=_ui("menu.music_resume", "Seguir"), command=lambda: self._command("seguir musica"))
+        self.menu_musica.add_command(label=_ui("menu.music_stop", "Parar"), command=lambda: self._command("para la musica"))
 
     def _fill_admin(self) -> None:
         from grok_assistant.startup import enabled
 
         menu = self.menu_admin
         menu.delete(0, "end")
-        menu.add_command(label="Modo administrador", command=lambda: self._command("modo administrador"))
-        menu.add_command(label="Contraseña…", command=self._password_dialog)
+        menu.add_command(label=_ui("menu.admin_mode", "Modo administrador"), command=lambda: self._command("modo administrador"))
+        menu.add_command(label=_ui("menu.password", "Contraseña…"), command=self._password_dialog)
         menu.add_separator()
         if enabled():
-            menu.add_command(label="✓  Desactivar arranque con Windows", command=self._toggle_startup)
+            menu.add_command(label=_used(True) + _ui("menu.startup_off", "Desactivar arranque con Windows"), command=self._toggle_startup)
         else:
-            menu.add_command(label="Activar arranque con Windows", command=self._toggle_startup)
+            menu.add_command(label=_ui("menu.startup_on", "Activar arranque con Windows"), command=self._toggle_startup)
 
     def _toggle_startup(self) -> None:
         from grok_assistant.startup import enabled, set_enabled
@@ -261,7 +283,7 @@ class TrayApp:
         menu = self.menu_escucha
         menu.delete(0, "end")
         menu.add_command(
-            label="Seguir escuchando" if self.user_paused else "Pausar escucha",
+            label=_ui("menu.resume", "Seguir escuchando") if self.user_paused else _ui("menu.pause", "Pausar escucha"),
             command=self._toggle_from_ui,
         )
         menu.add_separator()
@@ -269,22 +291,25 @@ class TrayApp:
         current = self.hub.brain.settings.recognizer
         present = set(self.hub.brain.recognizers)
         for name, label in RECOGNIZER_LABELS.items():
+            shown_name = _ui(f"ear.{name}", label)
             if name in present:
-                shown = ("✓  " if name == current else "") + label
-                self.menu_ear.add_command(label=shown, command=lambda picked=name: self._command(f"reconocedor {picked}"))
+                self.menu_ear.add_command(
+                    label=_used(name == current) + shown_name,
+                    command=lambda picked=name: self._command(f"reconocedor {picked}"),
+                )
             elif name == "windows":
-                self.menu_ear.add_command(label="Windows español… instalar", command=self._install_windows)
+                self.menu_ear.add_command(label=_ui("menu.install_windows", "Windows español… instalar"), command=self._install_windows)
             else:
-                self.menu_ear.add_command(label=f"{label}  (no instalado)", state="disabled")
-        menu.add_cascade(label="Reconocedor", menu=self.menu_ear)
-        menu.add_cascade(label="Identificador texto", menu=self.menu_identifier)
+                self.menu_ear.add_command(label=f"{shown_name}  {_ui('menu.not_installed', '(no instalado)')}", state="disabled")
+        menu.add_cascade(label=_ui("menu.recognizer", "Reconocedor"), menu=self.menu_ear)
+        menu.add_cascade(label=_ui("menu.identifier", "Identificador texto"), menu=self.menu_identifier)
         menu.add_separator()
         if self.hub.brain.test_mode:
-            menu.add_command(label="✓  Desactivar prueba", command=self._toggle_test)
+            menu.add_command(label=_used(True) + _ui("menu.test_off", "Desactivar prueba"), command=self._toggle_test)
         else:
-            menu.add_command(label="Activar prueba", command=self._toggle_test)
-        menu.add_command(label="Identificar mi voz", command=lambda: self._command("identifica mi voz"))
-        menu.add_command(label="Cambiar nombre…", command=lambda: self._command("cambiar nombre"))
+            menu.add_command(label=_ui("menu.test_on", "Activar prueba"), command=self._toggle_test)
+        menu.add_command(label=_ui("menu.identify", "Identificar mi voz"), command=lambda: self._command("identifica mi voz"))
+        menu.add_command(label=_ui("menu.rename", "Cambiar nombre…"), command=lambda: self._command("cambiar nombre"))
 
     def _fill_identifiers(self) -> None:
         menu = self.menu_identifier
@@ -293,30 +318,29 @@ class TrayApp:
 
         current = self.hub.brain.settings.llm_file if self.hub.brain.settings.local_llm else ""
         menu.add_command(
-            label=("✓  " if not current else "") + "Ninguno",
+            label=_used(not current) + _ui("menu.none", "Ninguno"),
             command=lambda: self._pick_identifier(None),
         )
         ready = [offer for offer in offers() if offer.kind == "llm" and offer.ready()]
         if not ready:
-            menu.add_command(label="(ninguno descargado)", state="disabled")
+            menu.add_command(label=_ui("menu.none_downloaded", "(ninguno descargado)"), state="disabled")
             return
         for offer in ready:
             filename = offer.files[0][1].rsplit("/", 1)[-1]
-            mark = "✓  " if filename == current else ""
-            menu.add_command(label=mark + offer.title, command=lambda item=offer: self._pick_identifier(item))
+            menu.add_command(label=_used(filename == current) + offer.title, command=lambda item=offer: self._pick_identifier(item))
 
     def _identifier_items(self) -> list:
         from grok_assistant.marketplace import offers
 
         current = self.hub.brain.settings.llm_file if self.hub.brain.settings.local_llm else ""
-        rows = [("cmd", "Ninguno", "identifier-off", not current)]
+        rows = [("cmd", _used(not current) + _ui("menu.none", "Ninguno"), "identifier-off", not current)]
         ready = [offer for offer in offers() if offer.kind == "llm" and offer.ready()]
         if not ready:
-            rows.append(("cmd", "(ninguno descargado)", "noop", False))
+            rows.append(("cmd", _ui("menu.none_downloaded", "(ninguno descargado)"), "noop", False))
             return rows
         for offer in ready:
             filename = offer.files[0][1].rsplit("/", 1)[-1]
-            rows.append(("cmd", offer.title, f"identifier:{filename}", filename == current))
+            rows.append(("cmd", _used(filename == current) + offer.title, f"identifier:{filename}", filename == current))
         return rows
 
     def _pick_identifier_file(self, filename: str) -> None:
@@ -358,35 +382,32 @@ class TrayApp:
         menu.delete(0, "end")
         current = self.hub.brain.settings.voice_index
         for index, name in enumerate(self.hub.brain.voices):
-            mark = "✓  " if index == current else ""
-            menu.add_command(label=f"{mark}{index + 1}. {name}", command=lambda number=index + 1: self._command(f"voz {number}"))
+            menu.add_command(label=f"{_used(index == current)}{index + 1}. {name}", command=lambda number=index + 1: self._command(f"voz {number}"))
         menu.add_separator()
-        menu.add_command(label="Subir volumen", command=lambda: self._command("subir volumen"))
-        menu.add_command(label="Bajar volumen", command=lambda: self._command("bajar volumen"))
+        menu.add_command(label=_ui("menu.volume_up", "Subir volumen"), command=lambda: self._command("subir volumen"))
+        menu.add_command(label=_ui("menu.volume_down", "Bajar volumen"), command=lambda: self._command("bajar volumen"))
 
     def _fill_modelo(self) -> None:
         menu = self.menu_modelo
         menu.delete(0, "end")
         current = self.hub.brain.settings.model
         for name in self.models:
-            mark = "✓  " if name == current else ""
-            menu.add_command(label=mark + name, command=lambda picked=name: self._pick_model(picked))
+            menu.add_command(label=_used(name == current) + name, command=lambda picked=name: self._pick_model(picked))
         menu.add_separator()
-        menu.add_command(label="Actualizar lista", command=self._refresh_models)
-        effort = "alto" if self.hub.brain.effort_now == "high" else "bajo"
-        menu.add_command(label=f"Razonamiento: {effort}", state="disabled")
+        menu.add_command(label=_ui("menu.refresh_models", "Actualizar lista"), command=self._refresh_models)
+        effort = _ui("menu.effort_high", "Razonamiento: alto") if self.hub.brain.effort_now == "high" else _ui("menu.effort_low", "Razonamiento: bajo")
+        menu.add_command(label=effort, state="disabled")
 
     def _fill_sesion(self) -> None:
         menu = self.menu_sesion
         menu.delete(0, "end")
         active = self.hub.brain.sessions.active
         for name in self.hub.brain.sessions.names():
-            mark = "✓  " if name == active else ""
-            menu.add_command(label=mark + name, command=lambda picked=name: self._command(f"abrir sesion {picked}"))
+            menu.add_command(label=_used(name == active) + name, command=lambda picked=name: self._command(f"abrir sesion {picked}"))
         menu.add_separator()
-        menu.add_command(label="Cerrar sesión", command=lambda: self._command("cerrar sesion"))
-        menu.add_command(label="Nueva sesión…", command=self._new_session)
-        menu.add_command(label="Borrar sesión…", command=self._delete_session)
+        menu.add_command(label=_ui("menu.close_session", "Cerrar sesión"), command=lambda: self._command("cerrar sesion"))
+        menu.add_command(label=_ui("menu.new_session", "Nueva sesión…"), command=self._new_session)
+        menu.add_command(label=_ui("menu.delete_session", "Borrar sesión…"), command=self._delete_session)
 
     def _fill_agente(self) -> None:
         menu = self.menu_agente
@@ -394,13 +415,12 @@ class TrayApp:
         active = self.hub.brain.agents.active or ""
         found = self.hub.brain.agents.list()
         if not found:
-            menu.add_command(label="No hay agentes", state="disabled")
+            menu.add_command(label=_ui("menu.no_agents", "No hay agentes"), state="disabled")
         for record in found:
-            mark = "✓  " if record.name == active else ""
-            menu.add_command(label=mark + record.name, command=lambda picked=record.name: self._command(f"abrir agente {picked}"))
+            menu.add_command(label=_used(record.name == active) + record.name, command=lambda picked=record.name: self._command(f"abrir agente {picked}"))
         menu.add_separator()
-        menu.add_command(label="Cerrar agente", command=lambda: self._command("cerrar agente"))
-        menu.add_command(label="Crear agente…", command=self._new_agent)
+        menu.add_command(label=_ui("menu.close_agent", "Cerrar agente"), command=lambda: self._command("cerrar agente"))
+        menu.add_command(label=_ui("menu.new_agent", "Crear agente…"), command=self._new_agent)
 
     def _tray_items(self) -> list:
         from grok_assistant.i18n import text
@@ -409,43 +429,66 @@ class TrayApp:
         ears = []
         present = set(brain.recognizers)
         for name, label in RECOGNIZER_LABELS.items():
+            shown = _ui(f"ear.{name}", label)
             if name in present:
-                ears.append(("cmd", label, f"ear:{name}", name == brain.settings.recognizer))
+                ears.append(("cmd", _used(name == brain.settings.recognizer) + shown, f"ear:{name}", name == brain.settings.recognizer))
             elif name == "windows":
-                ears.append(("cmd", "Windows español… instalar", "install-windows", False))
+                ears.append(("cmd", _ui("menu.install_windows", "Windows español… instalar"), "install-windows", False))
             else:
-                ears.append(("cmd", f"{label} (no instalado)", "noop", False))
+                ears.append(("cmd", f"{shown}  {_ui('menu.not_installed', '(no instalado)')}", "noop", False))
         voices = []
         for index, name in enumerate(brain.voices):
-            voices.append(("cmd", f"{index + 1}. {name}", f"voice:{index + 1}", index == brain.settings.voice_index))
-        models = [("cmd", name, f"model:{name}", name == brain.settings.model) for name in self.models]
+            voices.append(("cmd", f"{_used(index == brain.settings.voice_index)}{index + 1}. {name}", f"voice:{index + 1}", index == brain.settings.voice_index))
+        models = [("cmd", _used(name == brain.settings.model) + name, f"model:{name}", name == brain.settings.model) for name in self.models]
         models.append(("sep",))
-        models.append(("cmd", "Actualizar lista", "models-refresh", False))
-        sessions = [("cmd", name, f"session:{name}", name == brain.sessions.active) for name in brain.sessions.names()]
-        sessions += [("sep",), ("cmd", "Cerrar sesión", "session-close", False), ("cmd", "Nueva sesión…", "session-new", False)]
-        agents = [("cmd", record.name, f"agent:{record.name}", record.name == (brain.agents.active or "")) for record in brain.agents.list()]
+        models.append(("cmd", _ui("menu.refresh_models", "Actualizar lista"), "models-refresh", False))
+        sessions = [
+            ("cmd", _used(name == brain.sessions.active) + name, f"session:{name}", name == brain.sessions.active)
+            for name in brain.sessions.names()
+        ]
+        sessions += [
+            ("sep",),
+            ("cmd", _ui("menu.close_session", "Cerrar sesión"), "session-close", False),
+            ("cmd", _ui("menu.new_session", "Nueva sesión…"), "session-new", False),
+            ("cmd", _ui("menu.delete_session", "Borrar sesión…"), "session-delete", False),
+        ]
+        active_agent = brain.agents.active or ""
+        agents = [
+            ("cmd", _used(record.name == active_agent) + record.name, f"agent:{record.name}", record.name == active_agent)
+            for record in brain.agents.list()
+        ]
         if not agents:
-            agents = [("cmd", "No hay agentes", "noop", False)]
-        agents += [("sep",), ("cmd", "Cerrar agente", "agent-close", False), ("cmd", "Crear agente…", "agent-new", False)]
+            agents = [("cmd", _ui("menu.no_agents", "No hay agentes"), "noop", False)]
+        agents += [
+            ("sep",),
+            ("cmd", _ui("menu.close_agent", "Cerrar agente"), "agent-close", False),
+            ("cmd", _ui("menu.new_agent", "Crear agente…"), "agent-new", False),
+        ]
+        effort = _ui("menu.effort_high", "Razonamiento: alto") if brain.effort_now == "high" else _ui("menu.effort_low", "Razonamiento: bajo")
+        models.append(("cmd", effort, "noop", False))
         return [
             ("cmd", text("menu.show", "Mostrar"), "show", False),
             ("cmd", text("menu.resume", "Seguir escuchando") if self.user_paused else text("menu.pause", "Pausar escucha"), "pause", self.user_paused),
-            ("sub", "Reconocedor", ears),
-            ("sub", "Identificador texto", self._identifier_items()),
-            ("sub", "Voz", voices + [("sep",), ("cmd", "Subir volumen", "vol-up", False), ("cmd", "Bajar volumen", "vol-down", False)]),
-            ("sub", "Modelo", models),
-            ("sub", "Sesión", sessions),
-            ("sub", "Agente", agents),
+            ("sub", text("menu.recognizer", "Reconocedor"), ears),
+            ("sub", text("menu.identifier", "Identificador texto"), self._identifier_items()),
+            ("sub", text("menu.voice", "Voz"), voices + [
+                ("sep",),
+                ("cmd", _ui("menu.volume_up", "Subir volumen"), "vol-up", False),
+                ("cmd", _ui("menu.volume_down", "Bajar volumen"), "vol-down", False),
+            ]),
+            ("sub", text("menu.model", "Modelo"), models),
+            ("sub", text("menu.session", "Sesión"), sessions),
+            ("sub", text("menu.agent", "Agente"), agents),
             ("sub", text("menu.personality", "Personalidad"), self._persona_items()),
             ("sub", text("menu.language", "Idioma"), self._language_items()),
-            ("sub", "Música", [
-                ("cmd", "Pausar", "music-pause", False),
-                ("cmd", "Seguir", "music-resume", False),
-                ("cmd", "Parar", "music-stop", False),
+            ("sub", text("menu.music", "Música"), [
+                ("cmd", _ui("menu.music_pause", "Pausar"), "music-pause", False),
+                ("cmd", _ui("menu.music_resume", "Seguir"), "music-resume", False),
+                ("cmd", _ui("menu.music_stop", "Parar"), "music-stop", False),
             ]),
-            ("cmd", "Desactivar prueba" if brain.test_mode else "Activar prueba", "test-toggle", brain.test_mode),
-            ("cmd", "Cambiar nombre…", "rename", False),
-            ("cmd", "Desactivar arranque con Windows" if self._startup_on() else "Activar arranque con Windows", "startup", self._startup_on()),
+            ("cmd", _ui("menu.test_off", "Desactivar prueba") if brain.test_mode else _ui("menu.test_on", "Activar prueba"), "test-toggle", brain.test_mode),
+            ("cmd", _ui("menu.rename", "Cambiar nombre…"), "rename", False),
+            ("cmd", _ui("menu.startup_off", "Desactivar arranque con Windows") if self._startup_on() else _ui("menu.startup_on", "Activar arranque con Windows"), "startup", self._startup_on()),
             ("cmd", text("menu.market", "Voice market"), "market", False),
             ("cmd", text("menu.about", "Acerca de"), "about", False),
             ("sep",),
@@ -485,6 +528,8 @@ class TrayApp:
             self._command("cerrar sesion")
         elif key == "session-new":
             self._new_session()
+        elif key == "session-delete":
+            self._delete_session()
         elif key.startswith("agent:"):
             self._command(f"abrir agente {key.split(':', 1)[1]}")
         elif key == "agent-close":
@@ -550,17 +595,17 @@ class TrayApp:
         self._refresh()
 
     def _new_session(self) -> None:
-        name = simpledialog.askstring("Sesión", "Nombre de la sesión:", parent=self.root)
+        name = simpledialog.askstring(_ui("dialog.session", "Sesión"), _ui("dialog.session_name", "Nombre de la sesión:"), parent=self.root)
         if name and name.strip():
             self._command(f"crear sesion {name.strip()}")
 
     def _delete_session(self) -> None:
-        name = simpledialog.askstring("Sesión", "Nombre de la sesión a borrar:", parent=self.root)
+        name = simpledialog.askstring(_ui("dialog.session", "Sesión"), _ui("dialog.session_delete", "Nombre de la sesión a borrar:"), parent=self.root)
         if name and name.strip():
             self._command(f"borrar sesion {name.strip()}")
 
     def _new_agent(self) -> None:
-        name = simpledialog.askstring("Agente", "Nombre del agente:", parent=self.root)
+        name = simpledialog.askstring(_ui("dialog.agent", "Agente"), _ui("dialog.agent_name", "Nombre del agente:"), parent=self.root)
         if name and name.strip():
             self._command(f"crear agente {name.strip()}")
 
@@ -571,18 +616,17 @@ class TrayApp:
         menu.delete(0, "end")
         current = str(self.hub.brain.settings.personality.get("profile") or "")
         menu.add_command(
-            label=("✓  " if not current else "") + "Sin persona — la voz de siempre",
+            label=_used(not current) + _ui("persona.none", "Sin persona — la voz de siempre"),
             command=lambda: self._choose_person(""),
         )
         menu.add_separator()
         for person in persons():
-            mark = "✓  " if person.id == current else ""
             menu.add_command(
-                label=f"{mark}{person.name} — {person.label}",
+                label=_used(person.id == current) + f"{person.name} — {person.label}",
                 command=lambda picked=person.id: self._choose_person(picked),
             )
         menu.add_separator()
-        menu.add_command(label="Ajustar rasgos y comportamiento…", command=self._open_personality)
+        menu.add_command(label=_ui("persona.adjust", "Ajustar rasgos y comportamiento…"), command=self._open_personality)
 
     def _fill_language(self) -> None:
         from grok_assistant.i18n import languages, text
@@ -591,8 +635,7 @@ class TrayApp:
         menu.delete(0, "end")
         current = self.hub.brain.settings.language
         for code, name in languages():
-            mark = "✓  " if code == current else ""
-            menu.add_command(label=f"{mark}{name}", command=lambda picked=code: self._set_language(picked))
+            menu.add_command(label=_used(code == current) + name, command=lambda picked=code: self._set_language(picked))
         menu.add_separator()
         menu.add_command(label=text("menu.edit_commands", "Editar comandos…"), command=self._edit_commands)
         menu.add_command(label=text("menu.edit_help", "Editar ayuda…"), command=self._edit_help)
@@ -601,7 +644,7 @@ class TrayApp:
         from grok_assistant.i18n import languages, text
 
         current = self.hub.brain.settings.language
-        rows = [("cmd", name, f"lang:{code}", code == current) for code, name in languages()]
+        rows = [("cmd", _used(code == current) + name, f"lang:{code}", code == current) for code, name in languages()]
         rows.append(("sep",))
         rows.append(("cmd", text("menu.edit_commands", "Editar comandos…"), "edit-commands", False))
         rows.append(("cmd", text("menu.edit_help", "Editar ayuda…"), "edit-help", False))
@@ -622,10 +665,20 @@ class TrayApp:
         self.hub.brain.persist()
         self.hub.brain.set_devices(self.speaker.list_voices(code), self.hub.brain.recognizers)
         self._build_menus()
+        self._apply_chrome()
+        reopen_persona = self._drop_window("_persona_win")
+        reopen_about = self._drop_window("_about_win")
+        reopen_market = self._drop_window("_market_win")
         self._sync_ear()
         name = dict(languages()).get(code, code)
         self._note(f"idioma {name}")
         self._paint()
+        if reopen_persona:
+            self._build_personality()
+        if reopen_about:
+            self._build_about()
+        if reopen_market:
+            self._build_market()
 
     def _edit_commands(self) -> None:
         from grok_assistant.i18n import current, save_section
@@ -634,7 +687,7 @@ class TrayApp:
         window.title(self.hub.brain.settings.language)
         window.configure(bg=BG)
         window.geometry("720x560")
-        ttk.Label(window, text="Un comando por línea: id = frase | frase", style="Muted.TLabel").pack(anchor="w", padx=12, pady=8)
+        ttk.Label(window, text=_ui("dialog.commands_hint", "Un comando por línea: id = frase | frase"), style="Muted.TLabel").pack(anchor="w", padx=12, pady=8)
         box = tk.Text(window, wrap="word", bg=FIELD, fg=INK, insertbackground=INK, font=MONO, relief="flat", padx=10, pady=8)
         box.pack(fill="both", expand=True, padx=12, pady=(0, 8))
         commands = dict(current().get("commands") or {})
@@ -665,7 +718,7 @@ class TrayApp:
             self._note("comandos de este idioma guardados")
             window.destroy()
 
-        ttk.Button(window, text="Aplicar", command=save).pack(anchor="e", padx=12, pady=(0, 12))
+        ttk.Button(window, text=_ui("menu.apply", "Aplicar"), command=save).pack(anchor="e", padx=12, pady=(0, 12))
 
     def _edit_help(self) -> None:
         from grok_assistant.helptext import help_topics
@@ -677,7 +730,7 @@ class TrayApp:
         window.geometry("720x560")
         ttk.Label(
             window,
-            text="Cada ayuda: título, luego example: ejemplo, luego el texto, y una línea ---",
+            text=_ui("dialog.help_hint", "Cada ayuda: título, luego example: ejemplo, luego el texto, y una línea ---"),
             style="Muted.TLabel",
         ).pack(anchor="w", padx=12, pady=8)
         box = tk.Text(window, wrap="word", bg=FIELD, fg=INK, insertbackground=INK, font=FONT, relief="flat", padx=10, pady=8)
@@ -706,17 +759,17 @@ class TrayApp:
             self._note("ayuda de este idioma guardada")
             window.destroy()
 
-        ttk.Button(window, text="Aplicar", command=save).pack(anchor="e", padx=12, pady=(0, 12))
+        ttk.Button(window, text=_ui("menu.apply", "Aplicar"), command=save).pack(anchor="e", padx=12, pady=(0, 12))
 
     def _persona_items(self) -> list:
         from grok_assistant.personality import persons
 
         current = str(self.hub.brain.settings.personality.get("profile") or "")
-        rows = [("cmd", "Sin persona — la voz de siempre", "persona:", not current)]
+        rows = [("cmd", _used(not current) + _ui("persona.none", "Sin persona — la voz de siempre"), "persona:", not current)]
         for person in persons():
-            rows.append(("cmd", f"{person.name} — {person.label}", f"persona:{person.id}", person.id == current))
+            rows.append(("cmd", _used(person.id == current) + f"{person.name} — {person.label}", f"persona:{person.id}", person.id == current))
         rows.append(("sep",))
-        rows.append(("cmd", "Ajustar rasgos y comportamiento…", "persona-edit", False))
+        rows.append(("cmd", _ui("persona.adjust", "Ajustar rasgos y comportamiento…"), "persona-edit", False))
         return rows
 
     def _choose_person(self, person_id: str) -> None:
@@ -745,16 +798,29 @@ class TrayApp:
                 pass
         self._build_personality()
 
+    def _choice_map(self, prefix: str, pairs: tuple) -> tuple[list[str], dict[str, str], dict[str, str]]:
+        labels: list[str] = []
+        to_id: dict[str, str] = {}
+        to_label: dict[str, str] = {}
+        for key, fallback in pairs:
+            shown = _ui(f"{prefix}.{key}", fallback)
+            if shown in to_id:
+                shown = f"{shown} · {key}"
+            labels.append(shown)
+            to_id[shown] = key
+            to_label[key] = shown
+        return labels, to_id, to_label
+
     def _build_personality(self) -> None:
         from grok_assistant.personality import CULTURES, FORMALITY, TONES, TRAITS, VERBOSITY, persons
 
         window = tk.Toplevel(self.root)
-        window.title("Personalidad")
+        window.title(_ui("persona.title", "Personalidad"))
         window.configure(bg=BG)
         window.geometry("760x720")
         self._persona_win = window
         self._persona_hold = False
-        blank_label = "Sin persona — la voz de siempre"
+        blank_label = _ui("persona.none", "Sin persona — la voz de siempre")
         self._persona_ids = {blank_label: ""}
         self._persona_labels = {"": blank_label}
         for person in persons():
@@ -767,32 +833,28 @@ class TrayApp:
         self._persona_culture = tk.StringVar()
         self._persona_verbosity = tk.StringVar()
         self._persona_formality = tk.StringVar()
-        self._tone_ids = {label: key for key, label in TONES}
-        self._culture_ids = {label: key for key, label in CULTURES}
-        self._verbosity_ids = {label: key for key, label in VERBOSITY}
-        self._formality_ids = {label: key for key, label in FORMALITY}
-        self._tone_labels = {key: label for key, label in TONES}
-        self._culture_labels = {key: label for key, label in CULTURES}
-        self._verbosity_labels = {key: label for key, label in VERBOSITY}
-        self._formality_labels = {key: label for key, label in FORMALITY}
+        tone_labels, self._tone_ids, self._tone_labels = self._choice_map("tone", TONES)
+        culture_labels, self._culture_ids, self._culture_labels = self._choice_map("culture", CULTURES)
+        verbosity_labels, self._verbosity_ids, self._verbosity_labels = self._choice_map("form", VERBOSITY)
+        formality_labels, self._formality_ids, self._formality_labels = self._choice_map("form", FORMALITY)
 
-        ttk.Label(window, text="Personalidad", style="Status.TLabel").pack(anchor="w", padx=16, pady=(14, 2))
+        ttk.Label(window, text=_ui("persona.title", "Personalidad"), style="Status.TLabel").pack(anchor="w", padx=16, pady=(14, 2))
         ttk.Label(
             window,
-            text="Elige una persona y, si quieres, mueve cada rasgo. El comportamiento es texto libre.",
+            text=_ui("persona.hint", "Elige una persona y, si quieres, mueve cada rasgo. El comportamiento es texto libre."),
             style="Muted.TLabel",
         ).pack(anchor="w", padx=16, pady=(0, 8))
         buttons = ttk.Frame(window)
         buttons.pack(side="bottom", anchor="e", padx=16, pady=12)
-        ttk.Button(buttons, text="Restaurar", command=self._persona_restore).pack(side="right")
-        ttk.Button(buttons, text="Aplicar", command=self._persona_save).pack(side="right", padx=(0, 8))
+        ttk.Button(buttons, text=_ui("menu.restore", "Restaurar"), command=self._persona_restore).pack(side="right")
+        ttk.Button(buttons, text=_ui("menu.apply", "Aplicar"), command=self._persona_save).pack(side="right", padx=(0, 8))
         page = ttk.Frame(window)
         page.pack(fill="both", expand=True, padx=8)
         _canvas, inner = self._scroll_page(page)
 
         head = ttk.Frame(inner)
         head.pack(fill="x", padx=8, pady=(8, 4))
-        ttk.Label(head, text="Persona").pack(anchor="w")
+        ttk.Label(head, text=_ui("persona.person", "Persona")).pack(anchor="w")
         person_labels = list(self._persona_ids)
         picker = ttk.OptionMenu(head, self._persona_choice, person_labels[0], *person_labels[1:])
         picker.pack(anchor="w", pady=(2, 6))
@@ -800,16 +862,19 @@ class TrayApp:
 
         picks = ttk.Frame(inner)
         picks.pack(fill="x", padx=8, pady=(10, 4))
-        self._option_row(picks, "Tono", self._persona_tone, [label for _key, label in TONES])
-        self._option_row(picks, "Cultura", self._persona_culture, [label for _key, label in CULTURES])
-        self._option_row(picks, "Verbosidad", self._persona_verbosity, [label for _key, label in VERBOSITY])
-        self._option_row(picks, "Formalidad", self._persona_formality, [label for _key, label in FORMALITY])
+        self._option_row(picks, _ui("persona.tone", "Tono"), self._persona_tone, tone_labels)
+        self._option_row(picks, _ui("persona.culture", "Cultura"), self._persona_culture, culture_labels)
+        self._option_row(picks, _ui("persona.verbosity", "Verbosidad"), self._persona_verbosity, verbosity_labels)
+        self._option_row(picks, _ui("persona.formality", "Formalidad"), self._persona_formality, formality_labels)
 
         self._persona_scales = {}
         for key, title, low, high in TRAITS:
             row = ttk.Frame(inner)
             row.pack(fill="x", padx=8, pady=3)
-            ttk.Label(row, text=f"{title}    {low}  ·  {high}").pack(anchor="w")
+            shown = _ui(f"trait.{key}", title)
+            low_label = _ui(f"trait.{key}.low", low)
+            high_label = _ui(f"trait.{key}.high", high)
+            ttk.Label(row, text=f"{shown}    {low_label}  ·  {high_label}").pack(anchor="w")
             scale = tk.Scale(
                 row, from_=0, to=100, orient="horizontal", showvalue=True,
                 bg=BG, fg=INK, troughcolor=FIELD, highlightthickness=0,
@@ -818,10 +883,10 @@ class TrayApp:
             scale.pack(anchor="w")
             self._persona_scales[key] = scale
 
-        ttk.Label(inner, text="Comportamiento").pack(anchor="w", padx=8, pady=(12, 2))
+        ttk.Label(inner, text=_ui("persona.behavior", "Comportamiento")).pack(anchor="w", padx=8, pady=(12, 2))
         ttk.Label(
             inner,
-            text="Esto no es un número. Escribe cómo debe comportarse.",
+            text=_ui("persona.behavior_hint", "Esto no es un número. Escribe cómo debe comportarse."),
             style="Muted.TLabel",
         ).pack(anchor="w", padx=8)
         self._persona_behavior = tk.Text(
@@ -854,7 +919,7 @@ class TrayApp:
         self._persona_choice.set(self._persona_labels.get(cfg["profile"], self._persona_labels[""]))
         person = person_by_id(cfg["profile"])
         if person is None:
-            self._persona_meaning.set("Sin persona. Grok contesta con la voz de siempre.")
+            self._persona_meaning.set(_ui("persona.none_meaning", "Sin persona. Grok contesta con la voz de siempre."))
         else:
             self._persona_meaning.set(person.meaning)
         self._persona_tone.set(self._tone_labels.get(cfg["tone"], self._tone_labels["auto"]))
@@ -899,25 +964,174 @@ class TrayApp:
             self._note(f"persona {person.name}. La próxima respuesta usa estos rasgos.")
         self._paint()
 
+    def _alive(self, attr: str) -> bool:
+        window = getattr(self, attr, None)
+        if window is None:
+            return False
+        try:
+            return bool(window.winfo_exists())
+        except tk.TclError:
+            return False
+
+    def _drop_window(self, attr: str) -> bool:
+        alive = self._alive(attr)
+        if alive:
+            try:
+                getattr(self, attr).destroy()
+            except tk.TclError:
+                pass
+        setattr(self, attr, None)
+        return alive
+
+    def _apply_chrome(self) -> None:
+        self.debug_label.configure(text=_ui("window.debug", "Depuración — lo que oye y lo que hace después"))
+        self.send_button.configure(text=_ui("window.send", "Enviar"))
+        self.clear_button.configure(text=_ui("window.clear", "Limpiar registro"))
+        self.quit_button.configure(text=_ui("menu.quit", "Salir"))
+        paused = _ui("menu.resume", "Seguir escuchando") if self.user_paused else _ui("menu.pause", "Pausar escucha")
+        self.pause_button.configure(text=paused)
+        self._show_usage()
+
+    def _show_usage(self) -> None:
+        try:
+            if not self._usage_known:
+                self.usage_var.set(_ui("window.account", "cuenta {n}%").replace("{n}", "…"))
+                self.usage_label.configure(fg=MUTED)
+                return
+            percent = self._usage_percent
+            if percent is None:
+                self.usage_var.set(_ui("window.no_account", "sin cuenta"))
+                self.usage_label.configure(fg=MUTED)
+                return
+            self.usage_var.set(_ui("window.account", "cuenta {n}%").replace("{n}", str(percent)))
+            if percent >= 90:
+                color = "#e06a6a"
+            elif percent >= 70:
+                color = AMBER
+            else:
+                color = TEAL
+            self.usage_label.configure(fg=color)
+        except tk.TclError:
+            return
+
+    def _offer_used(self, offer: Offer) -> bool:
+        settings = self.hub.brain.settings
+        if offer.kind == "voice":
+            voices = self.hub.brain.voices
+            if not voices:
+                return False
+            current = voices[min(settings.voice_index, len(voices) - 1)]
+            return current == offer.use_label or current == offer.title
+        if offer.kind == "stt":
+            return bool(offer.engine_id) and offer.engine_id == settings.recognizer
+        if offer.kind == "llm":
+            if not settings.local_llm or not offer.files:
+                return False
+            filename = offer.files[0][1].rsplit("/", 1)[-1]
+            return filename == settings.llm_file
+        return False
+
+    def _used_mark(self, offer: Offer) -> str:
+        if not self._offer_used(offer):
+            return ""
+        return "✓   " + _ui("market.used", "EN USO")
+
+    def _offer_title(self, offer: Offer) -> str:
+        if offer.kind == "stt" and offer.engine_id:
+            return _ui(f"offer.{offer.engine_id}.title", offer.title)
+        return offer.title
+
+    def _offer_detail(self, offer: Offer) -> str:
+        if offer.kind == "stt" and offer.engine_id:
+            return _ui(f"offer.{offer.engine_id}.detail", offer.detail)
+        if offer.kind == "llm":
+            return _ui("offer.llm.detail", offer.detail)
+        if offer.detail.startswith("Piper ·"):
+            return offer.detail
+        return _ui("offer.voice.detail", offer.detail)
+
+    def _short_line(self, value: str, limit: int = 120) -> str:
+        compact = " ".join(value.split())
+        if len(compact) <= limit:
+            return compact
+        return compact[: limit - 1].rstrip() + "…"
+
+    def _refresh_market_marks(self) -> None:
+        for offer, mark in list(getattr(self, "_market_marks", [])):
+            try:
+                mark.configure(text=self._used_mark(offer))
+            except tk.TclError:
+                return
+
+    def _warm_piper(self) -> None:
+        from grok_assistant.marketplace import fetch_piper_index, piper_cached
+
+        if piper_cached():
+            return
+        found = fetch_piper_index()
+        def apply() -> None:
+            loading = getattr(self, "_market_loading", None)
+            if loading is not None:
+                try:
+                    loading.set("" if found else _ui("market.catalog_fail", "No pude leer el catálogo Piper."))
+                except tk.TclError:
+                    pass
+            if found and not getattr(self, "_market_busy", False):
+                self._append_market_extras()
+
+        self.ui.put(apply)
+
+    def _append_market_extras(self) -> None:
+        if not self._alive("_market_win"):
+            return
+        from grok_assistant.i18n import code
+        from grok_assistant.marketplace import extra_piper_offers
+
+        parent = getattr(self, "_market_voice_inner", None)
+        status = getattr(self, "_market_status", None)
+        if parent is None or status is None:
+            return
+        shown = getattr(self, "_market_shown", set())
+        for offer in extra_piper_offers(code()):
+            if offer.id in shown:
+                continue
+            try:
+                self._market_row(parent, offer, status)
+            except tk.TclError:
+                return
+            shown.add(offer.id)
+
     def _open_market(self) -> None:
+        if self._alive("_market_win"):
+            self._market_win.deiconify()
+            self._market_win.lift()
+            return
+        self._build_market()
+
+    def _build_market(self) -> None:
         window = tk.Toplevel(self.root)
         window.title("Voice market")
         window.configure(bg=BG)
-        window.geometry("760x640")
+        window.geometry("980x640")
+        self._market_win = window
+        self._market_marks = []
+        self._market_shown = set()
+        self._market_busy = False
         ttk.Label(window, text="Voice market", style="Status.TLabel").pack(anchor="w", padx=16, pady=(14, 2))
         ttk.Label(
             window,
-            text="Nada baja solo. En el menú entra cuando la descarga llega al 100 %.",
+            text=_ui("market.hint", "Nada baja solo. En el menú entra cuando la descarga llega al 100 %."),
             style="Muted.TLabel",
         ).pack(anchor="w", padx=16, pady=(0, 8))
         status = tk.StringVar(value="")
+        self._market_status = status
         ttk.Label(window, textvariable=status, style="Muted.TLabel").pack(side="bottom", anchor="w", padx=16, pady=(0, 10))
         book = ttk.Notebook(window, style="Market.TNotebook")
         book.pack(fill="both", expand=True, padx=12, pady=(0, 8))
         groups = (
-            ("stt", "Reconocimiento"),
-            ("voice", "Voces"),
-            ("llm", "Modelo local"),
+            ("stt", _ui("market.stt", "Reconocimiento")),
+            ("voice", _ui("market.voices", "Voces")),
+            ("llm", _ui("market.llm", "Modelo local")),
         )
         canvases: dict[str, tk.Canvas] = {}
         catalog = offers_for()
@@ -926,9 +1140,14 @@ class TrayApp:
             book.add(page, text=title)
             canvas, inner = self._scroll_page(page)
             canvases[str(page)] = canvas
-            for offer in catalog:
-                if offer.kind == kind:
-                    self._market_row(inner, offer, status)
+            rows = [offer for offer in catalog if offer.kind == kind]
+            rows.sort(key=lambda offer: (not self._offer_used(offer), offer.title.lower()))
+            if kind == "voice":
+                self._market_voice_inner = inner
+                self._market_voice_head(inner)
+            for offer in rows:
+                self._market_row(inner, offer, status)
+                self._market_shown.add(offer.id)
 
         def _wheel(event) -> None:
             canvas = canvases.get(str(book.select()))
@@ -937,6 +1156,26 @@ class TrayApp:
 
         window.bind("<MouseWheel>", _wheel)
         window.bind("<Destroy>", lambda event: window.unbind("<MouseWheel>") if event.widget is window else None)
+
+    def _market_voice_head(self, parent) -> None:
+        from grok_assistant.marketplace import piper_cached
+
+        head = tk.Frame(parent, bg=BG)
+        head.pack(fill="x", padx=8, pady=(8, 4))
+        tk.Label(
+            head,
+            text=_ui("market.more", "Más voces del catálogo Piper (rhasspy/piper-voices)."),
+            bg=BG, fg=MUTED, font=("Segoe UI", 10), anchor="w",
+        ).pack(fill="x")
+        link = tk.Label(
+            head,
+            text="huggingface.co/rhasspy/piper-voices",
+            bg=BG, fg=TEAL, cursor="hand2", font=("Segoe UI", 10, "underline"), anchor="w",
+        )
+        link.pack(fill="x")
+        link.bind("<Button-1>", lambda _event: webbrowser.open("https://huggingface.co/rhasspy/piper-voices"))
+        self._market_loading = tk.StringVar(value="" if piper_cached() else _ui("market.loading", "Busco más voces en el catálogo Piper…"))
+        tk.Label(head, textvariable=self._market_loading, bg=BG, fg=MUTED, font=("Segoe UI", 10), anchor="w").pack(fill="x")
 
     def _scroll_page(self, page: ttk.Frame) -> tuple[tk.Canvas, ttk.Frame]:
         canvas = tk.Canvas(page, bg=BG, highlightthickness=0)
@@ -958,26 +1197,41 @@ class TrayApp:
         return canvas, inner
 
     def _market_row(self, parent, offer: Offer, status: tk.StringVar) -> None:
-        row = ttk.Frame(parent)
-        row.pack(fill="x", padx=8, pady=6)
+        row = tk.Frame(parent, bg=BG)
+        row.pack(fill="x", padx=4, pady=1)
         ready = offer.ready()
         percent = tk.IntVar(value=100 if ready else 0)
-        label = tk.StringVar(value="100 %" if ready else "sin descargar")
-        ttk.Label(row, text=f"{offer.title}   {offer.size}", font=("Segoe UI", 11)).pack(anchor="w")
-        ttk.Label(row, textvariable=label, style="Muted.TLabel").pack(anchor="w")
-        ttk.Label(row, text=offer.detail, style="Muted.TLabel").pack(anchor="w")
-        bar = ttk.Progressbar(row, maximum=100, variable=percent, style="Market.Horizontal.TProgressbar")
-        button = ttk.Button(row)
-        button.pack(anchor="w", pady=(2, 0))
+        label = tk.StringVar(value="")
+        mark = tk.Label(
+            row,
+            text=self._used_mark(offer),
+            bg=BG, fg=GREEN, font=("Segoe UI", 9, "bold"),
+            width=18, anchor="w",
+        )
+        mark.pack(side="left", padx=(6, 2))
+        self._market_marks.append((offer, mark))
+        side = tk.Frame(row, bg=BG)
+        side.pack(side="right", padx=(6, 4))
+        tk.Label(side, text=offer.size, bg=BG, fg=MUTED, font=("Segoe UI", 9), width=16, anchor="e").pack(side="left", padx=(0, 6))
+        button = ttk.Button(side, style="Compact.TButton")
+        button.pack(side="left")
+        body = tk.Frame(row, bg=BG)
+        body.pack(side="left", fill="x", expand=True, padx=(2, 4))
+        tk.Label(body, text=self._offer_title(offer), bg=BG, fg=INK, font=("Segoe UI", 11), anchor="w").pack(fill="x")
+        tk.Label(body, text=self._short_line(self._offer_detail(offer)), bg=BG, fg=MUTED, font=("Segoe UI", 9), anchor="w").pack(fill="x")
+        bar = ttk.Progressbar(body, maximum=100, variable=percent, style="Market.Horizontal.TProgressbar")
+        state = tk.Label(body, textvariable=label, bg=BG, fg=MUTED, font=("Segoe UI", 9), anchor="w")
         if ready:
-            button.configure(text="Usar", command=lambda item=offer: self._use_offer(item))
+            button.configure(text=_ui("market.use", "Usar"), command=lambda item=offer: self._use_offer(item))
         else:
+            state.pack(fill="x")
+            label.set(_ui("market.missing", "sin descargar"))
             button.configure(
-                text="Descargar",
-                command=lambda item=offer: self._download_offer(item, status, percent, label, button, bar),
+                text=_ui("market.download", "Descargar"),
+                command=lambda item=offer: self._download_offer(item, status, percent, label, button, bar, state),
             )
 
-    def _download_offer(self, offer: Offer, status: tk.StringVar, percent: tk.IntVar, label: tk.StringVar, button: ttk.Button, bar: ttk.Progressbar) -> None:
+    def _download_offer(self, offer: Offer, status: tk.StringVar, percent: tk.IntVar, label: tk.StringVar, button: ttk.Button, bar: ttk.Progressbar, state: tk.Label | None = None) -> None:
         def show(value: int, caption: str = "") -> None:
             def apply() -> None:
                 try:
@@ -997,10 +1251,11 @@ class TrayApp:
                 )
 
                 def done() -> None:
+                    self._market_busy = False
                     try:
                         bar.pack_forget()
                         label.set("100 %")
-                        button.configure(text="Usar", state="normal", command=lambda item=offer: self._use_offer(item))
+                        button.configure(text=_ui("market.use", "Usar"), state="normal", command=lambda item=offer: self._use_offer(item))
                     except tk.TclError:
                         pass
                     status.set(f"{offer.title} listo")
@@ -1009,10 +1264,11 @@ class TrayApp:
                 self.ui.put(done)
             except Exception as exc:
                 def fail() -> None:
+                    self._market_busy = False
                     message = str(exc)[:180]
                     try:
                         bar.pack_forget()
-                        button.configure(state="normal", text="Descargar")
+                        button.configure(state="normal", text=_ui("market.download", "Descargar"))
                         label.set(message)
                     except tk.TclError:
                         pass
@@ -1021,11 +1277,15 @@ class TrayApp:
                 self.ui.put(fail)
 
         try:
-            button.configure(state="disabled", text="Descargando")
+            self._market_busy = True
+            button.configure(state="disabled", text=_ui("market.downloading", "Descargando"))
             label.set("0 %")
             percent.set(0)
-            bar.pack(fill="x", pady=(4, 2), before=button)
+            if state is not None:
+                state.pack(fill="x")
+            bar.pack(fill="x", pady=(2, 0))
         except tk.TclError:
+            self._market_busy = False
             return
         status.set(f"descargando {offer.title}…")
         threading.Thread(target=work, daemon=True).start()
@@ -1081,75 +1341,76 @@ class TrayApp:
             if self.hub.mind is not None:
                 self.hub.mind.select(filename)
             self._note(f"modelo local: {offer.title}. Si no es un comando, el texto sigue tal cual.")
+        self._refresh_market_marks()
         self._paint()
 
     def _password_dialog(self) -> None:
-        first = simpledialog.askstring("Administrador", "Nueva contraseña:", show="*", parent=self.root)
+        title = _ui("dialog.admin", "Administrador")
+        first = simpledialog.askstring(title, _ui("dialog.password_new", "Nueva contraseña:"), show="*", parent=self.root)
         if not first:
             return
-        second = simpledialog.askstring("Administrador", "Repite la contraseña:", show="*", parent=self.root)
+        second = simpledialog.askstring(title, _ui("dialog.password_repeat", "Repite la contraseña:"), show="*", parent=self.root)
         if first != second:
-            messagebox.showinfo("Administrador", "No coinciden.", parent=self.root)
+            messagebox.showinfo(title, _ui("dialog.password_mismatch", "No coinciden."), parent=self.root)
             return
         self.hub.brain.auth.set_password(first)
         self._note("contraseña de administrador guardada. En el disco solo está el hash.")
         self._paint()
 
     def _open_about(self) -> None:
+        if self._alive("_about_win"):
+            self._about_win.deiconify()
+            self._about_win.lift()
+            return
+        self._build_about()
+
+    def _build_about(self) -> None:
         window = tk.Toplevel(self.root)
-        window.title("Acerca de")
+        window.title(_ui("about.title", "Acerca de"))
         window.configure(bg=BG)
         window.geometry("720x560")
+        self._about_win = window
         book = ttk.Notebook(window, style="Market.TNotebook")
         book.pack(fill="both", expand=True, padx=12, pady=12)
         about = ttk.Frame(book)
         commands = ttk.Frame(book)
-        book.add(about, text="Acerca de")
-        book.add(commands, text="Comandos")
-        text = tk.Text(
+        book.add(about, text=_ui("about.title", "Acerca de"))
+        book.add(commands, text=_ui("about.commands", "Comandos"))
+        body = tk.Text(
             about, wrap="word", bg=FIELD, fg=INK, font=("Segoe UI", 12),
             relief="flat", padx=18, pady=16, insertbackground=INK,
         )
-        text.pack(fill="both", expand=True)
-        text.tag_configure("name", font=("Segoe UI", 16, "bold"), foreground=AMBER, spacing3=6)
-        text.tag_configure("quiet", foreground=MUTED, spacing3=10)
-        self._link_tag(text, "github", "https://github.com/antonio-castellon")
-        self._link_tag(text, "site", "https://www.castellon.ch")
-        text.insert("end", "Antonio Castellon\n", "name")
-        text.insert("end", "Castellon.CH\n", "quiet")
-        text.insert("end", "GitHub  ")
-        text.insert("end", "antonio-castellon", "github")
-        text.insert("end", "\nWeb  ")
-        text.insert("end", "www.castellon.ch", "site")
-        text.insert(
-            "end",
-            "\n\nGrok Assistant escucha en casa. El audio no sale. "
-            "A Grok solo se le manda el texto de una pregunta o de una orden, y solo cuando las reglas lo permiten. "
-            "Lo demás se queda en el cuaderno de este equipo.\n\n"
-            "Esta ventana es el registro: lo que se oyó y lo que se hizo después. "
-            "Cerrarla esconde el programa. El icono de Grok en la bandeja lo vuelve a abrir. Salir lo cierra.",
-        )
-        text.bind("<Key>", lambda _event: "break")
+        body.pack(fill="both", expand=True)
+        body.tag_configure("name", font=("Segoe UI", 16, "bold"), foreground=AMBER, spacing3=6)
+        body.tag_configure("quiet", foreground=MUTED, spacing3=10)
+        self._link_tag(body, "github", "https://github.com/antonio-castellon")
+        self._link_tag(body, "site", "https://www.castellon.ch")
+        body.insert("end", "Antonio Castellon\n", "name")
+        body.insert("end", "Castellon.CH\n", "quiet")
+        body.insert("end", "GitHub  ")
+        body.insert("end", "antonio-castellon", "github")
+        body.insert("end", "\nWeb  ")
+        body.insert("end", "www.castellon.ch", "site")
+        body.insert("end", "\n\n" + _ui("about.body", ""))
+        body.bind("<Key>", lambda _event: "break")
         self._fill_commands(commands)
         window.protocol("WM_DELETE_WINDOW", window.destroy)
 
     def _fill_commands(self, parent: ttk.Frame) -> None:
-        text = tk.Text(
+        box = tk.Text(
             parent, wrap="word", bg=FIELD, fg=INK, font=("Segoe UI", 12),
             relief="flat", padx=18, pady=16, insertbackground=INK,
         )
-        text.pack(fill="both", expand=True)
-        text.tag_configure("title", font=("Segoe UI", 14, "bold"), foreground=AMBER, spacing1=14, spacing3=4)
-        text.tag_configure("example", font=("Consolas", 12), foreground=TEAL, spacing3=8)
-        text.insert(
-            "end",
-            "Cada orden de abajo se puede decir. Casi todas empiezan por comando. El ejemplo es una frase completa.\n",
-        )
+        box.pack(fill="both", expand=True)
+        box.tag_configure("title", font=("Segoe UI", 14, "bold"), foreground=AMBER, spacing1=14, spacing3=4)
+        box.tag_configure("example", font=("Consolas", 12), foreground=TEAL, spacing3=8)
+        box.insert("end", _ui("about.lead", "") + "\n")
+        example_word = _ui("about.example", "Ejemplo")
         for title, body, example in help_topics():
-            text.insert("end", title + "\n", "title")
-            text.insert("end", body + "\n")
-            text.insert("end", f"Ejemplo: {example}\n", "example")
-        text.configure(state="disabled")
+            box.insert("end", title + "\n", "title")
+            box.insert("end", body + "\n")
+            box.insert("end", f"{example_word}: {example}\n", "example")
+        box.configure(state="disabled")
 
     def _link_tag(self, text: tk.Text, tag: str, url: str) -> None:
         text.tag_configure(tag, foreground=TEAL, underline=True)
@@ -1221,7 +1482,7 @@ class TrayApp:
                 result = self.hub.run(payload, speaker=self.say, vector=embedding)
                 self._apply(result)
                 if any(item[0] == "ask_password" for item in result.effects):
-                    password = self._ask("Contraseña de administrador")
+                    password = self._ask(_ui("dialog.admin", "Administrador"))
                     follow = self.hub.submit_password(password, speaker=self.say) if password else self.hub.cancel_password(speaker=self.say)
                     self._apply(follow)
             finally:
@@ -1377,21 +1638,9 @@ class TrayApp:
             percent = fetch_account_percent()
 
             def apply() -> None:
-                try:
-                    if percent is None:
-                        self.usage_var.set("sin cuenta")
-                        self.usage_label.configure(fg=MUTED)
-                        return
-                    self.usage_var.set(f"cuenta {percent}%")
-                    if percent >= 90:
-                        color = "#e06a6a"
-                    elif percent >= 70:
-                        color = AMBER
-                    else:
-                        color = TEAL
-                    self.usage_label.configure(fg=color)
-                except tk.TclError:
-                    return
+                self._usage_known = True
+                self._usage_percent = percent
+                self._show_usage()
 
             self.ui.put(apply)
 
@@ -1420,6 +1669,7 @@ class TrayApp:
         except tk.TclError:
             return
         self.status_var.set(snap["status"])
+        self._refresh_market_marks()
         self.detail_var.set(
             f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {snap['recognizer']}  ·  {snap['identifier']}  ·  {snap['session']}  ·  {snap['volume']}%"
         )
@@ -1464,7 +1714,9 @@ class TrayApp:
         self.user_paused = not self.user_paused
         self.hub.brain.set_paused(self.user_paused)
         self._sync_ear()
-        self.pause_button.configure(text="Seguir escuchando" if self.user_paused else "Pausar escucha")
+        self.pause_button.configure(
+            text=_ui("menu.resume", "Seguir escuchando") if self.user_paused else _ui("menu.pause", "Pausar escucha")
+        )
         self._note("escucha en pausa" if self.user_paused else "vuelvo a escuchar")
         self._paint()
 
@@ -1473,7 +1725,7 @@ class TrayApp:
         box: dict[str, str | None] = {"value": None}
 
         def show() -> None:
-            box["value"] = simpledialog.askstring(title, "Contraseña:", show="*", parent=self.root)
+            box["value"] = simpledialog.askstring(title, _ui("dialog.password", "Contraseña:"), show="*", parent=self.root)
             event.set()
 
         self.ui.put(show)

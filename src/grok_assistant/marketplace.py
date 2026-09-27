@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import tarfile
 import urllib.request
 import zipfile
@@ -163,7 +164,100 @@ def offers_for(lang: str | None = None) -> list[Offer]:
         if item.kind == "voice" and item.lang and item.lang != wanted:
             continue
         rows.append(item)
+    rows.extend(extra_piper_offers(wanted))
     return rows
+
+
+PIPER_INDEX = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/voices.json"
+
+
+def extra_piper_offers(lang: str, index: dict | None = None) -> list[Offer]:
+    """More Piper voices from the public rhasspy catalog, for this language only."""
+    data = piper_cached() if index is None else index
+    if not data:
+        return []
+    known = set()
+    for item in offers():
+        if item.kind != "voice":
+            continue
+        for _url, rel in item.files:
+            known.add(rel.rsplit("/", 1)[-1])
+    rows = []
+    for key, info in data.items():
+        if not isinstance(info, dict):
+            continue
+        language = info.get("language") or {}
+        if str(language.get("family") or "") != lang:
+            continue
+        try:
+            speakers = int(info.get("num_speakers") or 1)
+        except (TypeError, ValueError):
+            speakers = 1
+        if speakers > 8:
+            continue
+        files = info.get("files") or {}
+        onnx = next((path for path in files if str(path).endswith(".onnx")), "")
+        meta = next((path for path in files if str(path).endswith(".onnx.json")), "")
+        if not onnx or not meta:
+            continue
+        file_name = str(onnx).rsplit("/", 1)[-1]
+        if file_name in known:
+            continue
+        size = int((files.get(onnx) or {}).get("size_bytes") or 0)
+        name = str(info.get("name") or key).replace("_", " ")
+        country = str(language.get("country_english") or "")
+        quality = str(info.get("quality") or "")
+        title = f"{name} · {country} · {quality}".strip(" ·")
+        label = Path(file_name).stem.replace("-", " ")
+        rows.append(Offer(
+            id=f"piper-{key}",
+            kind="voice",
+            title=title,
+            detail="Piper · rhasspy/piper-voices",
+            size=f"{max(1, size // 1_000_000)} MB" if size else "",
+            use_label=label,
+            lang=lang,
+            files=(
+                (f"{PIPER}/{onnx}", f"voices/{file_name}"),
+                (f"{PIPER}/{meta}", f"voices/{str(meta).rsplit('/', 1)[-1]}"),
+            ),
+        ))
+    rows.sort(key=lambda item: item.title.lower())
+    return rows
+
+
+def piper_cached() -> dict:
+    """The rhasspy catalog already saved on this PC. Never touches the network."""
+    cache = default_data_dir() / "voices" / "piper-voices.json"
+    if not cache.exists() or cache.stat().st_size < 1000:
+        return {}
+    try:
+        data = json.loads(cache.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def fetch_piper_index() -> dict:
+    """Download voices.json once, then keep the copy under the assistant data folder."""
+    found = piper_cached()
+    if found:
+        return found
+    try:
+        import urllib.request
+
+        folder = default_data_dir() / "voices"
+        folder.mkdir(parents=True, exist_ok=True)
+        cache = folder / "piper-voices.json"
+        with urllib.request.urlopen(PIPER_INDEX, timeout=20) as response:
+            raw = response.read()
+        data = json.loads(raw.decode("utf-8"))
+        if not isinstance(data, dict):
+            return {}
+        cache.write_bytes(raw)
+        return data
+    except (OSError, ValueError, json.JSONDecodeError):
+        return {}
 
 
 def progress_percent(done: int, total: int) -> int:

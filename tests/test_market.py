@@ -27,6 +27,88 @@ class FakeCLI:
         return "Son las tres."
 
 
+def test_language_packs_share_the_same_labels():
+    import json
+    from grok_assistant.i18n import bundled_dir
+
+    packs = {
+        path.stem: set(json.loads(path.read_text(encoding="utf-8"))["ui"])
+        for path in bundled_dir().glob("*.json")
+    }
+    assert set(packs) >= {"es", "fr", "de", "en"}
+    missing = {code: sorted(packs["es"] - keys) for code, keys in packs.items() if keys != packs["es"]}
+    assert missing == {}
+
+
+def test_extra_piper_voices_stay_in_the_selected_language():
+    from grok_assistant.marketplace import extra_piper_offers, offers_for
+
+    index = {
+        "fr_FR-siwis-medium": {
+            "name": "siwis",
+            "language": {"family": "fr", "country_english": "France"},
+            "quality": "medium",
+            "num_speakers": 1,
+            "files": {
+                "fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx": {"size_bytes": 60_000_000},
+                "fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx.json": {"size_bytes": 1000},
+            },
+        },
+        "fr_FR-gilles-low": {
+            "name": "gilles",
+            "language": {"family": "fr", "country_english": "France"},
+            "quality": "low",
+            "num_speakers": 1,
+            "files": {
+                "fr/fr_FR/gilles/low/fr_FR-gilles-low.onnx": {"size_bytes": 63_000_000},
+                "fr/fr_FR/gilles/low/fr_FR-gilles-low.onnx.json": {"size_bytes": 800},
+            },
+        },
+        "en_US-libritts-high": {
+            "name": "libritts",
+            "language": {"family": "en", "country_english": "United States"},
+            "quality": "high",
+            "num_speakers": 904,
+            "files": {
+                "en/en_US/libritts/high/en_US-libritts-high.onnx": {"size_bytes": 100},
+                "en/en_US/libritts/high/en_US-libritts-high.onnx.json": {"size_bytes": 10},
+            },
+        },
+        "de_DE-thorsten-high": {
+            "name": "thorsten",
+            "language": {"family": "de", "country_english": "Germany"},
+            "quality": "high",
+            "num_speakers": 1,
+            "files": {
+                "de/de_DE/thorsten/high/de_DE-thorsten-high.onnx": {"size_bytes": 70_000_000},
+                "de/de_DE/thorsten/high/de_DE-thorsten-high.onnx.json": {"size_bytes": 900},
+            },
+        },
+    }
+    french = extra_piper_offers("fr", index)
+    assert [item.id for item in french] == ["piper-fr_FR-gilles-low"]
+    assert french[0].use_label == "fr_FR gilles low"
+    assert french[0].lang == "fr"
+    assert french[0].size == "63 MB"
+    german = extra_piper_offers("de", index)
+    assert [item.title for item in german] == ["thorsten · Germany · high"]
+    assert extra_piper_offers("en", index) == []
+
+    def cached():
+        return index
+
+    import grok_assistant.marketplace as market
+
+    original = market.piper_cached
+    market.piper_cached = cached
+    try:
+        voices = [item for item in offers_for("fr") if item.kind == "voice"]
+        assert any(item.id == "piper-fr_FR-gilles-low" for item in voices)
+        assert {item.lang for item in voices} == {"fr"}
+    finally:
+        market.piper_cached = original
+
+
 def test_voice_market_lists_only_the_selected_language():
     from grok_assistant.marketplace import offers_for
     from grok_assistant.speech import voice_lang

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 
 from grok_assistant.auth import AdminAuth
 from grok_assistant.helptext import SCREEN_HELP, spoken_help
-from grok_assistant.i18n import say
+from grok_assistant.i18n import say, text
 from grok_assistant.match import (
     Hit,
     Song,
@@ -217,21 +217,21 @@ class Brain:
 
     def mode_label(self) -> str:
         if self.paused:
-            return "modo pausa"
+            return text("status.pause", "modo pausa")
         if self.test_mode:
-            return "modo prueba"
+            return text("status.test", "modo prueba")
         if self.phase:
             return self.phase
         if self.in_conversation:
-            return "modo conversación"
-        return "modo escucha"
+            return text("status.talk", "modo conversación")
+        return text("status.listen", "modo escucha")
 
     def identifier_label(self) -> str:
         from grok_assistant.marketplace import offers
 
         ready = [offer for offer in offers() if offer.kind == "llm" and offer.ready()]
         if not self.settings.local_llm or not ready:
-            return "sin identificador"
+            return text("status.no_identifier", "sin identificador")
         wanted = self.settings.llm_file
         for offer in ready:
             filename = offer.files[0][1].rsplit("/", 1)[-1]
@@ -249,9 +249,9 @@ class Brain:
         return {
             "status": self.status_label(),
             "model": self.settings.model,
-            "effort": "alto" if self.effort_now == "high" else "bajo",
+            "effort": text("status.effort_high", "alto") if self.effort_now == "high" else text("status.effort_low", "bajo"),
             "voice": f"{voice_no}. {voice_name}",
-            "recognizer": self.settings.recognizer,
+            "recognizer": text(f"ear.{self.settings.recognizer}", self.settings.recognizer),
             "identifier": self.identifier_label(),
             "session": session.name,
             "shared": session.shared,
@@ -535,12 +535,12 @@ class Brain:
         self.detail_used = True
         self.last_question = question
         self._record(question, "conversacion", True, "más detalle")
-        self.phase = "Buscando en la nube"
+        self.phase = text("status.search", "Buscando en la nube")
         self.effort_now = "high"
         return Turn(
             speak=[self._next_wait()],
             job=self._converse_job(question, "high"),
-            status="Buscando en la nube",
+            status=self.phase,
         )
 
     def _voice_allowed(self, speaker_id: str | None) -> bool:
@@ -664,9 +664,9 @@ class Brain:
         self.last_question = heard
         self.last_heard = heard
         self._record(heard, "conversacion", True)
-        self.phase = "Buscando en la nube"
+        self.phase = text("status.search", "Buscando en la nube")
         self.effort_now = "low"
-        return Turn(speak=[self._next_wait()], job=self._converse_job(heard, "low"), status="Buscando en la nube")
+        return Turn(speak=[self._next_wait()], job=self._converse_job(heard, "low"), status=self.phase)
 
     def _converse_job(self, text: str, effort: str) -> Job:
         if self.agents.active:
@@ -696,17 +696,17 @@ class Brain:
     def _order(self, heard: str, body: list[tuple[str, str]], full_len: int) -> Turn:
         norms = [norm for _, norm in body]
         if ("agente" in norms or "agentes" in norms) and full_len > 8:
-            text = " ".join(raw for raw, _ in body)
+            phrase = " ".join(raw for raw, _ in body)
             self._record(heard, "comando", True, "a clasificar")
-            self.phase = "Interpretando … buscando en la nube"
-            return Turn(speak=[], job=Job("classify", text), status=self.phase)
+            self.phase = text("status.interpret", "Interpretando … buscando en la nube")
+            return Turn(speak=[], job=Job("classify", phrase), status=self.phase)
         hit = parse_order(body)
         if hit is None:
-            text = " ".join(raw for raw, _ in body)
+            phrase = " ".join(raw for raw, _ in body)
             self._record(heard, "comando", True, "a clasificar")
             self.last_heard = heard
-            self.phase = "Interpretando … buscando en la nube"
-            return Turn(speak=[], job=Job("classify", text), status=self.phase)
+            self.phase = text("status.interpret", "Interpretando … buscando en la nube")
+            return Turn(speak=[], job=Job("classify", phrase), status=self.phase)
         self.last_heard = heard
         if hit.strict == "prueba":
             return self._enter_test(heard)
