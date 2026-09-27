@@ -60,7 +60,7 @@ HELP_TOPICS = (
         "comando voz 2",
     ),
     (
-        "Motor STT",
+        "Motor escucha (STT)",
         "Elige el motor de STT, el que convierte la voz en texto. Teclado es escribir en esta ventana. Windows español es el dictado de escritorio de Windows y el audio se queda aquí. "
         "Si falta, la línea Windows español… instalar y el botón del Mercado lo bajan: Windows pide permiso de administrador. "
         "El motor de STT en streaming para español deja el audio en este PC y cierra la frase en menos de dos segundos después de callarte. "

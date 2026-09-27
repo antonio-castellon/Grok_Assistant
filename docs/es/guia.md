@@ -17,7 +17,7 @@ Pasos cortos para abrir el programa, dejarlo listo y hablar con él. Cada aparta
 Hazlo una vez, en este orden.
 
 1. **Idioma.** Elige Español, Français, Deutsch o English. Los menús y las respuestas pasan a esa lengua.
-2. **Motor STT.** Es el programa que pasa la voz a texto. Elige uno en el menú. Si falta, abre **Voice market**, pestaña **Motor STT**, y descárgalo. Se puede elegir cuando llega al 100 %.
+2. **Motor escucha (STT).** Es el programa que pasa la voz a texto. Elige uno en el menú. Si falta, abre **Voice market**, pestaña **Motor escucha (STT)**, y descárgalo. Se puede elegir cuando llega al 100 %.
 3. **Voz.** Elige una voz de la misma lengua. En **Voice market**, pestaña **Voces**, hay más. Solo salen las de la lengua activa.
 4. **Huella.** **Administrador → Huellas.** Abre tu nombre, o **Nueva huella…**. Elige el mismo motor STT que vas a usar. Di las doce frases. Si una toma no coge el micrófono, pide repetirla. El menú muestra un número cuando ese motor ya tiene huella, o **sin huella** si no. Una huella de un motor no vale en otro.
 5. **Contraseña.** Solo si vas a crear agentes. **Administrador → Contraseña…**. Escríbela dos veces. El programa guarda un resumen, no la contraseña en claro.

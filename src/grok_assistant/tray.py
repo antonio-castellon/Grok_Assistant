@@ -1976,7 +1976,7 @@ class TrayApp:
         stt_detail = library_for_ear()
         if ear != "teclado":
             stt_detail = clip(f"{snap.get('recognizer') or ear} · {stt_detail}")
-        box(pad, y, inner, box_h, _ui("flow.stt", "Motor STT"), stt_detail, stt_on or (testing and not keyboard))
+        box(pad, y, inner, box_h, _ui("flow.stt", "Motor escucha (STT)"), stt_detail, stt_on or (testing and not keyboard))
         y += box_h
         down(width / 2, y, y + gap + 2, alive)
         y += gap

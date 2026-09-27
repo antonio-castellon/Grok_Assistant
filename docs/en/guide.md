@@ -17,7 +17,7 @@ Short steps to open the program, set it up, and talk to it. Each long chapter st
 Do this once, in this order.
 
 1. **Language.** Pick Español, Français, Deutsch, or English. Menus and answers switch to that language.
-2. **STT engine.** This is the program that turns speech into text. Pick one in the menu. If it is missing, open **Voice market**, tab **STT engine**, and download it. It can be chosen when the download reaches 100%.
+2. **Listening engine (STT).** This is the program that turns speech into text. Pick one in the menu. If it is missing, open **Voice market**, tab **Listening engine (STT)**, and download it. It can be chosen when the download reaches 100%.
 3. **Voice.** Pick a voice in the same language. **Voice market**, tab **Voices**, has more. Only voices for the active language are listed.
 4. **Print.** **Admin → Prints.** Open your name, or **New print…**. Choose the same STT engine you will use. Say the twelve phrases. If a take does not catch the microphone, it asks you to repeat it. The menu shows a number when that engine has a print, or **no print** when it does not. A print from one engine does not work on another.
 5. **Password.** Only if you will create agents. **Admin → Password…**. Type it twice. The program stores a hash, not the password itself.
