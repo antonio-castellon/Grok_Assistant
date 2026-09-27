@@ -156,7 +156,7 @@ def test_a_near_greeting_goes_to_the_text_identifier(world):
     assert result.spoken == ["Hola."]
     assert hub.brain.in_conversation
     assert cli.calls == []
-    assert any("Abro la conversación" in line for line in hub.brain.logs)
+    assert any(line.split("  ")[1] == "·" and "Hola Groo" in line for line in hub.brain.logs)
 
 
 def test_poner_una_cancion_is_a_command_even_in_conversation(world):
@@ -449,13 +449,37 @@ def test_stop_music_is_not_pause_music(world):
     assert hub.run("comando pausa la musica").spoken == ["Pauso."]
 
 
-def test_log_names_the_mode_between_the_time_and_the_text(world):
+def test_the_log_hangs_each_step_under_the_heard_line(world):
     hub, _cli, _clock = world
-    hub.run("hola")
-    assert any(line.split("  ")[1:3] == ["modo escucha", "oí"] for line in hub.brain.logs)
+
+    class Mind:
+        def available(self):
+            return True
+
+        def interpret(self, phrase, in_conversation):
+            return {"accion": "texto", "orden": "", "texto": phrase}
+
+    hub.mind = Mind()
+    hub.brain.settings.local_llm = True
+    hub.run("qué hora es en madrid")
+    assert any(line.split("  ")[1] == "·" and line.endswith("qué hora es en madrid") for line in hub.brain.logs)
+    assert any(line.split("  ")[1] == "¦" and "LLM: se queda" in line for line in hub.brain.logs)
     hub.run("hola grok")
     hub.run("qué tiempo hará mañana")
-    assert any(line.split("  ")[1] == "modo conversación" for line in hub.brain.logs)
+    assert any(line.split("  ")[1] == "¦" and line.endswith("Grok: Son las tres.") for line in hub.brain.logs)
+
+
+def test_a_print_can_be_renamed_and_recaptured(world):
+    hub, _cli, _clock = world
+    hub.brain.speakers.add("Ana", [[1.0, 0.0]], lock=True)
+    hub.brain.speakers.add("Luis", [[0.0, 1.0]], lock=False)
+    assert hub.brain.speakers.rename("Ana", "Luis") is None
+    assert hub.brain.speakers.rename("Ana", "Ana María") == "Ana María"
+    assert hub.brain.speakers.locked == "Ana María"
+    turn = hub.brain.start_capture("Ana María")
+    assert hub.brain.enroll["stage"] == "takes"
+    assert hub.brain.enroll["target"] == "Ana María"
+    assert turn.speak
 
 
 def test_windows_recognizer_is_not_rewritten_to_kroko(world):

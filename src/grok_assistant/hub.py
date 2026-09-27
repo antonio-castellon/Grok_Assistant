@@ -100,13 +100,13 @@ class Hub:
         try:
             data = self.mind.interpret(original, self.brain.in_conversation)
         except Exception:
-            self.brain._log("modelo local no respondió")
+            self.brain._log("LLM: sin respuesta")
             data = None
         if data and data.get("accion") == "saludo":
             from grok_assistant.match import tokenize
 
             self.brain.phase = ""
-            self.brain._log(f"{self._identifier_name()}: saludo. Abro la conversación.")
+            self.brain._log("LLM: saludo")
             norms = [norm for _, norm in tokenize(original)]
             return self.brain._wake(original, norms, None, logged=False)
         if data and data.get("accion") == "comando":
@@ -115,19 +115,20 @@ class Hub:
             hit = canonicalize(str(data.get("orden") or ""))
             if hit is not None:
                 self.brain.phase = ""
-                self.brain._log(f"{self._identifier_name()}: comando {hit.strict}")
+                self.brain._log(f"LLM: {hit.strict}")
                 return self.brain.perform(hit)
         close = self._close_kind(original, data)
         if close:
             self.brain.phase = ""
-            self.brain._log(f"{self._identifier_name()}: cierre")
+            self.brain._log("LLM: cierre")
             return self.brain._goodbye(close)
         from grok_assistant.match import blank_phrase
 
         self.brain.phase = ""
         if not self.brain.in_conversation or blank_phrase(original):
+            self.brain._log("LLM: se queda")
             return Turn(status=self.brain.status_label())
-        self.brain._log(f"{self._identifier_name()}: paso el texto tal cual.")
+        self.brain._log(f"LLM: {original}")
         return self._pass_through(turn, original)
 
     def _identifier_ready(self) -> bool:
@@ -136,9 +137,6 @@ class Hub:
         if hasattr(self.mind, "available"):
             return bool(self.mind.available())
         return True
-
-    def _identifier_name(self) -> str:
-        return self.brain.identifier_label()
 
     def _close_kind(self, original: str, data: dict | None) -> str | None:
         from grok_assistant.match import blank_phrase, closer, tokenize
@@ -159,7 +157,7 @@ class Hub:
         from grok_assistant.match import blank_phrase
 
         if not self.brain.in_conversation or blank_phrase(original):
-            self.brain._log("no hay conversación. No envío a Grok.")
+            self.brain._log("LLM: se queda")
             return Turn(status=self.brain.status_label())
         turn.job.kind = "converse"
         turn.job.text = original

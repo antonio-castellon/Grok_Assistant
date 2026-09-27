@@ -238,6 +238,7 @@ class TrayApp:
         self.menu_persona = tk.Menu(bar, postcommand=self._fill_persona, **kw)
         self.menu_musica = tk.Menu(bar, **kw)
         self.menu_admin = tk.Menu(bar, postcommand=self._fill_admin, **kw)
+        self.menu_prints = tk.Menu(self.menu_admin, postcommand=self._fill_prints, **kw)
         self.menu_language = tk.Menu(bar, postcommand=self._fill_language, **kw)
         from grok_assistant.i18n import text
 
@@ -264,10 +265,84 @@ class TrayApp:
         menu.add_command(label=_ui("menu.admin_mode", "Modo administrador"), command=lambda: self._command("modo administrador"))
         menu.add_command(label=_ui("menu.password", "Contraseña…"), command=self._password_dialog)
         menu.add_separator()
+        menu.add_cascade(label=_ui("menu.prints", "Huellas"), menu=self.menu_prints)
+        menu.add_separator()
         if enabled():
             menu.add_command(label=_used(True) + _ui("menu.startup_off", "Desactivar arranque con Windows"), command=self._toggle_startup)
         else:
             menu.add_command(label=_ui("menu.startup_on", "Activar arranque con Windows"), command=self._toggle_startup)
+
+    def _fill_prints(self) -> None:
+        menu = self.menu_prints
+        menu.delete(0, "end")
+        book = self.hub.brain.speakers
+        names = book.names()
+        if not names:
+            menu.add_command(label=_ui("menu.no_prints", "No hay huellas"), state="disabled")
+        for name in names:
+            person = book.people.get(name) or {}
+            child = tk.Menu(menu, **self._menu_kw())
+            child.add_command(label=_ui("menu.print_rename", "Renombrar…"), command=lambda picked=name: self._rename_print(picked))
+            child.add_command(label=_ui("menu.print_recapture", "Volver a grabar"), command=lambda picked=name: self._recapture_print(picked))
+            child.add_command(label=_ui("menu.print_delete", "Borrar"), command=lambda picked=name: self._delete_print(picked))
+            label = _used(name == book.locked) + name
+            if not person.get("prints"):
+                label += "  " + _ui("menu.no_print", "(sin huella)")
+            menu.add_cascade(label=label, menu=child)
+        menu.add_separator()
+        menu.add_command(label=_ui("menu.print_new", "Nueva huella…"), command=self._new_print)
+
+    def _print_items(self) -> list:
+        book = self.hub.brain.speakers
+        rows = []
+        names = book.names()
+        if not names:
+            rows.append(("cmd", _ui("menu.no_prints", "No hay huellas"), "noop", False))
+        for name in names:
+            person = book.people.get(name) or {}
+            label = _used(name == book.locked) + (name if person.get("prints") else f"{name}  {_ui('menu.no_print', '(sin huella)')}")
+            rows.append(("sub", label, [
+                ("cmd", _ui("menu.print_rename", "Renombrar…"), f"print-rename:{name}", False),
+                ("cmd", _ui("menu.print_recapture", "Volver a grabar"), f"print-again:{name}", False),
+                ("cmd", _ui("menu.print_delete", "Borrar"), f"print-delete:{name}", False),
+            ]))
+        rows.append(("sep",))
+        rows.append(("cmd", _ui("menu.print_new", "Nueva huella…"), "print-new", False))
+        return rows
+
+    def _new_print(self) -> None:
+        name = simpledialog.askstring(
+            _ui("dialog.print_name", "Huella"),
+            _ui("dialog.print_new", "Nombre de la persona:"),
+            parent=self.root,
+        )
+        if name and name.strip():
+            self.jobs.put(("capture", name.strip()))
+
+    def _rename_print(self, name: str) -> None:
+        new = simpledialog.askstring(
+            _ui("dialog.print_name", "Huella"),
+            _ui("dialog.print_rename", "Nuevo nombre:"),
+            initialvalue=name,
+            parent=self.root,
+        )
+        if not new or not new.strip():
+            return
+        stored = self.hub.brain.speakers.rename(name, new.strip())
+        if stored:
+            self._note(f"huella: {stored}")
+        else:
+            self._note("ese nombre ya está")
+
+    def _recapture_print(self, name: str) -> None:
+        self.jobs.put(("capture", name))
+
+    def _delete_print(self, name: str) -> None:
+        title = _ui("dialog.print_name", "Huella")
+        if not messagebox.askyesno(title, _ui("dialog.print_delete", "¿Borro esta huella?"), parent=self.root):
+            return
+        if self.hub.brain.speakers.delete(name):
+            self._note(f"huella borrada: {name}")
 
     def _toggle_startup(self) -> None:
         from grok_assistant.startup import enabled, set_enabled
@@ -487,6 +562,7 @@ class TrayApp:
                 ("cmd", _ui("menu.music_stop", "Parar"), "music-stop", False),
             ]),
             ("cmd", _ui("menu.test_off", "Desactivar prueba") if brain.test_mode else _ui("menu.test_on", "Activar prueba"), "test-toggle", brain.test_mode),
+            ("sub", text("menu.prints", "Huellas"), self._print_items()),
             ("cmd", _ui("menu.rename", "Cambiar nombre…"), "rename", False),
             ("cmd", _ui("menu.startup_off", "Desactivar arranque con Windows") if self._startup_on() else _ui("menu.startup_on", "Activar arranque con Windows"), "startup", self._startup_on()),
             ("cmd", text("menu.market", "Voice market"), "market", False),
@@ -510,6 +586,14 @@ class TrayApp:
             self._toggle_test()
         elif key == "rename":
             self._command("cambiar nombre")
+        elif key == "print-new":
+            self._new_print()
+        elif key.startswith("print-rename:"):
+            self._rename_print(key.split(":", 1)[1])
+        elif key.startswith("print-again:"):
+            self._recapture_print(key.split(":", 1)[1])
+        elif key.startswith("print-delete:"):
+            self._delete_print(key.split(":", 1)[1])
         elif key == "install-windows":
             self._install_windows()
         elif key == "identifier-off":
@@ -1477,6 +1561,12 @@ class TrayApp:
             self._apply(result)
             self._refresh()
             return
+        if kind == "capture":
+            turn = self.hub.brain.start_capture(payload)
+            for line in turn.speak:
+                self.say(line)
+            self._refresh()
+            return
         if kind == "phrase":
             self._hold_mic(True)
             try:
@@ -1704,9 +1794,18 @@ class TrayApp:
         self.debug_text.see("end")
 
     def _insert_log(self, line: str) -> None:
-        parts = line.split("  ", 3)
-        if len(parts) == 4 and parts[2].strip() in {"oí", "sigue"}:
-            stamp, mode, kind, rest = parts[0], parts[1].strip(), parts[2].strip(), parts[3]
+        parts = line.split("  ", 2)
+        if len(parts) == 3 and parts[1] in {"·", "¦"}:
+            stamp, kind, rest = parts
+            self.debug_text.insert("end", stamp + " ", "time")
+            if kind == "¦":
+                self.debug_text.insert("end", "  ¦-- " + rest.strip() + "\n", "sigue")
+            else:
+                self.debug_text.insert("end", rest.strip() + "\n")
+            return
+        older = line.split("  ", 3)
+        if len(older) == 4 and older[2].strip() in {"oí", "sigue"}:
+            stamp, mode, kind, rest = older[0], older[1].strip(), older[2].strip(), older[3]
             self.debug_text.insert("end", stamp + "  ", "time")
             self.debug_text.insert("end", mode.ljust(18), "mode")
             self.debug_text.insert("end", "  " + kind.ljust(6), "oi" if kind == "oí" else "sigue")

@@ -75,38 +75,6 @@ def split_commands(answer: str) -> tuple[list[str], str]:
     return commands, "\n".join(kept).strip()
 
 
-def _next_step(decision: str, sent: bool, detail: str) -> str:
-    if decision == "ignorar" and detail == "presencia":
-        return "pregunta si le oigo. Respondo aquí. No envío nada."
-    if decision == "ignorar" and detail == "saludo":
-        return "saludo. Abro la conversación. El saludo no sale de casa."
-    if decision == "ignorar" and detail == "corto":
-        return "vacío o una palabra corta. No lo envío."
-    if decision == "ignorar" and detail == "ruido":
-        return "ruido del reconocedor. No lo envío."
-    if decision == "ignorar" and detail == "larga":
-        return "la ignoro: es larga y no va dirigida al asistente."
-    if decision == "ignorar" and detail == "canción larga":
-        return "la ignoro: la canción pasa de dieciséis palabras."
-    if decision == "ignorar" and detail in {"otra voz", "revisa el modelo local"}:
-        return ""
-    if decision == "ignorar" and detail == "prueba":
-        return "modo prueba. Lo anoto y no hago nada."
-    if decision == "ignorar" and not sent:
-        extra = f" ({detail})" if detail else ""
-        return f"la ignoro. Se queda en el cuaderno de casa.{extra}"
-    if decision == "conversacion":
-        extra = f" {detail}." if detail else ""
-        return f"es una pregunta. Envío solo el texto a Grok.{extra}"
-    if decision == "comando":
-        where = "Lo envío a clasificar." if sent else "Lo hago aquí."
-        bit = f" {detail}." if detail else ""
-        return f"es una orden.{bit} {where}"
-    if decision == "respuesta":
-        return detail or "respuesta de Grok"
-    return f"{decision} {detail}".strip()
-
-
 def for_speech(text: str) -> str:
     text = _ANSI.sub("", text or "")
     lines: list[str] = []
@@ -169,6 +137,7 @@ class Brain:
         self.phase = ""
         self.effort_now = "low"
         self.logs: list[str] = []
+        self._flow_heard = ""
 
     def set_devices(self, voices: list[str], recognizers: list[str]) -> None:
         previous = ""
@@ -412,7 +381,7 @@ class Brain:
         if hit is None:
             return self._said([say("unknown", "No conozco ese comando.")])
         self.pending = ("yesno", hit)
-        self._log(f"a confirmar: {display_order(hit)}")
+        self._step(f"Grok: {display_order(hit)}")
         return self._said([say("confirm", "Has dicho: {order}. ¿Sí o no?", order=display_order(hit))])
 
     def finish_converse(self, answer: str) -> Turn:
@@ -425,7 +394,7 @@ class Brain:
         if speech:
             spoken.append(speech)
             self.last_spoken = speech
-            self._log(f"Grok responde: {speech}")
+            self._step(f"Grok: {' '.join(speech.split())}")
             self.sessions.append({
                 "ts": self.wall(),
                 "heard": "",
@@ -436,7 +405,7 @@ class Brain:
         for raw in commands:
             hit = canonicalize(raw)
             if hit is None:
-                self._log(f"orden desconocida: {raw}")
+                self._step(f"Grok: {raw}")
                 continue
             if hit.confirm or (hit.admin and not self.is_admin()):
                 self.pending = ("yesno", hit)
@@ -453,7 +422,7 @@ class Brain:
     def finish_error(self, message: str) -> Turn:
         self.phase = ""
         self.effort_now = "low"
-        self._log(f"error: {message}".replace("\n", " ")[:240])
+        self._step("Grok: " + " ".join(message.split())[:180])
         return self._said([say("cloud_down", "Ahora mismo no llego a la nube.")])
 
     def submit_password(self, password: str) -> Turn:
@@ -875,7 +844,7 @@ class Brain:
             self.naming = {"stage": "choose", "name": "", "heard": []}
             return self._said(["¿Cómo quieres llamarme? Di solo el nombre."])
         if name == "identifica mi voz":
-            self.enroll = {"stage": "name", "target": None, "take": 0, "vectors": []}
+            self.enroll = {"stage": "name", "target": None, "spoken": "", "take": 0, "vectors": []}
             return self._said(["¿Cómo te llamas?"], effects=[("enroll", "¿Cómo te llamas?", "")])
         if name == "lista las personas":
             found = self.speakers.names()
@@ -995,19 +964,38 @@ class Brain:
             "detail": detail,
         })
         if heard:
-            self._log_line("oí", heard)
-        step = _next_step(decision, sent, detail)
-        if step:
-            self._log_line("sigue", step)
+            self._flow(heard)
+        if decision == "comando" and detail:
+            self._step(f"orden: {detail}")
+
+    def start_capture(self, name: str) -> Turn:
+        """Record twelve takes for this person. The menu uses it for a new print or a recapture."""
+        clean = " ".join((name or "").split())
+        if not clean:
+            self.enroll = {"stage": "name", "target": None, "spoken": "", "take": 0, "vectors": []}
+            return self._said(["¿Cómo te llamas?"], effects=[("enroll", "¿Cómo te llamas?", "")])
+        found = self.speakers.resolve(clean) or clean
+        self.enroll = {"stage": "takes", "target": found, "spoken": found, "take": 0, "vectors": []}
+        return self._prompt_take()
 
     def note(self, line: str) -> None:
-        self._log(line)
+        self._write_log(line, branch=False)
 
     def _log(self, line: str) -> None:
-        self._log_line("sigue", line)
+        self._step(line)
 
-    def _log_line(self, kind: str, text: str) -> None:
+    def _flow(self, heard: str) -> None:
+        if not heard or heard == self._flow_heard:
+            return
+        self._flow_heard = heard
+        self._write_log(heard, branch=False)
+
+    def _step(self, text: str) -> None:
+        self._write_log(text, branch=True)
+
+    def _write_log(self, text: str, branch: bool) -> None:
         stamp = time.strftime("%H:%M:%S")
-        self.logs.append(f"{stamp}  {self.mode_label()}  {kind}  {text}")
+        kind = "¦" if branch else "·"
+        self.logs.append(f"{stamp}  {kind}  {text}")
         if len(self.logs) > 500:
             self.logs = self.logs[-500:]

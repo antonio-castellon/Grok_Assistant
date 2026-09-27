@@ -223,6 +223,23 @@ class SpeakerBook:
         self.save()
         return key
 
+    def rename(self, old: str, new: str) -> str | None:
+        found = self.resolve(old)
+        if not found:
+            return None
+        clean = " ".join(new.split())
+        if not clean:
+            return None
+        other = self.resolve(clean)
+        if other and other != found:
+            return None
+        person = self.people.pop(found)
+        self.people[clean] = person
+        if self.locked == found:
+            self.locked = clean
+        self.save()
+        return clean
+
     def delete(self, name: str) -> str | None:
         found = self.resolve(name)
         if not found:
