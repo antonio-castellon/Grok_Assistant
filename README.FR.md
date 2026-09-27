@@ -18,7 +18,7 @@ C'est l'idée générale. Ci-dessous, on voit la fenêtre pendant l'écoute ains
 
 Le schéma ci-dessous montre ce qui arrive à une phrase à partir du moment où elle est prononcée.
 
-![Comment une phrase se déplace : l'oreille reste locale, et seul un texte de question ou d'ordre réparé part vers Grok](docs/img/flow.svg)
+![Le moteur STT transforme la parole en texte. Sans conversation, le modèle local vérifie si c'est un ordre complet. Dans une conversation, le texte va droit à Grok.](docs/img/flow.svg)
 
 ## Lire la suite
 

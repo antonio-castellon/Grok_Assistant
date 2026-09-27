@@ -18,7 +18,7 @@ That is the basic idea. Below you can see the listening window and the tray menu
 
 The diagram below shows what happens to a spoken phrase from the moment it is heard.
 
-![How a phrase moves: the ear stays local, and only a question or a repaired order sends text to Grok](docs/img/flow.svg)
+![The STT engine turns speech into text. Before a conversation, the local model checks for a complete command. During a conversation, the text goes straight to Grok.](docs/img/flow.svg)
 
 ## Read on
 

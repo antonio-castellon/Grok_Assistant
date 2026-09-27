@@ -18,7 +18,7 @@ Das ist die Grundidee. Unten sieht man das Fenster während des Zuhörens sowie 
 
 Die folgende Grafik zeigt, was mit einem gesprochenen Satz passiert.
 
-![Wie ein Satz läuft: das Ohr bleibt lokal, und nur eine Frage oder ein reparierter Auftrag schickt Text an Grok](docs/img/flow.svg)
+![Der STT-Motor macht aus Sprache Text. Ohne Gespräch prüft das lokale Modell, ob es ein voller Auftrag ist. Im Gespräch geht der Text direkt an Grok.](docs/img/flow.svg)
 
 ## Weiterlesen
 

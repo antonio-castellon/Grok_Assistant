@@ -18,7 +18,7 @@ Esa es la idea básica. Debajo se puede ver la ventana mientras escucha y el men
 
 El diagrama de abajo muestra qué ocurre con una frase desde que se pronuncia.
 
-![Cómo se mueve una frase: el oído se queda en local, y solo una pregunta o una orden reparada envía texto a Grok](docs/img/flow.svg)
+![El motor STT pasa la voz a texto. Sin conversación, el modelo local mira si es un comando completo. En una conversación, el texto va directo a Grok.](docs/img/flow.svg)
 
 ## Seguir leyendo
 

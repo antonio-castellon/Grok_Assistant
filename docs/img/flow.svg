@@ -1,65 +1,81 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 760" role="img" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 860" role="img" font-family="Segoe UI, Helvetica, Arial, sans-serif">
   <title>How a phrase moves through Grok Assistant</title>
-  <desc>Microphone and keyboard stay local. Only a real question or a repaired order sends text to Grok.</desc>
-  <rect width="1100" height="760" fill="#0e1418"/>
-  <text x="40" y="42" fill="#f4f7f8" font-size="26" font-weight="650">How a phrase moves</text>
-  <text x="40" y="68" fill="#9aafbb" font-size="15">Audio stops at the ear. The cloud receives text, and only when the rules agree.</text>
+  <desc>The STT engine turns speech into text. Before a conversation, the local model checks for a complete command. During a conversation, the text goes straight to Grok.</desc>
+  <rect width="1180" height="860" fill="#0e1418"/>
+  <text x="40" y="40" fill="#f4f7f8" font-size="26" font-weight="650">How a phrase moves</text>
+  <text x="40" y="66" fill="#9aafbb" font-size="15">The audio stops at the STT engine. Grok only receives text.</text>
 
-  <rect x="40" y="96" width="230" height="78" rx="14" fill="#1a242c" stroke="#314552"/>
-  <text x="155" y="128" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Microphone</text>
-  <text x="155" y="152" fill="#9aafbb" font-size="14" text-anchor="middle">open while it waits</text>
+  <rect x="40" y="92" width="250" height="78" rx="14" fill="#1a242c" stroke="#314552"/>
+  <text x="165" y="124" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Microphone</text>
+  <text x="165" y="148" fill="#9aafbb" font-size="14" text-anchor="middle">sound, still on this PC</text>
 
-  <rect x="300" y="96" width="230" height="78" rx="14" fill="#1a242c" stroke="#314552"/>
-  <text x="415" y="128" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Keyboard</text>
-  <text x="415" y="152" fill="#9aafbb" font-size="14" text-anchor="middle">debug window</text>
+  <rect x="370" y="92" width="360" height="78" rx="14" fill="#142824" stroke="#1f6f6a"/>
+  <text x="550" y="122" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">STT engine</text>
+  <text x="550" y="146" fill="#b7d4cf" font-size="14" text-anchor="middle">Speech to text. The audio never leaves.</text>
 
-  <rect x="620" y="96" width="440" height="78" rx="14" fill="#142824" stroke="#1f6f6a"/>
-  <text x="840" y="128" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Local speech to text</text>
-  <text x="840" y="152" fill="#b7d4cf" font-size="14" text-anchor="middle">Spanish. The recording never leaves.</text>
+  <rect x="820" y="92" width="320" height="78" rx="14" fill="#1a242c" stroke="#314552"/>
+  <text x="980" y="124" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Keyboard</text>
+  <text x="980" y="148" fill="#9aafbb" font-size="14" text-anchor="middle">already text. It skips STT.</text>
 
-  <path d="M270 135 H300" stroke="#e8a030" stroke-width="2" fill="none"/>
-  <path d="M530 135 H620" stroke="#e8a030" stroke-width="2" fill="none"/>
-  <polygon points="616,130 628,135 616,140" fill="#e8a030"/>
+  <path d="M290 131 H370" stroke="#e8a030" stroke-width="2" fill="none"/>
+  <polygon points="366,126 378,131 366,136" fill="#e8a030"/>
 
-  <rect x="330" y="214" width="440" height="72" rx="14" fill="#1a242c" stroke="#314552"/>
-  <text x="550" y="244" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Finished phrase</text>
-  <text x="550" y="268" fill="#9aafbb" font-size="14" text-anchor="middle">one line of text, after the pause</text>
-  <path d="M840 174 V196 H550 V214" stroke="#e8a030" stroke-width="2" fill="none"/>
+  <rect x="370" y="214" width="360" height="72" rx="14" fill="#1a242c" stroke="#314552"/>
+  <text x="550" y="244" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Text of the phrase</text>
+  <text x="550" y="268" fill="#9aafbb" font-size="14" text-anchor="middle">one line, after the person stops</text>
+  <path d="M550 170 V214" stroke="#e8a030" stroke-width="2" fill="none"/>
   <polygon points="544,210 550,222 556,210" fill="#e8a030"/>
+  <path d="M980 170 V196 H730 V250" stroke="#7f93a0" stroke-width="2" fill="none"/>
+  <polygon points="724,244 730,256 736,244" fill="#7f93a0"/>
 
-  <rect x="250" y="326" width="600" height="86" rx="14" fill="#2a2114" stroke="#e8a030"/>
-  <text x="550" y="360" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Rules, on this machine</text>
-  <text x="550" y="386" fill="#f0d7a8" font-size="14" text-anchor="middle">wake · comando · song · goodbye · length · whose voice</text>
+  <rect x="300" y="326" width="500" height="72" rx="14" fill="#2a2114" stroke="#e8a030"/>
+  <text x="550" y="356" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Conversation already open?</text>
+  <text x="550" y="380" fill="#f0d7a8" font-size="14" text-anchor="middle">The corner is green</text>
   <path d="M550 286 V326" stroke="#e8a030" stroke-width="2" fill="none"/>
   <polygon points="544,322 550,334 556,322" fill="#e8a030"/>
 
-  <rect x="40" y="460" width="320" height="150" rx="14" fill="#1a242c" stroke="#314552"/>
-  <text x="200" y="494" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Ignore</text>
-  <text x="200" y="522" fill="#9aafbb" font-size="14" text-anchor="middle">ordinary talk in the room</text>
-  <text x="200" y="548" fill="#9aafbb" font-size="14" text-anchor="middle">written in the local session</text>
-  <text x="200" y="580" fill="#7f93a0" font-size="13" text-anchor="middle">nothing is sent</text>
+  <rect x="860" y="430" width="280" height="150" rx="14" fill="#2a2114" stroke="#e8a030"/>
+  <text x="1000" y="468" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Grok</text>
+  <text x="1000" y="496" fill="#f0d7a8" font-size="14" text-anchor="middle">text only</text>
+  <text x="1000" y="520" fill="#f0d7a8" font-size="14" text-anchor="middle">a short spoken answer</text>
+  <text x="1000" y="552" fill="#e8a030" font-size="13" text-anchor="middle">STT → Grok</text>
+  <path d="M800 362 H1000 V430" stroke="#e8a030" stroke-width="2" fill="none"/>
+  <polygon points="994,426 1000,438 1006,426" fill="#e8a030"/>
+  <text x="900" y="352" fill="#e8a030" font-size="13">Yes. Skip the local model.</text>
 
-  <rect x="390" y="460" width="320" height="150" rx="14" fill="#142824" stroke="#1f6f6a"/>
-  <text x="550" y="494" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Local order</text>
-  <text x="550" y="522" fill="#b7d4cf" font-size="14" text-anchor="middle">volume, voice, music, session</text>
-  <text x="550" y="548" fill="#b7d4cf" font-size="14" text-anchor="middle">a garbled order is repaired,</text>
-  <text x="550" y="572" fill="#b7d4cf" font-size="14" text-anchor="middle">then waits for sí</text>
+  <rect x="180" y="448" width="560" height="86" rx="14" fill="#142824" stroke="#1f6f6a"/>
+  <text x="460" y="482" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Local model</text>
+  <text x="460" y="508" fill="#b7d4cf" font-size="14" text-anchor="middle">Only while waiting. It reads the text, not the audio.</text>
+  <path d="M460 398 V448" stroke="#1f6f6a" stroke-width="2" fill="none"/>
+  <polygon points="454,444 460,456 466,444" fill="#1f6f6a"/>
+  <text x="472" y="428" fill="#b7d4cf" font-size="13">No</text>
 
-  <rect x="740" y="460" width="320" height="150" rx="14" fill="#2a2114" stroke="#e8a030"/>
-  <text x="900" y="494" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Question</text>
-  <text x="900" y="522" fill="#f0d7a8" font-size="14" text-anchor="middle">text only, to your Grok account</text>
-  <text x="900" y="548" fill="#f0d7a8" font-size="14" text-anchor="middle">web search, or an open agent</text>
-  <text x="900" y="580" fill="#f0d7a8" font-size="14" text-anchor="middle">then a short spoken answer</text>
+  <rect x="40" y="580" width="300" height="130" rx="14" fill="#142824" stroke="#1f6f6a"/>
+  <text x="190" y="616" fill="#f4f7f8" font-size="17" text-anchor="middle" font-weight="650">Complete command</text>
+  <text x="190" y="644" fill="#b7d4cf" font-size="14" text-anchor="middle">Run it on this PC.</text>
+  <text x="190" y="668" fill="#b7d4cf" font-size="14" text-anchor="middle">Volume, voice, music.</text>
+  <text x="190" y="692" fill="#7f93a0" font-size="13" text-anchor="middle">Grok is not called.</text>
 
-  <path d="M430 412 V438 H200 V460" stroke="#7f93a0" stroke-width="2" fill="none"/>
-  <path d="M550 412 V460" stroke="#1f6f6a" stroke-width="2" fill="none"/>
-  <path d="M670 412 V438 H900 V460" stroke="#e8a030" stroke-width="2" fill="none"/>
-  <polygon points="194,456 200,468 206,456" fill="#7f93a0"/>
-  <polygon points="544,456 550,468 556,456" fill="#1f6f6a"/>
-  <polygon points="894,456 900,468 906,456" fill="#e8a030"/>
+  <rect x="370" y="580" width="300" height="130" rx="14" fill="#2a2114" stroke="#e8a030"/>
+  <text x="520" y="616" fill="#f4f7f8" font-size="17" text-anchor="middle" font-weight="650">Open a conversation</text>
+  <text x="520" y="644" fill="#f0d7a8" font-size="14" text-anchor="middle">Not a finished command.</text>
+  <text x="520" y="668" fill="#f0d7a8" font-size="14" text-anchor="middle">Pass the text to Grok.</text>
+  <text x="520" y="692" fill="#e8a030" font-size="13" text-anchor="middle">The corner turns green.</text>
 
-  <rect x="40" y="640" width="1020" height="88" rx="14" fill="#121c22" stroke="#314552"/>
-  <text x="60" y="674" fill="#f4f7f8" font-size="16" font-weight="650">Around that path</text>
-  <text x="60" y="702" fill="#9aafbb" font-size="15">Mouth: Windows speech or espeak, local. Ear closed while it talks, and while music plays.</text>
-  <text x="60" y="724" fill="#9aafbb" font-size="15">Notebook on this PC. Agents on the Grok account. The tray is only the shell.</text>
+  <rect x="700" y="580" width="140" height="130" rx="14" fill="#1a242c" stroke="#314552"/>
+  <text x="770" y="628" fill="#f4f7f8" font-size="16" text-anchor="middle" font-weight="650">Stay</text>
+  <text x="770" y="652" fill="#f4f7f8" font-size="16" text-anchor="middle" font-weight="650">home</text>
+  <text x="770" y="680" fill="#9aafbb" font-size="13" text-anchor="middle">Nothing</text>
+  <text x="770" y="698" fill="#9aafbb" font-size="13" text-anchor="middle">is sent.</text>
+
+  <path d="M320 534 V556 H190 V580" stroke="#1f6f6a" stroke-width="2" fill="none"/>
+  <path d="M460 534 V580" stroke="#e8a030" stroke-width="2" fill="none"/>
+  <path d="M560 534 V556 H770 V580" stroke="#7f93a0" stroke-width="2" fill="none"/>
+  <polygon points="184,576 190,588 196,576" fill="#1f6f6a"/>
+  <polygon points="454,576 460,588 466,576" fill="#e8a030"/>
+  <polygon points="764,576 770,588 776,576" fill="#7f93a0"/>
+
+  <rect x="40" y="740" width="1100" height="88" rx="14" fill="#121c22" stroke="#314552"/>
+  <text x="60" y="774" fill="#f4f7f8" font-size="16" font-weight="650">While a conversation is open, the next phrase skips the local model.</text>
+  <text x="60" y="802" fill="#9aafbb" font-size="15">STT writes the text, and that text goes to Grok. A goodbye or a clear order can still finish here.</text>
 </svg>
