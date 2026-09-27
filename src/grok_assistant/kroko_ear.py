@@ -110,13 +110,16 @@ class KrokoEar:
         try:
             with source:
                 quiet = 0.0
+                heard_audio: list = []
                 while not self._stop.is_set():
                     samples, _overflow = source.read(block)
                     if self._paused.is_set():
                         recognizer.reset(stream)
                         quiet = 0.0
+                        heard_audio.clear()
                         continue
                     chunk = np.ascontiguousarray(samples, dtype=np.float32).reshape(-1)
+                    heard_audio.append(chunk)
                     stream.accept_waveform(rate, chunk)
                     while recognizer.is_ready(stream):
                         recognizer.decode_stream(stream)
@@ -129,10 +132,13 @@ class KrokoEar:
                     if text and (quiet >= 0.7 or recognizer.is_endpoint(stream)):
                         recognizer.reset(stream)
                         quiet = 0.0
-                        self.on_line(text)
+                        audio = np.concatenate(heard_audio) if heard_audio else None
+                        heard_audio.clear()
+                        self.on_line(text, audio)
                     elif recognizer.is_endpoint(stream):
                         recognizer.reset(stream)
                         quiet = 0.0
+                        heard_audio.clear()
         except Exception as exc:
             self.error = f"Kroko se detuvo: {exc}"
             self._report(self.error)

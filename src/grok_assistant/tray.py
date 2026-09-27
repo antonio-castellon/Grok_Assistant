@@ -23,6 +23,7 @@ from grok_assistant.listen import (
 )
 from grok_assistant.marketplace import Offer, download, offers
 from grok_assistant.music import Music
+from grok_assistant.voiceprint import VoicePrint
 from grok_assistant.paths import bundle_root
 from grok_assistant.speech import Speaker
 from grok_assistant.win_tray import WinTray
@@ -65,10 +66,13 @@ class TrayApp:
         self.hub = hub
         self.speaker = Speaker()
         self.music = Music()
+        self.voiceprint = VoicePrint()
+        self._music_note = False
         self.user_paused = False
         self.jobs: queue.Queue = queue.Queue()
         self.ui: queue.Queue = queue.Queue()
         self.view_from = 0
+        self._debug_cache: list[str] = []
         self.debug_text = None
         self.status_var = tk.StringVar(value="Arrancando")
         self.detail_var = tk.StringVar(value="")
@@ -97,6 +101,7 @@ class TrayApp:
         self._sync_ear()
         self._ensure_identifier()
         self._poll_usage()
+        threading.Thread(target=self._arm_voiceprint, daemon=True).start()
         self._note("ventana lista")
         self.root.after(200, self._pulse)
 
@@ -829,30 +834,56 @@ class TrayApp:
 
     def _worker(self) -> None:
         while True:
-            kind, payload = self.jobs.get()
-            if kind == "stop":
+            item = self.jobs.get()
+            if item[0] == "stop":
                 break
-            if kind == "startup":
-                self.say(self.hub.startup())
-                self._refresh()
-                continue
-            if kind == "tick":
-                result = self.hub.tick(speaker=self.say)
+            kind = item[0]
+            payload = item[1] if len(item) > 1 else ""
+            embedding = item[2] if len(item) > 2 else None
+            try:
+                self._job(kind, payload, embedding)
+            except Exception as exc:
+                self._write_crash(exc)
+
+    def _write_crash(self, exc: Exception) -> None:
+        import traceback
+        from grok_assistant.paths import default_data_dir
+
+        path = default_data_dir() / "crash.log"
+        try:
+            with path.open("a", encoding="utf-8") as handle:
+                handle.write(traceback.format_exc())
+                handle.write("\n")
+        except OSError:
+            return
+        self.ui.put(lambda: self._note(f"fallo interno: {exc}"))
+
+    def _job(self, kind: str, payload: str, embedding) -> None:
+        if kind == "note":
+            self._note(payload)
+            self._refresh()
+            return
+        if kind == "startup":
+            self.say(self.hub.startup())
+            self._refresh()
+            return
+        if kind == "tick":
+            result = self.hub.tick(speaker=self.say)
+            self._apply(result)
+            self._refresh()
+            return
+        if kind == "phrase":
+            self._hold_mic(True)
+            try:
+                result = self.hub.run(payload, speaker=self.say, vector=embedding)
                 self._apply(result)
-                self._refresh()
-                continue
-            if kind == "phrase":
-                self._hold_mic(True)
-                try:
-                    result = self.hub.run(payload, speaker=self.say)
-                    self._apply(result)
-                    if any(item[0] == "ask_password" for item in result.effects):
-                        password = self._ask("Contraseña de administrador")
-                        follow = self.hub.submit_password(password, speaker=self.say) if password else self.hub.cancel_password(speaker=self.say)
-                        self._apply(follow)
-                finally:
-                    self._hold_mic(False)
-                self._refresh()
+                if any(item[0] == "ask_password" for item in result.effects):
+                    password = self._ask("Contraseña de administrador")
+                    follow = self.hub.submit_password(password, speaker=self.say) if password else self.hub.cancel_password(speaker=self.say)
+                    self._apply(follow)
+            finally:
+                self._hold_mic(False)
+            self._refresh()
 
     def say(self, text: str) -> None:
         if not text:
@@ -874,7 +905,8 @@ class TrayApp:
         if trouble:
             self.ui.put(lambda trouble=trouble: self.say(trouble))
             return
-        self.ui.put(lambda: self._hold_mic(True))
+        self._music_note = False
+        self.ui.put(lambda: self._note("la música suena. Sigo oyendo solo una voz registrada."))
 
     def _voice_name(self) -> str:
         voices = self.hub.brain.voices
@@ -891,20 +923,17 @@ class TrayApp:
                 threading.Thread(target=lambda title=title: self._play_song(title), daemon=True).start()
             elif kind == "pause_music":
                 self.music.pause()
-                self._hold_mic(False)
             elif kind == "resume_music":
                 self.music.resume()
-                self._hold_mic(True)
             elif kind == "stop_music":
                 self.music.stop()
-                self._hold_mic(False)
             elif kind == "shutdown":
                 shutdown_machine()
             elif kind == "recognizer":
                 self._sync_ear()
 
     def _hold_mic(self, hold: bool) -> None:
-        paused = hold or self.user_paused or self.music.loaded
+        paused = hold or self.user_paused
         if self.dictation is not None:
             self.dictation.set_paused(paused)
         if self.kroko is not None:
@@ -952,16 +981,30 @@ class TrayApp:
     def _kroko_status(self, text: str) -> None:
         self.ui.put(lambda text=text: self._note(text))
 
-    def _heard(self, text: str) -> None:
-        if self.user_paused or self.music.loaded:
+    def _heard(self, text: str, audio=None) -> None:
+        if self.user_paused:
             return
-        self.jobs.put(("phrase", text))
+        embedding = self.voiceprint.embed(audio) if audio is not None else None
+        if self.music.loaded:
+            who = self.hub.brain.speakers.closest(embedding)
+            if not who:
+                if not self._music_note:
+                    self._music_note = True
+                    self.jobs.put(("note", "música: esa voz no está registrada. Solo sigo a una huella guardada."))
+                return
+            self._music_note = False
+        self.jobs.put(("phrase", text, embedding))
 
     def _send(self, _event=None) -> None:
         text = self.entry.get().strip()
         self.entry.delete(0, "end")
         if text:
             self.jobs.put(("phrase", text))
+
+    def _arm_voiceprint(self) -> None:
+        if self.voiceprint.ensure():
+            self.hub.brain.embedder_ready = True
+            self.ui.put(lambda: self._note("la huella de voz está lista"))
 
     def _poll_usage(self) -> None:
         def work() -> None:
@@ -1020,7 +1063,10 @@ class TrayApp:
             self.tray.set_tip(f"Grok Assistant — {snap['status']}")
         if self.debug_text is None:
             return
-        shown = self.hub.brain.logs[self.view_from:]
+        shown = self.hub.brain.logs[-500:]
+        if shown == self._debug_cache:
+            return
+        self._debug_cache = list(shown)
         self.debug_text.configure(state="normal")
         self.debug_text.delete("1.0", "end")
         for line in shown:

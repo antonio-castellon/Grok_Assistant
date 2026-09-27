@@ -191,6 +191,15 @@ def test_conversation_goes_to_grok_without_the_local_model(world):
     assert "Volumen" not in " ".join(result.spoken)
 
 
+def test_debug_log_keeps_the_last_500_lines(world):
+    hub, _cli, _clock = world
+    for number in range(600):
+        hub.brain.note(f"linea {number}")
+    assert len(hub.brain.logs) == 500
+    assert hub.brain.logs[-1].endswith("linea 599")
+    assert hub.brain.logs[0].endswith("linea 100")
+
+
 def test_ok_closes_without_the_waiting_line(world):
     hub, cli, _clock = world
     hub.run("hola grok")

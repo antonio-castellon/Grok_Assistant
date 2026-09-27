@@ -916,8 +916,6 @@ class Brain:
         if heard:
             self._log_line("oí", heard)
         self._log_line("sigue", _next_step(decision, sent, detail))
-        if len(self.logs) > 500:
-            self.logs = self.logs[-500:]
 
     def note(self, line: str) -> None:
         self._log(line)
@@ -928,3 +926,5 @@ class Brain:
     def _log_line(self, kind: str, text: str) -> None:
         stamp = time.strftime("%H:%M:%S")
         self.logs.append(f"{stamp}  {self.mode_label()}  {kind}  {text}")
+        if len(self.logs) > 500:
+            self.logs = self.logs[-500:]
