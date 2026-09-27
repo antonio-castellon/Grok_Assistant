@@ -12,9 +12,9 @@ Solange das Programm läuft, kann der Assistent weiter zuhören. Das Audio bleib
 
 Das ist die Grundidee. Unten sieht man das Fenster während des Zuhörens sowie das Tray-Menü mit geöffnetem Bereich **Sprache**.
 
-![Das Informationsfenster, beim Zuhören, mit dem laufenden Protokoll darunter](docs/img/app-window.png)
+![Das Fenster auf Deutsch, im Warten, mit dem laufenden Protokoll](docs/img/de/app-window.png)
 
-![Das Menü der Taskleiste, mit der Sprachenliste offen](docs/img/tray-menu.png)
+![Das Menü der Taskleiste auf Deutsch](docs/img/de/tray-menu.png)
 
 Die folgende Grafik zeigt, was mit einem gesprochenen Satz passiert.
 

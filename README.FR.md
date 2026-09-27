@@ -12,9 +12,9 @@ Tant que le programme fonctionne, l'assistant peut rester à l'écoute. L'audio 
 
 C'est l'idée générale. Ci-dessous, on voit la fenêtre pendant l'écoute ainsi que le menu de la barre des tâches avec **Langue** ouvert.
 
-![La fenêtre d'information, à l'écoute, avec le journal en direct en dessous](docs/img/app-window.png)
+![La fenêtre en français, en attente, avec le journal en direct](docs/img/fr/app-window.png)
 
-![Le menu de la barre des tâches, avec la liste des langues ouverte](docs/img/tray-menu.png)
+![Le menu de la barre en français](docs/img/fr/tray-menu.png)
 
 Le schéma ci-dessous montre ce qui arrive à une phrase à partir du moment où elle est prononcée.
 

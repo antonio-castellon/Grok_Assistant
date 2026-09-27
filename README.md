@@ -14,9 +14,9 @@ While the program is running, it can keep listening. Speech is turned into text 
 
 That is the basic idea. Below you can see the listening window and the tray menu with **Idioma** open.
 
-![The information window, listening, with the live debug underneath](docs/img/app-window.png)
+![The information window in English, waiting, with the live log underneath](docs/img/en/app-window.png)
 
-![The tray menu, with the language list open](docs/img/tray-menu.png)
+![The tray menu in English](docs/img/en/tray-menu.png)
 
 The diagram below shows what happens to a spoken phrase from the moment it is heard.
 

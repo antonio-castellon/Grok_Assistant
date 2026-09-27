@@ -12,9 +12,9 @@ Mientras el programa está abierto, puede seguir escuchando. El audio se queda e
 
 Esa es la idea básica. Debajo se puede ver la ventana mientras escucha y el menú de la bandeja con **Idioma** abierto.
 
-![La ventana de información, escuchando, con la depuración en vivo debajo](docs/img/app-window.png)
+![La ventana en español, en espera, con el registro en vivo debajo](docs/img/es/app-window.png)
 
-![El menú de la bandeja, con la lista de idiomas abierta](docs/img/tray-menu.png)
+![El menú de la bandeja en español](docs/img/es/tray-menu.png)
 
 El diagrama de abajo muestra qué ocurre con una frase desde que se pronuncia.
 
