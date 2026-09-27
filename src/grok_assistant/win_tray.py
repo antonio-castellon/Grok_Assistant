@@ -479,11 +479,7 @@ def _default_items() -> list:
 # Windows draws the cascade glyph itself, in black, after Tk has painted the
 # dark item. Cover that glyph with a white chevron. The tray menu already
 # draws its own white chevron; this is for the window menus.
-_MENU_ARROW_PAINTS = {0x000F, 0x01E5, 0x0200, 0x0100, 0x0318}
-_arrow_state: dict = {}
-_arrow_lock = threading.Lock()
 _arrow_procs: list = []
-_arrow_busy = False
 
 
 def install_white_submenu_arrows() -> None:
@@ -539,10 +535,6 @@ def _arrow_apis():
     user.GetWindowDC.restype = wintypes.HDC
     user.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
     user.FillRect.argtypes = [wintypes.HDC, ctypes.POINTER(RECT), wintypes.HBRUSH]
-    user.CallWindowProcW.argtypes = [ctypes.c_void_p, wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
-    user.CallWindowProcW.restype = ctypes.c_ssize_t
-    user.SetWindowLongPtrW.argtypes = [wintypes.HWND, ctypes.c_int, ctypes.c_void_p]
-    user.SetWindowLongPtrW.restype = ctypes.c_void_p
     user.EnumWindows.argtypes = [ctypes.c_void_p, wintypes.LPARAM]
     gdi.CreateSolidBrush.argtypes = [wintypes.COLORREF]
     gdi.CreateSolidBrush.restype = wintypes.HBRUSH
@@ -561,78 +553,53 @@ def _arrow_apis():
 
 def _watch_menu_arrows() -> None:
     user, gdi, kern, RECT, MENUITEMINFOW = _arrow_apis()
-    WNDPROC = ctypes.WINFUNCTYPE(
-        ctypes.c_ssize_t, wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM,
-    )
+    found: list = []
 
     def paint(hwnd) -> None:
-        global _arrow_busy
-        if _arrow_busy:
+        if not user.IsWindow(hwnd):
             return
-        _arrow_busy = True
+        hmenu = user.SendMessageW(hwnd, 0x01E1, 0, 0)
+        if not hmenu:
+            return
+        count = user.GetMenuItemCount(hmenu)
+        if count <= 0:
+            return
+        window = RECT()
+        user.GetWindowRect(hwnd, ctypes.byref(window))
+        dc = user.GetWindowDC(hwnd)
+        if not dc:
+            return
         try:
-            hmenu = user.SendMessageW(hwnd, 0x01E1, 0, 0)
-            if not hmenu:
-                return
-            count = user.GetMenuItemCount(hmenu)
-            if count <= 0:
-                return
-            window = RECT()
-            user.GetWindowRect(hwnd, ctypes.byref(window))
-            dc = user.GetWindowDC(hwnd)
-            if not dc:
-                return
-            try:
-                for index in range(count):
-                    info = MENUITEMINFOW()
-                    info.cbSize = ctypes.sizeof(MENUITEMINFOW)
-                    info.fMask = 0x00000004
-                    if not user.GetMenuItemInfoW(hmenu, index, True, ctypes.byref(info)) or not info.hSubMenu:
-                        continue
-                    item = RECT()
-                    if not user.GetMenuItemRect(None, hmenu, index, ctypes.byref(item)):
-                        continue
-                    left = item.left - window.left
-                    top = item.top - window.top
-                    right = item.right - window.left
-                    bottom = item.bottom - window.top
-                    mid = (top + bottom) // 2
-                    sample = gdi.GetPixel(dc, left + 10, mid)
-                    if int(sample) == 0xFFFFFFFF:
-                        sample = MENU_BG
-                    brush = gdi.CreateSolidBrush(sample)
-                    user.FillRect(dc, ctypes.byref(RECT(right - 28, top + 2, right - 4, bottom - 2)), brush)
-                    gdi.DeleteObject(brush)
-                    pen = gdi.CreatePen(0, 2, 0x00FFFFFF)
-                    old_pen = gdi.SelectObject(dc, pen)
-                    x = right - 18
-                    gdi.MoveToEx(dc, x, mid - 5, None)
-                    gdi.LineTo(dc, x + 6, mid)
-                    gdi.LineTo(dc, x, mid + 5)
-                    gdi.SelectObject(dc, old_pen)
-                    gdi.DeleteObject(pen)
-            finally:
-                user.ReleaseDC(hwnd, dc)
+            for index in range(count):
+                info = MENUITEMINFOW()
+                info.cbSize = ctypes.sizeof(MENUITEMINFOW)
+                info.fMask = 0x00000004
+                if not user.GetMenuItemInfoW(hmenu, index, True, ctypes.byref(info)) or not info.hSubMenu:
+                    continue
+                item = RECT()
+                if not user.GetMenuItemRect(None, hmenu, index, ctypes.byref(item)):
+                    continue
+                left = item.left - window.left
+                top = item.top - window.top
+                right = item.right - window.left
+                bottom = item.bottom - window.top
+                mid = (top + bottom) // 2
+                sample = gdi.GetPixel(dc, left + 10, mid)
+                if int(sample) == 0xFFFFFFFF:
+                    sample = MENU_BG
+                brush = gdi.CreateSolidBrush(sample)
+                user.FillRect(dc, ctypes.byref(RECT(right - 28, top + 2, right - 4, bottom - 2)), brush)
+                gdi.DeleteObject(brush)
+                pen = gdi.CreatePen(0, 2, 0x00FFFFFF)
+                old_pen = gdi.SelectObject(dc, pen)
+                x = right - 18
+                gdi.MoveToEx(dc, x, mid - 5, None)
+                gdi.LineTo(dc, x + 6, mid)
+                gdi.LineTo(dc, x, mid + 5)
+                gdi.SelectObject(dc, old_pen)
+                gdi.DeleteObject(pen)
         finally:
-            _arrow_busy = False
-
-    def wndproc(hwnd, msg, wparam, lparam):
-        with _arrow_lock:
-            old = _arrow_state.get(int(hwnd))
-        if not old:
-            return 0
-        result = user.CallWindowProcW(old, hwnd, msg, wparam, lparam)
-        if msg == 0x0082:
-            with _arrow_lock:
-                _arrow_state.pop(int(hwnd), None)
-            return result
-        if msg in _MENU_ARROW_PAINTS:
-            paint(hwnd)
-        return result
-
-    callback = WNDPROC(wndproc)
-    _arrow_procs.append(callback)
-    found: list = []
+            user.ReleaseDC(hwnd, dc)
 
     @ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
     def enum(hwnd, _lparam):
@@ -650,29 +617,17 @@ def _watch_menu_arrows() -> None:
             found.append(hwnd)
         return True
 
-    def scan() -> None:
-        found.clear()
-        user.EnumWindows(ctypes.cast(enum, ctypes.c_void_p), 0)
-        for hwnd in found:
-            key = int(hwnd)
-            with _arrow_lock:
-                already = key in _arrow_state
-            if already:
-                continue
-            old = user.SetWindowLongPtrW(hwnd, -4, ctypes.cast(callback, ctypes.c_void_p))
-            if not old:
-                continue
-            with _arrow_lock:
-                _arrow_state[key] = old
-            paint(hwnd)
-        with _arrow_lock:
-            dead = [key for key in _arrow_state if not user.IsWindow(key)]
-            for key in dead:
-                _arrow_state.pop(key, None)
+    _arrow_procs.append(enum)
 
     while True:
         try:
-            scan()
+            found.clear()
+            user.EnumWindows(ctypes.cast(enum, ctypes.c_void_p), 0)
+            for hwnd in list(found):
+                try:
+                    paint(hwnd)
+                except Exception:
+                    pass
         except Exception:
             pass
-        time.sleep(0.03)
+        time.sleep(0.02 if found else 0.08)
