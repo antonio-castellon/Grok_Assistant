@@ -13,6 +13,7 @@ from tkinter import messagebox, simpledialog, ttk
 from grok_assistant.helptext import HELP_TOPICS
 from grok_assistant.hub import Hub, build
 from grok_assistant.listen import RECOGNIZER_LABELS, Dictation, discover_recognizers
+from grok_assistant.marketplace import Offer, download, offers
 from grok_assistant.music import Music
 from grok_assistant.paths import bundle_root
 from grok_assistant.speech import Speaker
@@ -183,6 +184,8 @@ class TrayApp:
         self.menu_musica = tk.Menu(bar, **kw)
         self.menu_admin = tk.Menu(bar, **kw)
         self.menu_about = tk.Menu(bar, **kw)
+        self.menu_market = tk.Menu(bar, **kw)
+        self.menu_market.add_command(label="Voces, oídos y modelo local…", command=self._open_market)
         bar.add_cascade(label="Escucha", menu=self.menu_escucha)
         bar.add_cascade(label="Voz", menu=self.menu_voz)
         bar.add_cascade(label="Modelo", menu=self.menu_modelo)
@@ -190,6 +193,7 @@ class TrayApp:
         bar.add_cascade(label="Agente", menu=self.menu_agente)
         bar.add_cascade(label="Música", menu=self.menu_musica)
         bar.add_cascade(label="Administrador", menu=self.menu_admin)
+        bar.add_cascade(label="Mercado", menu=self.menu_market)
         bar.add_cascade(label="Acerca de + Ayuda", menu=self.menu_about)
         self.menu_about.add_command(label="Comandos…", command=self._open_help)
         self.menu_about.add_command(label="Acerca de…", command=self._open_about)
@@ -306,6 +310,7 @@ class TrayApp:
                 ("cmd", "Seguir", "music-resume", False),
                 ("cmd", "Parar", "music-stop", False),
             ]),
+            ("cmd", "Mercado…", "market", False),
             ("sub", "Acerca de + Ayuda", [
                 ("cmd", "Comandos…", "help", False),
                 ("cmd", "Acerca de…", "about", False),
@@ -353,6 +358,8 @@ class TrayApp:
             self._command("seguir musica")
         elif key == "music-stop":
             self._command("para la musica")
+        elif key == "market":
+            self._open_market()
         elif key == "help":
             self._open_help()
         elif key == "about":
@@ -393,6 +400,87 @@ class TrayApp:
         name = simpledialog.askstring("Agente", "Nombre del agente:", parent=self.root)
         if name and name.strip():
             self._command(f"crear agente {name.strip()}")
+
+    def _open_market(self) -> None:
+        window = tk.Toplevel(self.root)
+        window.title("Mercado")
+        window.configure(bg=BG)
+        window.geometry("760x640")
+        ttk.Label(window, text="Mercado", style="Status.TLabel").pack(anchor="w", padx=16, pady=(14, 2))
+        ttk.Label(
+            window,
+            text="Elige qué se descarga a este equipo y qué queda en uso. Nada baja solo.",
+            style="Muted.TLabel",
+        ).pack(anchor="w", padx=16, pady=(0, 8))
+        canvas = tk.Canvas(window, bg=BG, highlightthickness=0)
+        canvas.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        inner = ttk.Frame(canvas)
+        canvas.create_window((0, 0), window=inner, anchor="nw")
+        inner.bind("<Configure>", lambda _event: canvas.configure(scrollregion=canvas.bbox("all")))
+        status = tk.StringVar(value="")
+        ttk.Label(window, textvariable=status, style="Muted.TLabel").pack(anchor="w", padx=16, pady=(0, 10))
+        headings = {"voice": "Voces", "stt": "Reconocimiento", "llm": "Modelo local"}
+        last = ""
+        for offer in offers():
+            if offer.kind != last:
+                ttk.Label(inner, text=headings[offer.kind], font=("Segoe UI", 13, "bold")).pack(anchor="w", padx=8, pady=(12, 4))
+                last = offer.kind
+            self._market_row(inner, offer, status)
+
+    def _market_row(self, parent, offer: Offer, status: tk.StringVar) -> None:
+        row = ttk.Frame(parent)
+        row.pack(fill="x", padx=8, pady=4)
+        ready = offer.ready()
+        state = "en este equipo" if ready else "sin descargar"
+        ttk.Label(row, text=f"{offer.title}   {offer.size}   {state}", font=("Segoe UI", 11)).pack(anchor="w")
+        ttk.Label(row, text=offer.detail, style="Muted.TLabel").pack(anchor="w")
+        buttons = ttk.Frame(row)
+        buttons.pack(anchor="w", pady=(2, 0))
+        if not ready:
+            ttk.Button(buttons, text="Descargar", command=lambda item=offer: self._download_offer(item, status)).pack(side="left")
+        else:
+            ttk.Button(buttons, text="Usar", command=lambda item=offer: self._use_offer(item)).pack(side="left")
+
+    def _download_offer(self, offer: Offer, status: tk.StringVar) -> None:
+        def work() -> None:
+            try:
+                download(offer, lambda message: self.ui.put(lambda message=message: status.set(message)))
+                self.ui.put(lambda: status.set(f"{offer.title} listo"))
+                self.ui.put(self._refresh_devices)
+            except Exception as exc:
+                self.ui.put(lambda: status.set(str(exc)[:180]))
+
+        status.set(f"descargando {offer.title}…")
+        threading.Thread(target=work, daemon=True).start()
+
+    def _refresh_devices(self) -> None:
+        self.hub.brain.set_devices(self.speaker.list_voices(), discover_recognizers())
+        self._note("lista de voces y oídos actualizada")
+        self._paint()
+
+    def _use_offer(self, offer: Offer) -> None:
+        self._refresh_devices()
+        if offer.kind == "voice":
+            try:
+                index = self.hub.brain.voices.index(offer.use_label)
+            except ValueError:
+                self._note(f"la voz {offer.title} está en disco, pero no entra en la lista")
+                return
+            self.hub.brain.settings.voice_index = index
+            self.hub.brain.persist()
+            self._note(f"uso la voz {offer.use_label}")
+        elif offer.kind == "stt":
+            if offer.engine_id not in self.hub.brain.recognizers:
+                self.hub.brain.recognizers.append(offer.engine_id)
+            self.hub.brain.settings.recognizer = offer.engine_id
+            self.hub.brain.persist()
+            self._sync_ear()
+            self._note(f"oído activo: {offer.title}")
+        elif offer.kind == "llm":
+            self.hub.brain.settings.local_llm = True
+            self.hub.brain.persist()
+            self._note("el modelo local revisa la frase antes de la nube")
+        self._paint()
 
     def _password_dialog(self) -> None:
         first = simpledialog.askstring("Administrador", "Nueva contraseña:", show="*", parent=self.root)

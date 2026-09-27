@@ -8,6 +8,7 @@ from pathlib import Path
 from grok_assistant.auth import AdminAuth
 from grok_assistant.brain import Brain, Turn
 from grok_assistant.grok_cli import GrokCLI, GrokError
+from grok_assistant.local_llm import LocalMind
 from grok_assistant.paths import default_agents_dir, default_data_dir, load_lines
 from grok_assistant.settings import Settings
 from grok_assistant.store import AgentBook, SessionStore, SpeakerBook
@@ -34,6 +35,7 @@ class Hub:
         self.cli = cli
         self.data_dir = data_dir
         self.on_effect = None
+        self.mind = None
         self.sent: list[tuple] = []
 
     def startup(self) -> str:
@@ -62,6 +64,9 @@ class Hub:
 
     def _play(self, turn: Turn, speaker) -> Result:
         result = Result()
+        local = self._local_turn(turn)
+        if local is not None:
+            turn = local
         self._emit(turn, speaker, result)
         if turn.job:
             follow = self._cloud(turn)
@@ -83,6 +88,30 @@ class Hub:
             result.effects.append(effect)
             if self.on_effect:
                 self.on_effect(effect)
+
+    def _local_turn(self, turn: Turn) -> Turn | None:
+        if turn.job is None or self.mind is None or not self.brain.settings.local_llm:
+            return None
+        try:
+            data = self.mind.interpret(turn.job.text, self.brain.in_conversation)
+        except Exception:
+            self.brain._log("modelo local no respondió")
+            return None
+        if not data:
+            return None
+        accion = data.get("accion")
+        self.brain._log(f"modelo local: {accion}")
+        if turn.job.kind == "classify" or accion == "comando":
+            self.brain.phase = ""
+            return self.brain.finish_classify(data)
+        if accion == "ignorar":
+            self.brain.phase = ""
+            self.brain._log("modelo local: se queda en casa")
+            return Turn(speak=[], status=self.brain.status_label())
+        if accion == "pregunta" and data.get("texto"):
+            turn.job.text = data["texto"]
+            self.brain._log(f"modelo local afina: {turn.job.text}")
+        return None
 
     def _cloud(self, turn: Turn) -> Turn:
         job = turn.job
@@ -168,4 +197,6 @@ def build(data_dir: Path | None = None, agents_dir: Path | None = None, cli: Gro
         cli = GrokCLI(binary, data) if binary else None
     elif getattr(cli, "cwd", None) is None:
         pass
-    return Hub(brain, cli, data)
+    hub = Hub(brain, cli, data)
+    hub.mind = LocalMind(data)
+    return hub

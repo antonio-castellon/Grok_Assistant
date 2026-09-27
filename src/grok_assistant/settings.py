@@ -16,6 +16,7 @@ class Settings:
     voice_index: int = 0
     recognizer: str = "teclado"
     volume: int = 70
+    local_llm: bool = True
 
     @classmethod
     def load(cls, path: Path) -> "Settings":

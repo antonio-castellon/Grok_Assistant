@@ -7,7 +7,7 @@ import subprocess
 import threading
 from pathlib import Path
 
-from grok_assistant.paths import bundle_root
+from grok_assistant.paths import bundle_root, default_data_dir
 from grok_assistant.quiet import no_window
 
 
@@ -39,6 +39,7 @@ def discover_recognizers() -> list[str]:
         found.append("windows")
     roots = [
         bundle_root() / "models",
+        default_data_dir() / "models",
         Path.home() / ".grok" / "assistant-models",
     ]
     seen = set(found)

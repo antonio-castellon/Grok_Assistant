@@ -24,6 +24,8 @@ a = Analysis(
         "grok_assistant.helptext",
         "grok_assistant.hub",
         "grok_assistant.listen",
+        "grok_assistant.local_llm",
+        "grok_assistant.marketplace",
         "grok_assistant.match",
         "grok_assistant.music",
         "grok_assistant.paths",
