@@ -23,6 +23,7 @@ from grok_assistant.listen import (
 )
 from grok_assistant.marketplace import Offer, download, offers
 from grok_assistant.music import Music
+from grok_assistant.refine import Refiner, choose_transcript
 from grok_assistant.voiceprint import VoicePrint
 from grok_assistant.paths import bundle_root
 from grok_assistant.speech import Speaker
@@ -67,6 +68,7 @@ class TrayApp:
         self.speaker = Speaker()
         self.music = Music()
         self.voiceprint = VoicePrint()
+        self.refiner = Refiner()
         self._music_note = False
         self.user_paused = False
         self.jobs: queue.Queue = queue.Queue()
@@ -102,6 +104,7 @@ class TrayApp:
         self._ensure_identifier()
         self._poll_usage()
         threading.Thread(target=self._arm_voiceprint, daemon=True).start()
+        threading.Thread(target=self._arm_refiner, daemon=True).start()
         self._note("ventana lista")
         self.root.after(200, self._pulse)
 
@@ -985,6 +988,11 @@ class TrayApp:
         if self.user_paused:
             return
         embedding = self.voiceprint.embed(audio) if audio is not None else None
+        second = self.refiner.transcribe(audio) if audio is not None else ""
+        chosen = choose_transcript(text, second)
+        if second and second.casefold() != text.casefold():
+            self.jobs.put(("note", f"{self.refiner.label()} relee: {second}"))
+        text = chosen
         if self.music.loaded:
             who = self.hub.brain.speakers.closest(embedding)
             if not who:
@@ -1000,6 +1008,10 @@ class TrayApp:
         self.entry.delete(0, "end")
         if text:
             self.jobs.put(("phrase", text))
+
+    def _arm_refiner(self) -> None:
+        if self.refiner.load():
+            self.ui.put(lambda: self._note(f"releo cada frase con {self.refiner.label()} para guardar los nombres en inglés"))
 
     def _arm_voiceprint(self) -> None:
         if self.voiceprint.ensure():

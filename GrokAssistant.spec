@@ -58,6 +58,7 @@ a = Analysis(
         "grok_assistant.speech",
         "grok_assistant.startup",
         "grok_assistant.voiceprint",
+        "grok_assistant.refine",
         "grok_assistant.store",
         "grok_assistant.textutil",
         "grok_assistant.tray",

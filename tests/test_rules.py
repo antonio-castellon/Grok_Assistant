@@ -191,6 +191,13 @@ def test_conversation_goes_to_grok_without_the_local_model(world):
     assert "Volumen" not in " ".join(result.spoken)
 
 
+def test_the_second_reading_keeps_an_english_name():
+    from grok_assistant.refine import choose_transcript
+
+    assert choose_transcript("pon la cancion de de bi tles", "pon la canción de The Beatles") == "pon la canción de The Beatles"
+    assert choose_transcript("pon la cancion", "") == "pon la cancion"
+
+
 def test_debug_log_keeps_the_last_500_lines(world):
     hub, _cli, _clock = world
     for number in range(600):
