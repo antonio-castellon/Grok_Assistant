@@ -107,7 +107,7 @@ HELP_TOPICS = (
     (
         "Personas e identificar la voz",
         "identifica mi voz pregunta el nombre y graba dieciséis frases una sola vez. "
-        "Un pitido agudo abre cada frase. La ventana muestra la frase y lo que oye el motor. Seguir pasa a la siguiente. Salir tira los audios de esta grabación. "
+        "Un pitido agudo abre cada frase. La ventana muestra la frase y lo que oye el motor. Reintentar repite esta frase. Seguir pasa a la siguiente. Salir tira los audios de esta grabación. "
         "El motor que escucha no decide si la frase era la esperada. Se guarda el sonido en crudo y con él se hace la huella, la misma para todos los motores. "
         "Cada motor se valora con esas frases, porque ya se sabe lo que había que decir. "
         "Al lado del motor sale el acierto de esa persona, por ejemplo (92%). Es información. "

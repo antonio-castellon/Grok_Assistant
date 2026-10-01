@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import queue
 import threading
+import time
 import webbrowser
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
@@ -137,6 +138,7 @@ class TrayApp:
         self._take_open = False
         self._print_wait: queue.Queue = queue.Queue()
         self._print_win = None
+        self._drop_take_audio = 0.0
         self._settled_seq = 0
         self._score_lock = threading.Lock()
         self._downloads: dict[str, dict] = {}
@@ -2162,7 +2164,7 @@ class TrayApp:
                 ear.set_hold(hold)
 
     def _wait_print_decision(self) -> tuple[str, str, object]:
-        """Seguir keeps this phrase. Salir drops every take from this session."""
+        """Seguir keeps this phrase. Reintentar records it again. Salir drops the session."""
         pending = []
         while True:
             try:
@@ -2182,11 +2184,23 @@ class TrayApp:
                     text, audio = self._take_box.get_nowait()
                 except queue.Empty:
                     break
-                if audio is not None:
+                if audio is not None and time.monotonic() >= self._drop_take_audio:
                     pending_text, pending_audio = str(text or ""), audio
                     self.ui.put(lambda heard=pending_text: self._set_print_heard(heard))
             if decision == "salir":
                 return "salir", "", None
+            if decision == "reintentar":
+                extra = []
+                while True:
+                    try:
+                        extra.append(self._print_wait.get_nowait())
+                    except queue.Empty:
+                        break
+                if "salir" in extra:
+                    return "salir", "", None
+                self._restart_print_listen()
+                pending_text, pending_audio = "", None
+                continue
             if decision != "seguir":
                 continue
             if pending_audio is None:
@@ -2242,7 +2256,8 @@ class TrayApp:
             ttk.Label(win, textvariable=self._print_hint, style="Muted.TLabel").pack(anchor="w", padx=18, pady=(8, 0))
             row = ttk.Frame(win)
             row.pack(fill="x", padx=18, pady=16)
-            ttk.Button(row, text=_ui("dialog.print_next", "Seguir"), command=self._print_next).pack(side="left")
+            ttk.Button(row, text=_ui("dialog.print_retry", "Reintentar"), command=self._print_retry).pack(side="left")
+            ttk.Button(row, text=_ui("dialog.print_next", "Seguir"), command=self._print_next).pack(side="left", padx=(12, 0))
             ttk.Button(row, text=_ui("dialog.print_leave", "Salir"), command=self._print_leave).pack(side="right")
             self._print_win = win
             self.root.deiconify()
@@ -2281,8 +2296,36 @@ class TrayApp:
     def _print_next(self) -> None:
         self._print_wait.put("seguir")
 
+    def _print_retry(self) -> None:
+        self._print_wait.put("reintentar")
+
     def _print_leave(self) -> None:
         self._print_wait.put("salir")
+
+    def _restart_print_listen(self) -> None:
+        """Drop only this phrase and listen for it again. Earlier phrases stay."""
+        from grok_assistant.enroll_audio import play_tone
+
+        self._drop_take_audio = time.monotonic() + 0.35
+        self._hold_mic(True)
+        time.sleep(0.15)
+        while True:
+            try:
+                self._take_box.get_nowait()
+            except queue.Empty:
+                break
+        brain = self.hub.brain
+        brain._live_text = ""
+        brain._live_open = False
+        self._set_capture(True)
+        self._set_hold(True)
+        self._hold_mic(False)
+        threading.Thread(target=play_tone, args=(True,), daemon=True).start()
+        self.ui.put(self._mark_print_retry)
+
+    def _mark_print_retry(self) -> None:
+        self._set_print_heard("")
+        self._set_print_hint(_ui("dialog.print_again", "Otra vez. Habla después del pitido."))
 
     def _close_print_modal(self) -> None:
         def close() -> None:
@@ -2448,6 +2491,8 @@ class TrayApp:
         self.ui.put(lambda text=text: self._note(text))
 
     def _preview(self, text: str, seq: int = 0) -> None:
+        if time.monotonic() < self._drop_take_audio:
+            return
         if seq and seq <= self._settled_seq:
             return
         heard = " ".join((text or "").split())
@@ -2473,7 +2518,7 @@ class TrayApp:
         self._settle_preview()
         enroll = self.hub.brain.enroll
         if isinstance(enroll, dict) and enroll.get("stage") == "takes":
-            if self._take_open:
+            if self._take_open and time.monotonic() >= self._drop_take_audio:
                 self._take_box.put((text or "", audio))
             return
         from grok_assistant.match import is_presence, words_norm

@@ -1035,7 +1035,7 @@ class Brain:
         if index == 0:
             said = (
                 f"Grabaré {total} frases una sola vez. La frase sale en la ventana. "
-                f"Seguir pasa a la siguiente. Salir tira lo grabado. "
+                f"Reintentar repite esta. Seguir pasa a la siguiente. Salir tira lo grabado. "
                 f"Habla después del pitido. "
                 f"1 de {total}. {phrase}"
             )

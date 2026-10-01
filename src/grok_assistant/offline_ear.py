@@ -106,7 +106,7 @@ class OfflineEar:
             self._capture.clear()
 
     def set_hold(self, hold: bool) -> None:
-        """While the print window is open, only Seguir ends the phrase."""
+        """While the print window is open, Seguir keeps the phrase and Reintentar clears it."""
         self._hold = bool(hold)
 
     def request_flush(self) -> None:
