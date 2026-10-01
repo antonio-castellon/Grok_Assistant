@@ -250,6 +250,39 @@ def test_outside_conversation_the_local_model_can_close(world):
     assert cli.calls == []
 
 
+def test_a_typed_name_is_kept_before_any_repetition(world):
+    hub, _cli, _clock = world
+    hub.brain.settings.wake_heard = ["hola droga", "hola grog"]
+    turn = hub.brain.rename_typed("luz")
+    assert hub.brain.settings.wake_name == "luz"
+    assert hub.brain.settings.wake_heard == []
+    assert hub.brain.naming["stage"] == "train_offer"
+    assert turn.speak[0] == "A partir de ahora me llamo luz."
+    left = hub.run("salir")
+    assert left.spoken == ["Me sigo llamando luz."]
+    assert hub.brain.naming is None
+    assert hub.brain.settings.wake_name == "luz"
+    hub.run("hola luz")
+    assert hub.brain.in_conversation
+    hub.brain.in_conversation = False
+    empty = hub.brain.rename_typed("   ")
+    assert empty.speak == ["Dime un nombre."]
+    assert hub.brain.settings.wake_name == "luz"
+
+
+def test_six_repetitions_can_follow_a_typed_name(world):
+    hub, _cli, _clock = world
+    hub.brain.rename_typed("luz")
+    hub.run("sí")
+    for heard in ("luz", "lus", "luz", "luz", "luz", "luz"):
+        hub.run(heard)
+    assert hub.brain.naming is None
+    assert hub.brain.settings.wake_name == "luz"
+    assert "lus" in hub.brain.settings.wake_heard
+    hub.run("lus")
+    assert hub.brain.in_conversation
+
+
 def test_a_trained_name_wakes_from_what_was_heard(world):
     hub, _cli, _clock = world
     hub.run("comando cambiar nombre")

@@ -607,13 +607,39 @@ class Brain:
         self.opener = speaker_id
         return self._cloud(question)
 
+    def rename_typed(self, name: str) -> Turn:
+        """The written name is kept as typed. Speech is only for later mishearings."""
+        clean = " ".join((name or "").split())
+        if not clean or not tokenize(clean):
+            return self._said(["Dime un nombre."])
+        self.settings.wake_name = clean
+        self.settings.wake_heard = []
+        self.persist()
+        self.naming = {"stage": "train_offer", "name": clean, "heard": [], "kept": True}
+        return self._said([
+            f"A partir de ahora me llamo {clean}.",
+            "Si el oído lo deforma, di sí y lo repites seis veces.",
+        ])
+
     def _name_take(self, heard: str, norms: list[str]) -> Turn:
         self._record(heard, "ignorar", False, "nombre")
         self.last_heard = heard
         if norms == ["salir"]:
+            kept = bool(self.naming.get("kept"))
+            chosen = self.settings.wake_name
             self.naming = None
+            if kept:
+                return self._said([f"Me sigo llamando {chosen}."])
             return self._said(["Dejo el nombre como estaba."])
         stage = self.naming["stage"]
+        if stage == "train_offer":
+            if is_yes(norms):
+                self.naming["stage"] = "repeat"
+                self.naming["heard"] = []
+                return self._said([f"Di «{self.naming['name']}» seis veces. Primera."])
+            chosen = self.settings.wake_name
+            self.naming = None
+            return self._said([f"Me sigo llamando {chosen}."])
         if stage == "choose":
             self.naming["name"] = heard.strip()
             self.naming["stage"] = "confirm"
@@ -885,7 +911,7 @@ class Brain:
             return self._said([spoken_help()])
         if name == "cambiar nombre":
             self.naming = {"stage": "choose", "name": "", "heard": []}
-            return self._said(["¿Cómo quieres llamarme? Di solo el nombre."])
+            return self._said(["¿Cómo quieres llamarme? Dilo, o escríbelo en la caja."])
         if name == "identifica mi voz":
             self.enroll = _blank_enroll()
             return self._said(["¿Cómo te llamas?"], effects=[("enroll", "¿Cómo te llamas?", "")])

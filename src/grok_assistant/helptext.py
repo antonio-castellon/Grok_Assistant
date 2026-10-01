@@ -25,7 +25,7 @@ HELP_TOPICS = (
         "Fuera de una conversación el micrófono oye, pero no manda nada a Grok. "
         "Para abrir la charla di un saludo. Si la pregunta va en la misma frase, también se envía. "
         "Si solo saludas, el oído espera hasta dos segundos por si la pregunta sigue. "
-        "El nombre de fábrica es grok. Cambiar nombre pide el nombre y luego lo repites seis veces. "
+        "El nombre de fábrica es grok. En Cambiar nombre se escribe; por la voz se dice y luego se repite seis veces. "
         "Cada vez se enseña lo que se entendió, y esas variaciones también abren la charla.",
         "hola grok",
     ),

@@ -78,6 +78,8 @@
     "dialog.print_new": "Person's name:",
     "dialog.print_rename": "New name:",
     "dialog.print_delete": "Delete this print?",
+    "dialog.wake_title": "Change name",
+    "dialog.wake_name": "Assistant name. A word in the listening language is easier to hear:",
     "menu.startup_on": "Start with Windows",
     "menu.startup_off": "Do not start with Windows",
     "menu.music_pause": "Pause",

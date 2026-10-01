@@ -78,6 +78,8 @@
     "dialog.print_new": "Nombre de la persona:",
     "dialog.print_rename": "Nuevo nombre:",
     "dialog.print_delete": "¿Borro esta huella?",
+    "dialog.wake_title": "Cambiar nombre",
+    "dialog.wake_name": "Nombre del asistente. Una palabra en español se oye mejor:",
     "menu.startup_on": "Activar arranque con Windows",
     "menu.startup_off": "Desactivar arranque con Windows",
     "menu.music_pause": "Pausar",

@@ -78,6 +78,8 @@
     "dialog.print_new": "Name der Person:",
     "dialog.print_rename": "Neuer Name:",
     "dialog.print_delete": "Diesen Abdruck löschen?",
+    "dialog.wake_title": "Namen ändern",
+    "dialog.wake_name": "Name des Assistenten. Ein Wort der Hörsprache wird besser erkannt:",
     "menu.startup_on": "Mit Windows starten",
     "menu.startup_off": "Nicht mit Windows starten",
     "menu.music_pause": "Pause",

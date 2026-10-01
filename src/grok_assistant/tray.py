@@ -522,6 +522,18 @@ class TrayApp:
         if name and name.strip():
             self._recapture_print(name.strip())
 
+    def _rename_assistant(self) -> None:
+        current = self.hub.brain.settings.wake_name
+        typed = simpledialog.askstring(
+            _ui("dialog.wake_title", "Cambiar nombre"),
+            _ui("dialog.wake_name", "Nombre del asistente. Una palabra en español se oye mejor:"),
+            initialvalue=current,
+            parent=self.root,
+        )
+        if not typed or not typed.strip() or typed.strip() == current:
+            return
+        self.jobs.put(("rename", typed.strip()))
+
     def _rename_print(self, name: str) -> None:
         new = simpledialog.askstring(
             _ui("dialog.print_name", "Huella"),
@@ -590,7 +602,7 @@ class TrayApp:
             menu.add_command(label=_used(True) + _ui("menu.test_off", "Desactivar prueba"), command=self._toggle_test)
         else:
             menu.add_command(label=_ui("menu.test_on", "Activar prueba"), command=self._toggle_test)
-        menu.add_command(label=_ui("menu.rename", "Cambiar nombre…"), command=lambda: self._command("cambiar nombre"))
+        menu.add_command(label=_ui("menu.rename", "Cambiar nombre…"), command=self._rename_assistant)
 
     def _fill_identifiers(self) -> None:
         menu = self.menu_identifier
@@ -816,7 +828,7 @@ class TrayApp:
         elif key == "test-toggle":
             self._toggle_test()
         elif key == "rename":
-            self._command("cambiar nombre")
+            self._rename_assistant()
         elif key == "identify":
             self._command("identifica mi voz")
         elif key == "admin":
@@ -1964,6 +1976,13 @@ class TrayApp:
         if kind == "tick":
             result = self.hub.tick(speaker=self.say)
             self._apply(result)
+            self._refresh()
+            return
+        if kind == "rename":
+            turn = self.hub.brain.rename_typed(payload)
+            for line in turn.speak:
+                self.say(line)
+            self._note(f"nombre: {self.hub.brain.settings.wake_name}")
             self._refresh()
             return
         if kind == "capture":

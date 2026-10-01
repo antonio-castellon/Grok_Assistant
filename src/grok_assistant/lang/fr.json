@@ -78,6 +78,8 @@
     "dialog.print_new": "Nom de la personne :",
     "dialog.print_rename": "Nouveau nom :",
     "dialog.print_delete": "Supprimer cette empreinte ?",
+    "dialog.wake_title": "Changer le nom",
+    "dialog.wake_name": "Nom de l'assistant. Un mot de la langue d'écoute s'entend mieux :",
     "menu.startup_on": "Démarrer avec Windows",
     "menu.startup_off": "Ne pas démarrer avec Windows",
     "menu.music_pause": "Pause",
