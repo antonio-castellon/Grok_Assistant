@@ -278,8 +278,8 @@ class SpeakerBook:
         self.save()
         return key
 
-    def store_recording(self, name: str, clips: list[dict], vectors: list, lock: bool) -> str:
-        """Save the raw phrases and one voice print derived from them."""
+    def store_recording(self, name: str, clips: list[dict], vectors: list, lock: bool, replace_print: bool = True) -> str:
+        """Save every raw phrase. The voice print is replaced only when asked."""
         from grok_assistant.enroll_audio import write_wav
 
         clean = " ".join(name.split())
@@ -293,12 +293,13 @@ class SpeakerBook:
             rel = f"{slug}/{index:02d}.wav"
             write_wav(self.raw_root() / rel, clip["samples"])
             stored.append({"phrase": clip["phrase"], "file": rel})
-        person["prints"] = {"campplus": [list(map(float, vector)) for vector in vectors]}
+        if replace_print:
+            person["prints"] = {"campplus": [list(map(float, vector)) for vector in vectors]}
         person["raw"] = stored
         person["scores"] = {}
         person["last"] = time.time()
         self.people[key] = person
-        if lock and vectors:
+        if replace_print and lock and vectors:
             self.locked = key
         self.save()
         return key

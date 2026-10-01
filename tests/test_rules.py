@@ -605,10 +605,42 @@ def test_a_split_recording_does_not_create_a_second_person(world):
         vector = [1.0, 0.0] if number < 8 else [0.0, 1.0]
         turn = hub.brain.accept_take(samples, vector)
     assert hub.brain.enroll is None
-    assert "otra persona" in turn.speak[0]
-    assert hub.brain.speakers.raw_clips("Ana") == []
+    assert "no cambio la huella" in turn.speak[0]
+    assert len(hub.brain.speakers.raw_clips("Ana")) == 16
+    assert any(effect[0] == "score_prints" for effect in turn.effects)
     assert hub.brain.speakers.closest([1.0, 0.0], "canary") == "Ana"
+    assert hub.brain.speakers.closest([0.0, 1.0], "canary") is None
     assert hub.brain.speakers.locked == "Ana"
+    assert any("wav guardados" in line for line in hub.brain.logs)
+
+
+def test_outlier_takes_stay_in_the_raw_sound(world):
+    hub, _cli, _clock = world
+    hub.brain.start_capture("Ana")
+    samples = [0.01] * 1600
+    turn = None
+    for number in range(16):
+        vector = [1.0, 0.0] if number < 12 else [0.0, 1.0]
+        turn = hub.brain.accept_take(samples, vector)
+    assert len(hub.brain.speakers.raw_clips("Ana")) == 16
+    assert hub.brain.speakers.closest([1.0, 0.0]) == "Ana"
+    assert hub.brain.speakers.closest([0.0, 1.0]) is None
+    assert "12 de 16" in turn.speak[0]
+
+
+def test_a_first_recording_keeps_the_wavs_when_the_voices_split(world):
+    hub, _cli, _clock = world
+    hub.brain.start_capture("Ana")
+    samples = [0.01] * 1600
+    turn = None
+    for number in range(16):
+        vector = [1.0, 0.0] if number < 8 else [0.0, 1.0]
+        turn = hub.brain.accept_take(samples, vector)
+    assert len(hub.brain.speakers.raw_clips("Ana")) == 16
+    assert hub.brain.speakers.closest([1.0, 0.0]) is None
+    assert hub.brain.speakers.locked is None
+    assert any(effect[0] == "score_prints" for effect in turn.effects)
+    assert any("wav guardados" in line for line in hub.brain.logs)
 
 
 def test_a_take_writes_what_the_ear_heard(world):

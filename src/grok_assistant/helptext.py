@@ -113,7 +113,7 @@ HELP_TOPICS = (
         "Al lado del motor sale el acierto de esa persona, por ejemplo (92%). Es información. "
         "El motor se elige sumando todas las huellas, al arrancar, y se escribe en Depuración. "
         "Cambiarlo está en Escucha. Las huellas y la identificación están en Personas. "
-        "Si las tomas no son una sola voz, no se guarda a otra persona. "
+        "Si las tomas no son una sola voz, el sonido en crudo se guarda igual y se valoran los motores. La huella de la persona no se cambia. "
         "Sin el modelo de huella de voz te apunta, pero no cierra la puerta: sigue oyendo a todo el mundo. "
         "Con el modelo, solo esa persona pasa. Listar y borrar personas pide administrador.",
         "comando identifica mi voz",

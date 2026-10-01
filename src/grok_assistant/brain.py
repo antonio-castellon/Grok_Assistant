@@ -1048,18 +1048,25 @@ class Brain:
         clips = list(self.enroll["clips"])
         name = self.enroll["target"] or self.enroll["spoken"]
         kept = one_voice(vectors)
-        if not kept:
+        total = len(clips)
+        if kept:
+            kept_vectors = [vectors[index] for index in kept]
+            stored = self.speakers.store_recording(name, clips, kept_vectors, True)
             self.enroll = None
-            return self._said(["Estas tomas no son una sola voz. No guardo a otra persona."])
-        kept_clips = [clips[index] for index in kept]
-        kept_vectors = [vectors[index] for index in kept]
-        stored = self.speakers.store_recording(name, kept_clips, kept_vectors, True)
+            detail = f" La huella usa {len(kept_vectors)} de {total}." if len(kept_vectors) < total else ""
+            self.note(f"huella guardada: {total} wav. {stored}.{detail}")
+            return self._said(
+                [f"Listo, {stored}.{detail} El sonido queda guardado y vale para todos los motores. Valoro cada uno."],
+                effects=[("score_prints", stored)],
+            )
+        stored = self.speakers.store_recording(name, clips, [], False, replace_print=False)
         self.enroll = None
-        kept_n = len(kept_vectors)
-        total = len(PHRASES)
-        detail = f" Guardo {kept_n} de {total}." if kept_n < total else ""
+        self.note(f"huella: {total} wav guardados. Los vectores no son una sola voz, no cambio la huella.")
         return self._said(
-            [f"Listo, {stored}.{detail} El sonido queda guardado y vale para todos los motores. Valoro cada uno."],
+            [
+                f"Listo, {stored}. Guardo el sonido de las {total} frases. "
+                "Los vectores no son una sola voz, así que no cambio la huella de la persona. Valoro cada motor."
+            ],
             effects=[("score_prints", stored)],
         )
 
