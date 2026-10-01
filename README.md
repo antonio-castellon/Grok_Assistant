@@ -24,6 +24,24 @@ The diagram below shows what happens to a spoken phrase from the moment it is he
 
 ![The STT engine turns speech into text. Before a conversation, the local model checks for a complete command. During a conversation, it notes the line and the text goes to Grok.](docs/img/flow.svg)
 
+## Look
+
+Settings → Look lists Noche, Día, and Mar. Noche is the one in the pictures.
+
+To change the look, put a file named `themes/<id>.json` in the same folder as `GrokAssistant.exe`. The menu shows the `name` inside that file. A file with the same id replaces the built-in theme. A missing color stays on Noche. Running from source reads `dist/themes/`.
+
+```json
+{
+  "name": "Casa",
+  "bg": "#14181e",
+  "ink": "#e7eef2"
+}
+```
+
+The other keys are `panel`, `muted`, `amber`, `teal`, `green`, `field`, `button`, `button_active`, `pause`, `pause_active`, `quit`, `quit_active`, `time`, `mode_ink`, `danger`, `select`, `chip_ink`, `flow_on`, `flow_off`, `flow_dim`, `menu_bg`, `menu_hot`, `menu_ink`, `menu_muted`, and `menu_line`. Optional `font`, `font_bold`, and `mono` are lists, for example `["Segoe UI", 12]`.
+
+In Settings, Grok starts with web lookup only. An administrator can allow file changes. The shell stays off, and a relative path lands in the assistant data folder.
+
 ## Read on
 
 - [How to use it](docs/en/guide.md)

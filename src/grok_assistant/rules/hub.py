@@ -5,13 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from grok_assistant.auth import AdminAuth
-from grok_assistant.brain import Brain, Turn
-from grok_assistant.grok_cli import GrokCLI, GrokError
-from grok_assistant.local_llm import LocalMind
+from grok_assistant.notebook.auth import AdminAuth
+from grok_assistant.rules.brain import Brain, Turn
+from grok_assistant.cloud.grok_cli import GrokCLI, GrokError
+from grok_assistant.mind.local_llm import LocalMind
 from grok_assistant.paths import default_account_agents_dir, default_agents_dir, default_data_dir, load_lines, speakers_file
-from grok_assistant.settings import Settings
-from grok_assistant.store import AgentBook, SessionStore, SpeakerBook
+from grok_assistant.notebook.settings import Settings
+from grok_assistant.notebook.store import AgentBook, SessionStore, SpeakerBook
 
 _ROOM_RULES = """\
 # Voz
@@ -20,6 +20,21 @@ Esto es una sesión del asistente de voz, no un proyecto de código.
 Responde en español hablado, corto, sin markdown.
 No edites archivos. No ejecutes el shell.
 """
+
+_ROOM_RULES_ON = """\
+# Voz
+
+Esto es una sesión del asistente de voz, no un proyecto de código.
+Responde en español hablado, corto, sin markdown.
+Puedes leer y cambiar archivos si la persona lo pide.
+No ejecutes el shell. No instales programas. No borres una carpeta entera.
+Una ruta relativa queda en esta carpeta.
+"""
+
+
+def write_room_rules(folder: Path, files: bool) -> None:
+    text = _ROOM_RULES_ON if files else _ROOM_RULES
+    (folder / "AGENTS.md").write_text(text, encoding="utf-8")
 
 
 @dataclass
@@ -65,6 +80,13 @@ class Hub:
         try:
             turn = self.brain.handle(text, **kwargs)
             return self._play(turn, speaker)
+        finally:
+            self.brain.mark_idle()
+
+    def set_grok_files(self, allow: bool, speaker=None) -> Result:
+        self.brain.mark_busy()
+        try:
+            return self._play(self.brain.set_grok_files(allow), speaker)
         finally:
             self.brain.mark_idle()
 
@@ -124,14 +146,14 @@ class Hub:
         except Exception:
             data = None
         if data and data.get("accion") == "saludo":
-            from grok_assistant.match import tokenize
+            from grok_assistant.rules.match import tokenize
 
             self.brain.phase = ""
             self.brain._log(_intent_line(data, original))
             norms = [norm for _, norm in tokenize(original)]
             return self.brain._wake(original, norms, None, logged=False)
         if data and data.get("accion") == "comando":
-            from grok_assistant.match import canonicalize
+            from grok_assistant.rules.match import canonicalize
 
             hit = canonicalize(str(data.get("orden") or ""))
             if hit is not None:
@@ -143,7 +165,7 @@ class Hub:
             self.brain.phase = ""
             self.brain._log(_intent_line(data, original))
             return self.brain._goodbye(close)
-        from grok_assistant.match import blank_phrase
+        from grok_assistant.rules.match import blank_phrase
 
         self.brain.phase = ""
         stays = not self.brain.in_conversation or blank_phrase(original)
@@ -174,7 +196,7 @@ class Hub:
         return True
 
     def _close_kind(self, original: str, data: dict | None) -> str | None:
-        from grok_assistant.match import blank_phrase, closer, tokenize
+        from grok_assistant.rules.match import blank_phrase, closer, tokenize
 
         heard = closer([norm for _, norm in tokenize(original)])
         if heard:
@@ -189,7 +211,7 @@ class Hub:
         return "adios"
 
     def _pass_through(self, turn: Turn, original: str) -> None:
-        from grok_assistant.match import blank_phrase
+        from grok_assistant.rules.match import blank_phrase
 
         if not self.brain.in_conversation or blank_phrase(original):
             return Turn(status=self.brain.status_label())
@@ -204,6 +226,8 @@ class Hub:
             return Turn()
         if self.cli is None:
             return self.brain.finish_error("no encuentro el comando grok")
+        files = bool(self.brain.settings.grok_files)
+        write_room_rules(self.data_dir, files)
         try:
             if job.kind == "classify":
                 data = self.cli.classify(job.text, self.brain.settings.model)
@@ -220,6 +244,7 @@ class Hub:
                     first=first,
                     agent_path=job.agent_path,
                     system=spoken,
+                    files=files,
                 )
             except GrokError:
                 if first:
@@ -233,6 +258,7 @@ class Hub:
                     first=True,
                     agent_path=job.agent_path,
                     system=spoken,
+                    files=files,
                 )
             self.sent.append(("converse", job.text, job.effort, job.agent_name))
             return self.brain.finish_converse(answer)
@@ -241,14 +267,16 @@ class Hub:
 
     def _spoken_rules(self, job) -> str:
         from grok_assistant.i18n import agent_rules, reply_rules
-        from grok_assistant.personality import voice_prompt
-        from grok_assistant.prompts import AGENT_RULES, VOICE_SYSTEM
+        from grok_assistant.house.personality import voice_prompt
+        from grok_assistant.cloud.prompts import AGENT_RULES, spoken_agent_rules, voice_rules
 
+        files = bool(self.brain.settings.grok_files)
         if job.agent_path:
-            base = agent_rules() or AGENT_RULES
+            base = spoken_agent_rules(agent_rules() or AGENT_RULES, files)
         else:
             language = reply_rules()
-            base = f"{language}\n{VOICE_SYSTEM}" if language else VOICE_SYSTEM
+            voice = voice_rules(files)
+            base = f"{language}\n{voice}" if language else voice
         return voice_prompt(self.brain.settings.personality, base)
 
     def _slot(self, job) -> tuple[str, bool]:
@@ -271,9 +299,6 @@ class Hub:
 def build(data_dir: Path | None = None, agents_dir: Path | None = None, cli: GrokCLI | None = None, clock=None, wall=None, account_dir: Path | None = None) -> Hub:
     data = data_dir or default_data_dir()
     data.mkdir(parents=True, exist_ok=True)
-    rules = data / "AGENTS.md"
-    if not rules.exists():
-        rules.write_text(_ROOM_RULES, encoding="utf-8")
     config_path = data / "config.json"
     settings = Settings.load(config_path)
     from grok_assistant.i18n import activate
@@ -300,6 +325,8 @@ def build(data_dir: Path | None = None, agents_dir: Path | None = None, cli: Gro
         wall=wall,
         persist=persist,
     )
+    brain.room_dir = data
+    write_room_rules(data, bool(settings.grok_files))
     if cli is None:
         binary = GrokCLI.find()
         cli = GrokCLI(binary, data) if binary else None

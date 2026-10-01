@@ -8,7 +8,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from grok_assistant.marketplace import _llama_exe
+from grok_assistant.house.marketplace import _llama_exe
 from grok_assistant.paths import default_data_dir
 from grok_assistant.quiet import no_window
 

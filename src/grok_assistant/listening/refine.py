@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from grok_assistant.offline_ear import model_dir
+from grok_assistant.listening.offline_ear import model_dir
 
 # Whisper base keeps foreign names. Canary in Spanish mode translates them.
 _ORDER = ("base", "whisper")
@@ -18,7 +18,7 @@ def pick_transcript(primary: str, second: str, testing: bool) -> str:
 
 def choose_transcript(first: str, second: str) -> str:
     """Keep the selected engine unless the reread is the same sentence."""
-    from grok_assistant.match import noise_phrase, thin_phrase
+    from grok_assistant.rules.match import noise_phrase, thin_phrase
 
     cleaned = (second or "").strip()
     primary = (first or "").strip()
@@ -43,7 +43,7 @@ _STOP = {
 
 def _same_utterance(primary: str, second: str) -> bool:
     """True when the reread still says the selected engine's sentence."""
-    from grok_assistant.match import words_norm
+    from grok_assistant.rules.match import words_norm
 
     first = [word for word in words_norm(primary) if word not in _STOP and len(word) > 1]
     other = {word for word in words_norm(second) if word not in _STOP and len(word) > 1}

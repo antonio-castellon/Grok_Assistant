@@ -6,8 +6,8 @@ import os
 import subprocess
 from pathlib import Path
 
-from grok_assistant.enroll_audio import phrase_hit, read_wav
-from grok_assistant.listen import dictation_script
+from grok_assistant.listening.enroll_audio import phrase_hit, read_wav
+from grok_assistant.listening.listen import dictation_script
 from grok_assistant.quiet import no_window
 
 
@@ -30,10 +30,10 @@ def score_person(book, name: str, ear: str, transcribe=None) -> tuple[int, int]:
 
 def _transcribe(ear: str, samples) -> str:
     try:
-        from grok_assistant.kroko_ear import STREAMING_KINDS
-        from grok_assistant.kroko_ear import transcribe_clip as stream_clip
-        from grok_assistant.offline_ear import OFFLINE_KINDS
-        from grok_assistant.offline_ear import transcribe_clip as offline_clip
+        from grok_assistant.listening.kroko_ear import STREAMING_KINDS
+        from grok_assistant.listening.kroko_ear import transcribe_clip as stream_clip
+        from grok_assistant.listening.offline_ear import OFFLINE_KINDS
+        from grok_assistant.listening.offline_ear import transcribe_clip as offline_clip
 
         if ear in STREAMING_KINDS:
             return stream_clip(samples, ear)

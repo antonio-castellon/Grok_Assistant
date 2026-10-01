@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from grok_assistant.grok_cli import GrokCLI
+from grok_assistant.cloud.grok_cli import GrokCLI
 
 
 class Capture(GrokCLI):
@@ -45,7 +45,7 @@ def test_cloud_text_is_read_as_utf8(tmp_path, monkeypatch):
         seen.update(kwargs)
         return Done()
 
-    monkeypatch.setattr("grok_assistant.grok_cli.subprocess.run", fake_run)
+    monkeypatch.setattr("grok_assistant.cloud.grok_cli.subprocess.run", fake_run)
     assert GrokCLI("grok", tmp_path)._run(["grok"], 5) == "mañana, mínima y máxima"
     assert seen["encoding"] == "utf-8"
     assert seen["errors"] == "replace"
@@ -64,16 +64,40 @@ def test_converse_can_search_and_cannot_inherit_this_checkout(tmp_path):
     assert "--tools" in cli.command
     tools = cli.command[cli.command.index("--tools") + 1]
     assert tools == "web_search,web_fetch"
+    assert cli.command[cli.command.index("--disallowed-tools") + 1] == "bash"
     assert "--disable-web-search" not in cli.command
     assert "--no-subagents" in cli.command
     assert cli.command[cli.command.index("--cwd") + 1] == str(tmp_path)
     assert "--session-id" in cli.command
     assert "--system-prompt-override" in cli.command
+    override = cli.command[cli.command.index("--system-prompt-override") + 1]
+    assert "editar archivos" in override
+
+
+def test_file_edits_add_file_tools_and_still_refuse_the_shell(tmp_path):
+    cli = Capture(tmp_path)
+    cli.converse(
+        "anota esto en notas.txt",
+        model="grok-4.7",
+        effort="low",
+        session_id="11111111-1111-1111-1111-111111111111",
+        first=True,
+        agent_path=None,
+        files=True,
+    )
+    tools = cli.command[cli.command.index("--tools") + 1]
+    assert tools == "web_search,web_fetch,read_file,list_dir,search_replace"
+    assert "bash" not in tools.split(",")
+    assert cli.command[cli.command.index("--disallowed-tools") + 1] == "bash"
+    assert cli.command[cli.command.index("--cwd") + 1] == str(tmp_path)
+    override = cli.command[cli.command.index("--system-prompt-override") + 1]
+    assert "leer y cambiar archivos" in override
+    assert "shell" in override
 
 
 def test_converse_sends_the_personality_with_the_answer(tmp_path):
-    from grok_assistant.personality import load_person, voice_prompt
-    from grok_assistant.prompts import VOICE_SYSTEM
+    from grok_assistant.house.personality import load_person, voice_prompt
+    from grok_assistant.cloud.prompts import VOICE_SYSTEM
 
     cli = Capture(tmp_path)
     cfg = load_person("marcos")

@@ -94,6 +94,8 @@ _FIXED: tuple[tuple[str, tuple[str, ...], bool, bool], ...] = (
     ("cambiar nombre", ("cambiar nombre", "cambia el nombre", "cambiar el nombre"), False, False),
     ("lista las personas", ("lista las personas", "listar las personas", "lista personas"), False, True),
     ("modo administrador", ("modo administrador", "administrador"), False, True),
+    ("grok solo web", ("grok solo web",), False, True),
+    ("grok puede editar", ("grok puede editar",), False, True),
 )
 
 _LEADING = {"de", "del", "la", "el", "una", "un", "mi", "por", "favor", "quiero", "porfa", "con"}

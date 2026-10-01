@@ -41,8 +41,8 @@ def _main(argv: list[str] | None) -> None:
         from grok_assistant.console import run
         run()
         return
-    from grok_assistant.setup_grok import ensure_grok
-    from grok_assistant.tray import run
+    from grok_assistant.cloud.setup_grok import ensure_grok
+    from grok_assistant.ui.app import run
 
     ensure_grok()
     run()
@@ -80,15 +80,15 @@ def _importable(name: str) -> bool:
 
 
 def _kroko_ready() -> bool:
-    from grok_assistant.kroko_ear import kroko_dir
+    from grok_assistant.listening.kroko_ear import kroko_dir
 
     return kroko_dir() is not None
 
 
 def _write_check() -> None:
     from grok_assistant import __version__
-    from grok_assistant.grok_cli import GrokCLI
-    from grok_assistant.setup_grok import probe
+    from grok_assistant.cloud.grok_cli import GrokCLI
+    from grok_assistant.cloud.setup_grok import probe
 
     status = probe()
     lines = [

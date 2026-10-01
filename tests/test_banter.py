@@ -1,7 +1,7 @@
 """Saved greetings and waiting lines. They never come from the network."""
 
-from grok_assistant.banter import KINDS, THEMES, apply_choice, catalog, pool
-from grok_assistant.settings import Settings
+from grok_assistant.speaking.banter import KINDS, THEMES, apply_choice, catalog, pool
+from grok_assistant.notebook.settings import Settings
 
 
 def test_each_language_has_every_kind_and_theme():
@@ -42,8 +42,8 @@ def test_an_old_config_starts_with_every_kind_and_theme(tmp_path):
 def test_the_greeting_menu_uses_checkboxes(tmp_path):
     import tkinter as tk
 
-    from grok_assistant.hub import build
-    from grok_assistant.tray import TrayApp
+    from grok_assistant.rules.hub import build
+    from grok_assistant.ui.app import TrayApp
 
     root = tk.Tk()
     root.withdraw()

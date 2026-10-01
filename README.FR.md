@@ -22,6 +22,24 @@ Le schéma ci-dessous montre ce qui arrive à une phrase à partir du moment où
 
 ![Le moteur STT transforme la parole en texte. Sans conversation, le modèle local vérifie si c'est un ordre complet. Dans une conversation, il note la phrase et le texte va à Grok.](docs/img/flow.svg)
 
+## Aspect
+
+Réglages → Aspect liste Noche, Día et Mar. Noche est celui des photos.
+
+Pour changer l'aspect, place un fichier `themes/<id>.json` dans le même dossier que `GrokAssistant.exe`. Le menu affiche le champ `name`. Un fichier du même id remplace le thème inclus. Une couleur absente reste celle de Noche. Un lancement depuis les sources lit `dist/themes/`.
+
+```json
+{
+  "name": "Casa",
+  "bg": "#14181e",
+  "ink": "#e7eef2"
+}
+```
+
+Les autres clés sont `panel`, `muted`, `amber`, `teal`, `green`, `field`, `button`, `button_active`, `pause`, `pause_active`, `quit`, `quit_active`, `time`, `mode_ink`, `danger`, `select`, `chip_ink`, `flow_on`, `flow_off`, `flow_dim`, `menu_bg`, `menu_hot`, `menu_ink`, `menu_muted` et `menu_line`. `font`, `font_bold` et `mono` sont facultatifs, en liste, par exemple `["Segoe UI", 12]`.
+
+Dans Réglages, Grok commence par le web seulement. Un administrateur peut lui permettre de modifier des fichiers. Le shell reste coupé, et un chemin relatif tombe dans le dossier de données de l'assistant.
+
 ## Lire la suite
 
 - [Mode d'emploi](docs/fr/guide.md)

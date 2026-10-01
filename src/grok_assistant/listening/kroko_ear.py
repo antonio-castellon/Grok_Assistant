@@ -5,7 +5,7 @@ from __future__ import annotations
 import threading
 from pathlib import Path
 
-from grok_assistant.listen import ENGINE_DIRS, RECOGNIZER_LABELS
+from grok_assistant.listening.listen import ENGINE_DIRS, RECOGNIZER_LABELS
 from grok_assistant.paths import bundle_root, default_data_dir
 
 STREAMING_KINDS = ("kroko", "zipfr", "zipen")
@@ -28,7 +28,7 @@ def kroko_dir() -> Path | None:
 
 def note_capture_speech(mark: str, heard: str, quiet: float, voiced: float) -> tuple[str, float, float]:
     """A new decoded word restarts the pause. The word is not matched to the phrase."""
-    from grok_assistant.enroll_audio import TAKE_MIN_VOICE
+    from grok_assistant.listening.enroll_audio import TAKE_MIN_VOICE
 
     heard = " ".join((heard or "").split())
     if heard and heard != mark:
@@ -162,7 +162,7 @@ class KrokoEar:
         self._stop.set()
 
     def _ready(self, text: str, quiet: float, endpoint: bool) -> bool:
-        from grok_assistant.match import endpoint_quiet
+        from grok_assistant.rules.match import endpoint_quiet
 
         if not text:
             return False
@@ -183,7 +183,7 @@ class KrokoEar:
 
     def _capture_ready(self, text: str, quiet: float, voiced: float) -> bool:
         """End the take on sound plus a pause. The words are not checked."""
-        from grok_assistant.enroll_audio import TAKE_MAX_VOICE, TAKE_MIN_VOICE, TAKE_QUIET
+        from grok_assistant.listening.enroll_audio import TAKE_MAX_VOICE, TAKE_MIN_VOICE, TAKE_QUIET
 
         if voiced >= TAKE_MAX_VOICE:
             return True

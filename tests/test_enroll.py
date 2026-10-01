@@ -1,13 +1,13 @@
 """One recording, one person. Each listener is scored from the saved sound."""
 
-from grok_assistant.ear_score import score_person
-from grok_assistant.enroll_audio import PHRASES, MIN_KEEP, phrase_hit, one_voice, read_wav, record_phrase, write_wav
-from grok_assistant.store import SpeakerBook
+from grok_assistant.listening.ear_score import score_person
+from grok_assistant.listening.enroll_audio import PHRASES, MIN_KEEP, phrase_hit, one_voice, read_wav, record_phrase, write_wav
+from grok_assistant.notebook.store import SpeakerBook
 
 
 def test_a_held_take_stays_open_until_seguir():
-    from grok_assistant.enroll_audio import TAKE_QUIET
-    from grok_assistant.kroko_ear import KrokoEar
+    from grok_assistant.listening.enroll_audio import TAKE_QUIET
+    from grok_assistant.listening.kroko_ear import KrokoEar
 
     ear = KrokoEar(lambda *_: None)
     ear.set_hold(True)
@@ -17,8 +17,8 @@ def test_a_held_take_stays_open_until_seguir():
 
 
 def test_a_print_take_stays_open_through_a_short_pause():
-    from grok_assistant.enroll_audio import TAKE_MAX_VOICE, TAKE_MIN_VOICE, TAKE_QUIET, tone
-    from grok_assistant.kroko_ear import KrokoEar
+    from grok_assistant.listening.enroll_audio import TAKE_MAX_VOICE, TAKE_MIN_VOICE, TAKE_QUIET, tone
+    from grok_assistant.listening.kroko_ear import KrokoEar
 
     ear = KrokoEar(lambda *_: None, talk_mode=lambda: "saludo")
     assert ear._ready("qué hora es", 0.7, True) is True
@@ -38,8 +38,8 @@ def test_a_print_take_stays_open_through_a_short_pause():
 
 
 def test_a_decoded_word_counts_as_sound_and_restarts_the_pause():
-    from grok_assistant.enroll_audio import TAKE_MIN_VOICE
-    from grok_assistant.kroko_ear import capture_has_sound, note_capture_speech
+    from grok_assistant.listening.enroll_audio import TAKE_MIN_VOICE
+    from grok_assistant.listening.kroko_ear import capture_has_sound, note_capture_speech
 
     mark, quiet, voiced = note_capture_speech("", "Hola, droga", 2.0, 0.0)
     assert mark == "Hola, droga"
@@ -64,7 +64,7 @@ def test_sixteen_different_phrases():
 
 
 def test_the_greeting_phrase_uses_the_wake_name():
-    from grok_assistant.enroll_audio import enroll_phrases
+    from grok_assistant.listening.enroll_audio import enroll_phrases
 
     assert enroll_phrases("Miguel")[0] == "hola Miguel"
     assert enroll_phrases("Miguel")[1:] == PHRASES[1:]
@@ -164,7 +164,7 @@ def test_each_listener_is_scored_from_the_same_raw(tmp_path):
 
 
 def test_a_score_is_a_whole_percent_beside_the_library(tmp_path):
-    from grok_assistant.listen import eligible_ears, highest_accuracy, with_accuracy
+    from grok_assistant.listening.listen import eligible_ears, highest_accuracy, with_accuracy
 
     book = SpeakerBook(tmp_path / "speakers.json")
     book.people["Ana"] = {
@@ -206,7 +206,7 @@ def test_a_heard_take_gets_a_campplus_vector():
     import pytest
 
     pytest.importorskip("sherpa_onnx")
-    from grok_assistant.voiceprint import VoicePrint
+    from grok_assistant.listening.voiceprint import VoicePrint
 
     printer = VoicePrint()
     if not printer.ready():

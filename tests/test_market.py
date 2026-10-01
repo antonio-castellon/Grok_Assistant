@@ -1,6 +1,6 @@
-from grok_assistant.hub import build
-from grok_assistant.local_llm import parse_intent
-from grok_assistant.marketplace import cpu_windows_zip, offers, progress_percent
+from grok_assistant.rules.hub import build
+from grok_assistant.mind.local_llm import parse_intent
+from grok_assistant.house.marketplace import cpu_windows_zip, offers, progress_percent
 
 
 class Clock:
@@ -22,7 +22,7 @@ class FakeCLI:
         self.calls.append(("classify", text))
         return {"accion": "ignorar", "orden": "", "texto": ""}
 
-    def converse(self, text, *, model, effort, session_id, first, agent_path, system=None):
+    def converse(self, text, *, model, effort, session_id, first, agent_path, system=None, files=False):
         self.calls.append(("converse", text))
         return "Son las tres."
 
@@ -57,7 +57,7 @@ def test_language_packs_share_the_same_labels():
 
 
 def test_extra_piper_voices_stay_in_the_selected_language():
-    from grok_assistant.marketplace import extra_piper_offers, offers_for
+    from grok_assistant.house.marketplace import extra_piper_offers, offers_for
 
     index = {
         "fr_FR-siwis-medium": {
@@ -113,7 +113,7 @@ def test_extra_piper_voices_stay_in_the_selected_language():
     def cached():
         return index
 
-    import grok_assistant.marketplace as market
+    import grok_assistant.house.marketplace as market
 
     original = market.piper_cached
     market.piper_cached = cached
@@ -126,8 +126,8 @@ def test_extra_piper_voices_stay_in_the_selected_language():
 
 
 def test_voice_market_lists_only_the_selected_language():
-    from grok_assistant.marketplace import offers_for
-    from grok_assistant.speech import voice_lang
+    from grok_assistant.house.marketplace import offers_for
+    from grok_assistant.speaking.speech import voice_lang
 
     spanish = [item for item in offers_for("es") if item.kind == "voice"]
     french = [item for item in offers_for("fr") if item.kind == "voice"]
@@ -161,10 +161,10 @@ def test_new_ears_are_downloads_and_stay_in_their_language(tmp_path):
     import types
 
     from grok_assistant.i18n import stt_language
-    from grok_assistant.kroko_ear import transcribe_clip
-    from grok_assistant.listen import EAR_LANG, ENGINE_DIRS, eligible_ears
-    from grok_assistant.offline_ear import OFFLINE_KINDS, OfflineEar
-    from grok_assistant import kroko_ear
+    from grok_assistant.listening.kroko_ear import transcribe_clip
+    from grok_assistant.listening.listen import EAR_LANG, ENGINE_DIRS, eligible_ears
+    from grok_assistant.listening.offline_ear import OFFLINE_KINDS, OfflineEar
+    from grok_assistant.listening import kroko_ear
 
     wanted = {
         "small": "sherpa-onnx-whisper-small.tar.bz2",
@@ -273,7 +273,7 @@ class _Body:
 
 
 def test_a_cut_download_keeps_the_partial_and_resumes(tmp_path, monkeypatch):
-    from grok_assistant import marketplace
+    from grok_assistant.house import marketplace
 
     dest = tmp_path / "models" / "piece.bin"
     dest.parent.mkdir(parents=True)
@@ -305,7 +305,7 @@ def test_a_cut_download_keeps_the_partial_and_resumes(tmp_path, monkeypatch):
 def test_a_failed_download_does_not_delete_what_already_arrived(tmp_path, monkeypatch):
     import urllib.error
 
-    from grok_assistant import marketplace
+    from grok_assistant.house import marketplace
 
     dest = tmp_path / "piece.bin"
     part = dest.with_name(dest.name + ".part")
@@ -329,7 +329,7 @@ def test_a_failed_download_does_not_delete_what_already_arrived(tmp_path, monkey
 def test_opening_an_archive_says_it_is_opening(tmp_path):
     import tarfile
 
-    from grok_assistant.marketplace import _extract
+    from grok_assistant.house.marketplace import _extract
 
     source = tmp_path / "tokens.txt"
     source.write_text("hola", encoding="utf-8")
@@ -345,8 +345,8 @@ def test_opening_an_archive_says_it_is_opening(tmp_path):
 def test_a_closed_market_still_shows_the_download(tmp_path):
     import tkinter as tk
 
-    from grok_assistant.hub import build
-    from grok_assistant.tray import TrayApp
+    from grok_assistant.rules.hub import build
+    from grok_assistant.ui.app import TrayApp
 
     root = tk.Tk()
     root.withdraw()
@@ -410,7 +410,7 @@ def test_windows_spanish_is_an_installable_ear():
 
 
 def test_keyboard_steps_aside_when_kroko_is_installed():
-    from grok_assistant.listen import preferred_recognizer
+    from grok_assistant.listening.listen import preferred_recognizer
 
     assert preferred_recognizer("teclado", ["teclado", "kroko"]) == "kroko"
     assert preferred_recognizer("windows", ["teclado", "windows", "kroko"]) == "windows"

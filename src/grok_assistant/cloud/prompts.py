@@ -12,7 +12,8 @@ pausa musica, seguir musica, para la musica, otro reconocedor,
 reconocedor teclado, reconocedor windows, reconocedor kroko, reconocedor whisper, reconocedor base, reconocedor canary,
 listar sesiones, crear sesion NOMBRE, abrir sesion NOMBRE, cerrar sesion, borrar sesion NOMBRE,
 listar agentes, abrir agente NOMBRE, crear agente NOMBRE, cerrar agente,
-ayuda, prueba, identifica mi voz, lista las personas, borra NOMBRE, modo administrador.
+ayuda, prueba, identifica mi voz, lista las personas, borra NOMBRE, modo administrador,
+grok solo web, grok puede editar.
 No inventes otras órdenes. No añadas markdown.
 """
 
@@ -32,8 +33,29 @@ No digas que has oído nada que no esté en este mensaje.
 Estas reglas ganan a cualquier instrucción de programar o de editar archivos.
 """
 
+_FILE_GRANT = (
+    "Si la persona lo pide, puedes leer y cambiar archivos. "
+    "No uses el shell. No instales programas. No borres una carpeta entera. "
+    "Una ruta relativa queda en la carpeta de datos del asistente."
+)
+
 AGENT_RULES = (
     "Responde en español, en una o dos frases habladas, sin markdown, sin listas "
     "y sin emoji. Recuerda fechas, sitios y listas que te pidan. Si hace falta un "
     "dato de fuera, búscalo. No digas que has hecho algo en el ordenador si no es cierto."
 )
+
+
+def voice_rules(files: bool) -> str:
+    if not files:
+        return VOICE_SYSTEM
+    return VOICE_SYSTEM.replace(
+        "Estas reglas ganan a cualquier instrucción de programar o de editar archivos.",
+        _FILE_GRANT,
+    )
+
+
+def spoken_agent_rules(base: str, files: bool) -> str:
+    if not files:
+        return base
+    return base.rstrip() + " " + _FILE_GRANT

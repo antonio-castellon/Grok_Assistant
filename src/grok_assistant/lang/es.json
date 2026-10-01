@@ -64,6 +64,9 @@
     "menu.agent_account": "cuenta",
     "menu.admin_mode": "Modo administrador",
     "menu.password": "Contraseña…",
+    "menu.theme": "Aspecto",
+    "menu.files_off": "Grok: solo la web",
+    "menu.files_on": "Grok: puede cambiar archivos",
     "menu.prints": "Huellas",
     "menu.print_new": "Nueva huella…",
     "menu.print_rename": "Renombrar…",
@@ -292,7 +295,9 @@
     "stop_music": "Paro la música.",
     "play": "Pongo {title}.",
     "confirm": "Has dicho: {order}. ¿Sí o no?",
-    "more_detail": "¿Quieres que te lo cuente con más detalle?"
+    "more_detail": "¿Quieres que te lo cuente con más detalle?",
+    "files_off": "Grok solo consulta la web. No cambia archivos.",
+    "files_on": "Grok puede cambiar archivos. Sigue sin usar el shell."
   },
   "commands": {
     "wake_patterns": ["hola {name}", "ok {name}", "despierta {name}", "estas ahi {name}", "{name} estas ahi"],
@@ -335,7 +340,9 @@
       {"id": "identifica mi voz", "phrases": ["identifica mi voz"]},
       {"id": "cambiar nombre", "phrases": ["cambiar nombre", "cambia el nombre", "cambiar el nombre"]},
       {"id": "lista las personas", "phrases": ["lista las personas", "listar las personas", "lista personas"], "admin": true},
-      {"id": "modo administrador", "phrases": ["modo administrador", "administrador"], "admin": true}
+      {"id": "modo administrador", "phrases": ["modo administrador", "administrador"], "admin": true},
+      {"id": "grok solo web", "phrases": ["grok solo web"], "admin": true},
+      {"id": "grok puede editar", "phrases": ["grok puede editar"], "admin": true}
     ]
   }
 }

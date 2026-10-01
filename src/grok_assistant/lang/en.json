@@ -64,6 +64,9 @@
     "menu.agent_account": "account",
     "menu.admin_mode": "Administrator mode",
     "menu.password": "Password…",
+    "menu.theme": "Look",
+    "menu.files_off": "Grok: web only",
+    "menu.files_on": "Grok: may change files",
     "menu.prints": "Prints",
     "menu.print_new": "New print…",
     "menu.print_rename": "Rename…",
@@ -292,7 +295,9 @@
     "stop_music": "Stopping the music.",
     "play": "Playing {title}.",
     "confirm": "You said: {order}. Yes or no?",
-    "more_detail": "Want me to tell you that in more detail?"
+    "more_detail": "Want me to tell you that in more detail?",
+    "files_off": "Grok only looks things up on the web. It does not change files.",
+    "files_on": "Grok may change files. It still does not use the shell."
   },
   "screen_help": "start: hello grok. stop: thanks or okay. Commands start with the word command.",
   "help": [
@@ -362,7 +367,9 @@
       {"id": "identifica mi voz", "phrases": ["identify my voice"]},
       {"id": "cambiar nombre", "phrases": ["change the name", "change name"]},
       {"id": "lista las personas", "phrases": ["list the people"], "admin": true},
-      {"id": "modo administrador", "phrases": ["admin mode", "administrator"], "admin": true}
+      {"id": "modo administrador", "phrases": ["admin mode", "administrator"], "admin": true},
+      {"id": "grok solo web", "phrases": ["grok web only"], "admin": true},
+      {"id": "grok puede editar", "phrases": ["grok may edit files"], "admin": true}
     ]
   }
 }

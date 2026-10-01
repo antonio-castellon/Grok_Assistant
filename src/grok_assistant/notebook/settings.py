@@ -6,8 +6,8 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from grok_assistant.banter import KINDS, THEMES, normalize_choice
-from grok_assistant.personality import blank_personality, normalize_personality
+from grok_assistant.speaking.banter import KINDS, THEMES, normalize_choice
+from grok_assistant.house.personality import blank_personality, normalize_personality
 
 TALK_MODES = ("seguida", "saludo", "abierta")
 
@@ -23,6 +23,26 @@ def normalize_shared_days(value) -> int:
     except (TypeError, ValueError):
         return 1
     return max(1, min(365, days))
+
+
+def normalize_theme(value) -> str:
+    key = str(value or "").strip()
+    if not key or len(key) > 64:
+        return "noche"
+    if any(ch in key for ch in "\\/") or not all(ch.isalnum() or ch in "-_" for ch in key):
+        return "noche"
+    return key
+
+
+def normalize_flag(value) -> bool:
+    """A real bool, or the words 1 / true / yes / si. The string "false" stays off."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().casefold() in {"1", "true", "yes", "si", "sí"}
+    if isinstance(value, (int, float)):
+        return value == 1
+    return False
 
 
 @dataclass
@@ -44,6 +64,8 @@ class Settings:
     line_themes: list = field(default_factory=lambda: list(THEMES))
     talk_mode: str = "seguida"
     shared_days: int = 1
+    theme: str = "noche"
+    grok_files: bool = False
 
     @classmethod
     def load(cls, path: Path) -> "Settings":
@@ -69,6 +91,8 @@ class Settings:
         item.line_themes = normalize_choice(item.line_themes, THEMES)
         item.talk_mode = normalize_talk_mode(item.talk_mode)
         item.shared_days = normalize_shared_days(item.shared_days)
+        item.theme = normalize_theme(item.theme)
+        item.grok_files = normalize_flag(item.grok_files)
         return item
 
     def save(self, path: Path) -> None:

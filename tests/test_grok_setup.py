@@ -1,5 +1,5 @@
-from grok_assistant.grok_cli import interpret_models
-from grok_assistant.helptext import HELP_TOPICS
+from grok_assistant.cloud.grok_cli import interpret_models
+from grok_assistant.house.helptext import HELP_TOPICS
 from grok_assistant.paths import bundle_root
 
 
@@ -13,7 +13,7 @@ def test_a_sign_in_prompt_is_not_ready():
 
 
 def test_every_help_topic_has_an_example():
-    from grok_assistant.helptext import help_topics
+    from grok_assistant.house.helptext import help_topics
 
     titles = []
     for title, body, example in help_topics():
@@ -34,7 +34,7 @@ def test_startup_command_points_at_the_program():
 
 
 def test_account_percent_is_the_allowance_already_used():
-    from grok_assistant.account_usage import percent_used
+    from grok_assistant.cloud.account_usage import percent_used
 
     assert percent_used({"config": {"creditUsagePercent": 79.4}}) == 79
     assert percent_used({"config": {}}) is None
@@ -50,7 +50,7 @@ def test_tray_keeps_the_full_module_handle():
     import ctypes
     from ctypes import wintypes
 
-    from grok_assistant import win_tray
+    from grok_assistant.ui import win_tray
 
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel.GetModuleHandleW.argtypes = [wintypes.LPCWSTR]

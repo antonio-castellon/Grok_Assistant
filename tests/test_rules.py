@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from grok_assistant.grok_cli import GrokError
-from grok_assistant.hub import build
+from grok_assistant.cloud.grok_cli import GrokError
+from grok_assistant.rules.hub import build
 from grok_assistant.paths import load_lines
 
 
@@ -30,7 +30,7 @@ class FakeCLI:
         self.calls.append(("classify", text))
         return self.classified
 
-    def converse(self, text, *, model, effort, session_id, first, agent_path, system=None):
+    def converse(self, text, *, model, effort, session_id, first, agent_path, system=None, files=False):
         self.calls.append(("converse", text, effort, agent_path))
         return self.answer
 
@@ -54,7 +54,7 @@ def test_lists_are_long_and_distinct():
 
 
 def test_startup_uses_the_saved_lines(world):
-    from grok_assistant.banter import pool
+    from grok_assistant.speaking.banter import pool
 
     hub, _cli, _clock = world
     spoken = pool("es", hub.brain.settings.line_kinds, hub.brain.settings.line_themes)
@@ -126,7 +126,7 @@ def test_question_sends_text_and_a_filler_not_the_room(world):
     hub, cli, _clock = world
     hub.run("hablan de fútbol en la cocina")
     hub.run("hola grok")
-    from grok_assistant.banter import pool
+    from grok_assistant.speaking.banter import pool
 
     spoken = pool("es", hub.brain.settings.line_kinds, hub.brain.settings.line_themes)
     result = hub.run("qué hora es")
@@ -194,7 +194,7 @@ def test_conversation_goes_to_grok_without_the_local_model(world):
 
 
 def test_the_second_reading_keeps_an_english_name():
-    from grok_assistant.refine import choose_transcript
+    from grok_assistant.listening.refine import choose_transcript
 
     assert choose_transcript("pon la cancion de de bi tles", "pon la canción de The Beatles") == "pon la canción de The Beatles"
     assert choose_transcript("pon la cancion", "") == "pon la cancion"
@@ -205,7 +205,7 @@ def test_the_second_reading_keeps_an_english_name():
 
 
 def test_test_mode_keeps_the_selected_ear(world):
-    from grok_assistant.refine import pick_transcript
+    from grok_assistant.listening.refine import pick_transcript
 
     assert pick_transcript("hola desde kroko", "hola desde whisper", True) == "hola desde kroko"
     assert pick_transcript("pon la cancion de de bi tles", "pon la canción de The Beatles", False).endswith("Beatles")
@@ -362,8 +362,8 @@ def test_agent_create_needs_the_password_and_listing_does_not(world, tmp_path):
 
 
 def test_the_agent_menu_lists_account_agents_and_a_local_file_wins(tmp_path, monkeypatch):
-    from grok_assistant.account_agents import agents_from_bundle, agents_from_customizations
-    from grok_assistant.store import AgentBook
+    from grok_assistant.cloud.account_agents import agents_from_bundle, agents_from_customizations
+    from grok_assistant.notebook.store import AgentBook
 
     account = tmp_path / "bundled"
     account.mkdir()
@@ -391,7 +391,7 @@ def test_the_agent_menu_lists_account_agents_and_a_local_file_wins(tmp_path, mon
     assert "Fechas y listas." in custom["Casa"]
 
     monkeypatch.setattr(
-        "grok_assistant.account_agents.fetch_account_agents",
+        "grok_assistant.cloud.account_agents.fetch_account_agents",
         lambda auth_path=None: {"vega": "---\nname: vega\n---\n\nHola.\n"},
     )
     book.refresh_account()
@@ -506,6 +506,33 @@ def test_new_print_name_never_leaves(world):
     assert "Ana" in named.spoken[0]
     assert hub.brain.speakers.locked is None
     assert cli.calls == []
+
+
+def test_file_edits_stay_off_until_an_admin_allows_them(world, tmp_path):
+    import json
+
+    hub, _cli, _clock = world
+    assert hub.brain.settings.grok_files is False
+    blocked = hub.brain.set_grok_files(True)
+    assert hub.brain.settings.grok_files is False
+    assert "contraseña" in blocked.speak[0].lower()
+    hub.brain.auth.set_password("secreto")
+    asked = hub.brain.set_grok_files(True)
+    assert any(effect[0] == "ask_password" for effect in asked.effects)
+    assert hub.brain.settings.grok_files is False
+    done = hub.submit_password("secreto")
+    assert hub.brain.settings.grok_files is True
+    assert any("archivos" in line for line in done.spoken)
+    saved = json.loads((tmp_path / "data" / "config.json").read_text(encoding="utf-8"))
+    assert saved["grok_files"] is True
+    room = (tmp_path / "data" / "AGENTS.md").read_text(encoding="utf-8")
+    assert "cambiar archivos" in room
+    assert "shell" in room
+    closed = hub.run("comando grok solo web")
+    assert hub.brain.settings.grok_files is False
+    assert any("web" in line for line in closed.spoken)
+    room = (tmp_path / "data" / "AGENTS.md").read_text(encoding="utf-8")
+    assert "No edites archivos" in room
 
 
 def test_admin_lasts_five_minutes(world):
@@ -876,8 +903,8 @@ def test_ola_grok_still_wakes_when_the_identifier_says_no(world):
 
 
 def test_a_short_reread_does_not_erase_the_sentence():
-    from grok_assistant.match import endpoint_quiet
-    from grok_assistant.refine import choose_transcript
+    from grok_assistant.rules.match import endpoint_quiet
+    from grok_assistant.listening.refine import choose_transcript
 
     assert endpoint_quiet("Ola Grok", "grok", "saludo") == 2.0
     assert endpoint_quiet("Ola Grok qué hora es", "grok", "saludo") == 0.7
@@ -946,7 +973,7 @@ def test_conversation_goes_straight_to_grok(world):
 
 
 def test_hola_miren_is_a_greeting_to_miguel(world):
-    from grok_assistant.match import near_greeting
+    from grok_assistant.rules.match import near_greeting
 
     assert near_greeting("Hola miren.", "Miguel") == "hola Miguel"
     assert near_greeting("miren", "Miguel") is None
@@ -1036,9 +1063,9 @@ def test_one_loose_recognizer_character(world):
 def test_simple_tab_chooses_how_to_talk_and_how_many_days(tmp_path):
     import tkinter as tk
 
-    from grok_assistant.hub import build
+    from grok_assistant.rules.hub import build
     from grok_assistant.i18n import activate
-    from grok_assistant.tray import TrayApp
+    from grok_assistant.ui.app import TrayApp
 
     root = tk.Tk()
     root.withdraw()

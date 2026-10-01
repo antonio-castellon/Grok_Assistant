@@ -8,7 +8,10 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from grok_assistant.prompts import AGENT_RULES, CLASSIFY_SYSTEM, VOICE_SYSTEM
+from grok_assistant.cloud.prompts import AGENT_RULES, CLASSIFY_SYSTEM, spoken_agent_rules, voice_rules
+
+WEB_TOOLS = "web_search,web_fetch"
+FILE_TOOLS = "web_search,web_fetch,read_file,list_dir,search_replace"
 from grok_assistant.quiet import no_window
 
 CLASSIFY_SCHEMA = json.dumps({
@@ -70,6 +73,7 @@ class GrokCLI:
         first: bool,
         agent_path: str | None,
         system: str | None = None,
+        files: bool = False,
     ) -> str:
         command = [
             self.binary, "-p", text,
@@ -79,14 +83,16 @@ class GrokCLI:
             "--output-format", "plain",
             "--max-turns", "4",
             "--no-subagents",
-            "--tools", "web_search,web_fetch",
+            "--tools", FILE_TOOLS if files else WEB_TOOLS,
+            "--disallowed-tools", "bash",
             "--always-approve",
             "--cwd", str(self.cwd),
         ]
         if agent_path:
-            command += ["--agent", agent_path, "--rules", AGENT_RULES if system is None else system]
+            rules = system if system is not None else spoken_agent_rules(AGENT_RULES, files)
+            command += ["--agent", agent_path, "--rules", rules]
         else:
-            command += ["--system-prompt-override", VOICE_SYSTEM if system is None else system]
+            command += ["--system-prompt-override", voice_rules(files) if system is None else system]
         command += ["--session-id", session_id] if first else ["--resume", session_id]
         return self._run(command, 120).strip()
 

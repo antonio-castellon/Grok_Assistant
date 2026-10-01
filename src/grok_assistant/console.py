@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-from grok_assistant.hub import build
+from grok_assistant.rules.hub import build
 
 
 def run() -> None:

@@ -11,7 +11,7 @@ from pathlib import Path
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
-from grok_assistant.grok_cli import GrokCLI, interpret_models
+from grok_assistant.cloud.grok_cli import GrokCLI, interpret_models
 from grok_assistant.quiet import no_window
 
 INSTALL_COMMAND = "irm https://x.ai/cli/install.ps1 | iex"

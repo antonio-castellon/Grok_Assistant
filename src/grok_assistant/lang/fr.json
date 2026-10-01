@@ -64,6 +64,9 @@
     "menu.agent_account": "compte",
     "menu.admin_mode": "Mode administrateur",
     "menu.password": "Mot de passe…",
+    "menu.theme": "Aspect",
+    "menu.files_off": "Grok : web seulement",
+    "menu.files_on": "Grok : peut modifier des fichiers",
     "menu.prints": "Empreintes",
     "menu.print_new": "Nouvelle empreinte…",
     "menu.print_rename": "Renommer…",
@@ -292,7 +295,9 @@
     "stop_music": "J'arrête la musique.",
     "play": "Je mets {title}.",
     "confirm": "Tu as dit : {order}. Oui ou non ?",
-    "more_detail": "Tu veux que je le raconte avec plus de détail ?"
+    "more_detail": "Tu veux que je le raconte avec plus de détail ?",
+    "files_off": "Grok ne consulte que le web. Il ne change pas les fichiers.",
+    "files_on": "Grok peut changer des fichiers. Il n'utilise toujours pas le shell."
   },
   "screen_help": "commencer : bonjour grok. finir : merci ou d'accord. Les commandes commencent par le mot commande.",
   "help": [
@@ -362,7 +367,9 @@
       {"id": "identifica mi voz", "phrases": ["identifie ma voix"]},
       {"id": "cambiar nombre", "phrases": ["change le nom", "changer le nom"]},
       {"id": "lista las personas", "phrases": ["liste les personnes"], "admin": true},
-      {"id": "modo administrador", "phrases": ["mode admin", "administrateur"], "admin": true}
+      {"id": "modo administrador", "phrases": ["mode admin", "administrateur"], "admin": true},
+      {"id": "grok solo web", "phrases": ["grok web seulement"], "admin": true},
+      {"id": "grok puede editar", "phrases": ["grok peut modifier"], "admin": true}
     ]
   }
 }

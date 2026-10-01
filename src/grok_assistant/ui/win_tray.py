@@ -7,6 +7,8 @@ import threading
 import time
 from ctypes import wintypes
 
+from grok_assistant.ui.theme import colorref, look
+
 user32 = ctypes.windll.user32
 gdi32 = ctypes.windll.gdi32
 shell32 = ctypes.windll.shell32
@@ -214,6 +216,13 @@ class WinTray:
         self._owner: dict[int, dict] = {}
         self._next_id = 1
         self._menu_brush = None
+        self.palette = {
+            "menu_bg": MENU_BG,
+            "menu_hot": MENU_HOT,
+            "menu_ink": MENU_INK,
+            "menu_muted": MENU_MUTED,
+            "menu_line": MENU_LINE,
+        }
         self.hwnd = None
         self.hicon = None
         self.ok = False
@@ -230,6 +239,13 @@ class WinTray:
     def stop(self) -> None:
         if self.hwnd:
             user32.PostMessageW(self.hwnd, WM_CLOSE, 0, 0)
+
+    def set_palette(self, refs: dict) -> None:
+        fresh = dict(self.palette)
+        for key, value in refs.items():
+            if key in fresh:
+                fresh[key] = int(value)
+        self.palette = fresh
 
     def set_tip(self, text: str) -> None:
         if not self.hwnd:
@@ -327,7 +343,7 @@ class WinTray:
         self._next_id = 1
         if self._menu_brush:
             gdi32.DeleteObject(self._menu_brush)
-        self._menu_brush = gdi32.CreateSolidBrush(MENU_BG)
+        self._menu_brush = gdi32.CreateSolidBrush(self.palette["menu_bg"])
         menu, owned = self._build(self.items())
         point = POINT()
         user32.GetCursorPos(ctypes.byref(point))
@@ -369,11 +385,11 @@ class WinTray:
             return
         rect = draw.rcItem
         hot = bool(draw.itemState & ODS_SELECTED) and not info.get("sep")
-        brush = gdi32.CreateSolidBrush(MENU_HOT if hot else MENU_BG)
+        brush = gdi32.CreateSolidBrush(self.palette["menu_hot"] if hot else self.palette["menu_bg"])
         user32.FillRect(draw.hDC, ctypes.byref(rect), brush)
         gdi32.DeleteObject(brush)
         if info.get("sep"):
-            pen = gdi32.CreatePen(0, 1, MENU_LINE)
+            pen = gdi32.CreatePen(0, 1, self.palette["menu_line"])
             old = gdi32.SelectObject(draw.hDC, pen)
             mid = (rect.top + rect.bottom) // 2
             gdi32.MoveToEx(draw.hDC, rect.left + 12, mid, None)
@@ -382,12 +398,12 @@ class WinTray:
             gdi32.DeleteObject(pen)
             return
         disabled = bool(draw.itemState & (ODS_GRAYED | ODS_DISABLED)) or info.get("disabled")
-        color = MENU_MUTED if disabled else MENU_INK
+        color = self.palette["menu_muted"] if disabled else self.palette["menu_ink"]
         gdi32.SetBkMode(draw.hDC, TRANSPARENT)
         gdi32.SetTextColor(draw.hDC, color)
         checked = bool(draw.itemState & ODS_CHECKED) or info.get("checked")
         if checked:
-            self._mark(draw.hDC, rect, MENU_INK)
+            self._mark(draw.hDC, rect, self.palette["menu_ink"])
         text_rect = RECT(rect.left + 28, rect.top, rect.right - 28, rect.bottom)
         user32.DrawTextW(
             draw.hDC, info["text"], -1, ctypes.byref(text_rect),
@@ -586,7 +602,7 @@ def _watch_menu_arrows() -> None:
                 mid = (top + bottom) // 2
                 sample = gdi.GetPixel(dc, left + 10, mid)
                 if int(sample) == 0xFFFFFFFF:
-                    sample = MENU_BG
+                    sample = colorref(look.menu_bg)
                 brush = gdi.CreateSolidBrush(sample)
                 user.FillRect(dc, ctypes.byref(RECT(right - 28, top + 2, right - 4, bottom - 2)), brush)
                 gdi.DeleteObject(brush)

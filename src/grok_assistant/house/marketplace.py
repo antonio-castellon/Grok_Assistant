@@ -36,7 +36,7 @@ class Offer:
 
     def ready(self, root: Path | None = None) -> bool:
         if self.local == "windows-speech":
-            from grok_assistant.listen import windows_spanish_available
+            from grok_assistant.listening.listen import windows_spanish_available
 
             return windows_spanish_available()
         base = root or default_data_dir()
@@ -327,7 +327,7 @@ def cpu_windows_zip(assets: list) -> dict | None:
 
 def download(offer: Offer, on_status, on_progress=None, root: Path | None = None) -> None:
     if offer.local == "windows-speech":
-        from grok_assistant.listen import install_windows_speech
+        from grok_assistant.listening.listen import install_windows_speech
 
         on_status("instalo el idioma de voz de Windows")
         _report(on_progress, 0)

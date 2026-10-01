@@ -22,6 +22,24 @@ Die folgende Grafik zeigt, was mit einem gesprochenen Satz passiert.
 
 ![Der STT-Motor macht aus Sprache Text. Ohne Gespräch prüft das lokale Modell, ob es ein voller Auftrag ist. Im Gespräch notiert es den Satz, und der Text geht an Grok.](docs/img/flow.svg)
 
+## Aussehen
+
+Einstellungen → Aussehen listet Noche, Día und Mar. Noche ist das der Bilder.
+
+Zum Wechseln eine Datei `themes/<id>.json` in denselben Ordner legen wie `GrokAssistant.exe`. Das Menü zeigt das Feld `name`. Eine Datei mit derselben id ersetzt das mitgelieferte Thema. Eine fehlende Farbe bleibt bei Noche. Ein Start aus dem Quellbaum liest `dist/themes/`.
+
+```json
+{
+  "name": "Casa",
+  "bg": "#14181e",
+  "ink": "#e7eef2"
+}
+```
+
+Die übrigen Schlüssel sind `panel`, `muted`, `amber`, `teal`, `green`, `field`, `button`, `button_active`, `pause`, `pause_active`, `quit`, `quit_active`, `time`, `mode_ink`, `danger`, `select`, `chip_ink`, `flow_on`, `flow_off`, `flow_dim`, `menu_bg`, `menu_hot`, `menu_ink`, `menu_muted` und `menu_line`. `font`, `font_bold` und `mono` sind optional, als Liste, zum Beispiel `["Segoe UI", 12]`.
+
+In den Einstellungen beginnt Grok nur mit dem Web. Ein Administrator kann Dateiänderungen erlauben. Die Shell bleibt aus, und ein relativer Pfad landet im Datenordner des Assistenten.
+
 ## Weiterlesen
 
 - [Kurze Anleitung](docs/de/anleitung.md)

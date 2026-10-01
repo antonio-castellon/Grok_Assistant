@@ -300,7 +300,7 @@ class SpeakerBook:
 
     def store_recording(self, name: str, clips: list[dict], vectors: list, lock: bool, replace_print: bool = True) -> str:
         """Save every raw phrase. The voice print is replaced only when asked."""
-        from grok_assistant.enroll_audio import write_wav
+        from grok_assistant.listening.enroll_audio import write_wav
 
         clean = " ".join(name.split())
         found = self.resolve(clean)
@@ -588,7 +588,7 @@ class AgentBook:
         """Copy the account's agents into the cache. A failed read leaves the previous copy."""
         if self.account_cache is None:
             return
-        from grok_assistant.account_agents import fetch_account_agents
+        from grok_assistant.cloud.account_agents import fetch_account_agents
 
         found = fetch_account_agents()
         if not found:

@@ -1,8 +1,8 @@
 """The spoken answer can wear a person, numeric traits, and a free behavior text."""
 
-from grok_assistant.personality import compose, load_person, normalize_personality, voice_prompt
-from grok_assistant.prompts import VOICE_SYSTEM
-from grok_assistant.settings import Settings
+from grok_assistant.house.personality import compose, load_person, normalize_personality, voice_prompt
+from grok_assistant.cloud.prompts import VOICE_SYSTEM
+from grok_assistant.notebook.settings import Settings
 
 
 def test_no_person_leaves_the_voice_prompt_alone():
@@ -11,7 +11,7 @@ def test_no_person_leaves_the_voice_prompt_alone():
 
 
 def test_restore_reads_the_original_numbers_and_text():
-    from grok_assistant.personality import load_person
+    from grok_assistant.house.personality import load_person
 
     stock = load_person("ines", stock=True)
     assert stock["humor"] == 25
@@ -63,8 +63,8 @@ def test_settings_roundtrip_keeps_a_custom_person(tmp_path):
 def test_personality_window_saves_a_free_behavior(tmp_path):
     import tkinter as tk
 
-    from grok_assistant.hub import build
-    from grok_assistant.tray import TrayApp
+    from grok_assistant.rules.hub import build
+    from grok_assistant.ui.app import TrayApp
 
     root = tk.Tk()
     root.withdraw()
@@ -104,9 +104,10 @@ def test_personality_window_saves_a_free_behavior(tmp_path):
 def test_windows_follow_the_selected_language(tmp_path):
     import tkinter as tk
 
-    from grok_assistant.hub import build
+    from grok_assistant.rules.hub import build
     from grok_assistant.i18n import activate
-    from grok_assistant.tray import GREEN, TrayApp
+    from grok_assistant.ui.app import TrayApp
+    from grok_assistant.ui.theme import look
 
     root = tk.Tk()
     root.withdraw()
@@ -150,7 +151,7 @@ def test_windows_follow_the_selected_language(tmp_path):
         assert used
         offer, button, chip = used[0]
         assert offer.engine_id == "kroko"
-        assert chip.cget("bg") == GREEN
+        assert chip.cget("bg") == look.green
         assert not button.winfo_manager()
     finally:
         activate("es")

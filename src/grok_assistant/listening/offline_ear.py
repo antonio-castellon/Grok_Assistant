@@ -5,8 +5,8 @@ from __future__ import annotations
 import threading
 from pathlib import Path
 
-from grok_assistant.enroll_audio import TAKE_MAX_VOICE, TAKE_MIN_VOICE, TAKE_QUIET
-from grok_assistant.listen import ENGINE_DIRS
+from grok_assistant.listening.enroll_audio import TAKE_MAX_VOICE, TAKE_MIN_VOICE, TAKE_QUIET
+from grok_assistant.listening.listen import ENGINE_DIRS
 from grok_assistant.paths import bundle_root, default_data_dir
 
 OFFLINE_KINDS = ("whisper", "base", "small", "canary", "cohere")
