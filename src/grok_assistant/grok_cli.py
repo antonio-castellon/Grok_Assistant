@@ -112,6 +112,8 @@ class GrokCLI:
                 cwd=str(self.cwd),
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=timeout,
                 check=False,
                 **no_window(),

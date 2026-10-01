@@ -351,6 +351,9 @@ class Brain:
                 woken = self._wake_question(heard, norms, pairs, speaker_id)
                 if woken is not None:
                     return woken
+                slipped = self._slipped_greeting(heard, speaker_id)
+                if slipped is not None:
+                    return slipped
             if song.too_long:
                 self._record(heard, "ignorar", False, "canción larga")
                 self.last_heard = heard
@@ -388,6 +391,9 @@ class Brain:
             woken = self._wake_question(heard, norms, pairs, speaker_id)
             if woken is not None:
                 return woken
+            slipped = self._slipped_greeting(heard, speaker_id)
+            if slipped is not None:
+                return slipped
         kind = closer([norm for _, norm in body] if is_cmd else norms)
         if kind and not (is_cmd and ("sesion" in norms or "agente" in norms)):
             self._touch()
@@ -587,6 +593,20 @@ class Brain:
         heard = self.settings.wake_heard or []
         # One changed letter ("Ola Grok") is still the greeting. The small model was dropping it.
         return is_wake(norms, self.settings.wake_name, heard)
+
+    def _slipped_greeting(self, heard: str, speaker_id: str | None) -> Turn | None:
+        """«Hola miren» is a greeting to Miguel. The line says so, without the prompt echo."""
+        from grok_assistant.match import near_greeting, tokenize
+
+        fixed = near_greeting(heard, self.settings.wake_name)
+        if not fixed:
+            return None
+        self._record(heard, "ignorar", False, "saludo")
+        self.last_heard = heard
+        if self.settings.local_llm:
+            self._log(f"LLM: saludo · {fixed}")
+        norms = [norm for _, norm in tokenize(heard)]
+        return self._wake(heard, norms, speaker_id, logged=False)
 
     def _wake_question(self, heard: str, norms: list[str], pairs: list[tuple[str, str]], speaker_id: str | None) -> Turn | None:
         from grok_assistant.match import wake_split

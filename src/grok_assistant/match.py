@@ -198,6 +198,42 @@ def wake_split(norms: list[str], name: str = "grok", extras: tuple[str, ...] | l
     return norms[best:]
 
 
+def near_greeting(text: str, name: str = "grok") -> str | None:
+    """A short greeting whose name is a bad hearing of the wake name.
+
+    One changed letter is already a wake. This catches a bigger slip,
+    such as «miren» for Miguel. A bare word is not a greeting.
+    Returns the cleaned greeting, for example «hola Miguel».
+    """
+    norms = words_norm(text)
+    if not norms or len(norms) > 4 or is_wake(norms, name):
+        return None
+    called = normalize(name) or "grok"
+    shown = " ".join((name or "").split()) or called
+    limit = max(2, (len(called) + 1) // 2)
+    for target in wake_targets(name):
+        parts = target.split()
+        if called not in parts or len(parts) < 2 or len(parts) != len(norms):
+            continue
+        if not _slip_matches(norms, parts, called, limit):
+            continue
+        return " ".join(shown if piece == called else piece for piece in parts)
+    return None
+
+
+def _slip_matches(norms: list[str], parts: list[str], called: str, limit: int) -> bool:
+    for heard, piece in zip(norms, parts):
+        if piece == called:
+            if not heard or heard[0] != called[0]:
+                return False
+            if edit_distance(heard, called, limit) > limit:
+                return False
+            continue
+        if not loose(heard, piece):
+            return False
+    return True
+
+
 def endpoint_quiet(text: str, wake_name: str = "grok") -> float:
     """A bare greeting stays open for two seconds so the question can follow."""
     rest = wake_split(words_norm(text), wake_name)

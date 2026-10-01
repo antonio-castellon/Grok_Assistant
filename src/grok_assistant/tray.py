@@ -2735,9 +2735,17 @@ class TrayApp:
         col = (inner - 12) / 2
         local_on = alive and not testing and not talking
         grok_on = alive and talking
-        box(pad, y, col, box_h, _ui("flow.local", "Modelo local"), _ui("flow.skip", "no entra") if talking else local_detail, local_on)
+        has_local = local_name != _ui("status.no_identifier", "sin identificador")
+        annotating = alive and not testing and talking and has_local
+        if annotating:
+            local_box = _ui("flow.note", "anota")
+        elif talking:
+            local_box = _ui("flow.skip", "no entra")
+        else:
+            local_box = local_detail
+        box(pad, y, col, box_h, _ui("flow.local", "Modelo local"), local_box, local_on or annotating)
         box(pad + col + 12, y, col, box_h, _ui("flow.grok", "Grok"), clip(f"{snap.get('model') or 'grok'} · {_ui('flow.grok_note', 'solo texto')}"), grok_on)
-        down(pad + col / 2, ask_bottom, y, local_on)
+        down(pad + col / 2, ask_bottom, y, local_on or annotating)
         down(pad + col + 12 + col / 2, ask_bottom, y, grok_on)
         y += box_h + gap
         chip_w = (col - 8) / 3

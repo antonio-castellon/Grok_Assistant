@@ -33,6 +33,24 @@ def test_classify_is_one_turn_without_search_or_the_dev_tree(tmp_path):
     assert "web_search" not in cli.command
 
 
+def test_cloud_text_is_read_as_utf8(tmp_path, monkeypatch):
+    seen = {}
+
+    class Done:
+        returncode = 0
+        stdout = "mañana, mínima y máxima"
+        stderr = ""
+
+    def fake_run(_command, **kwargs):
+        seen.update(kwargs)
+        return Done()
+
+    monkeypatch.setattr("grok_assistant.grok_cli.subprocess.run", fake_run)
+    assert GrokCLI("grok", tmp_path)._run(["grok"], 5) == "mañana, mínima y máxima"
+    assert seen["encoding"] == "utf-8"
+    assert seen["errors"] == "replace"
+
+
 def test_converse_can_search_and_cannot_inherit_this_checkout(tmp_path):
     cli = Capture(tmp_path)
     cli.converse(

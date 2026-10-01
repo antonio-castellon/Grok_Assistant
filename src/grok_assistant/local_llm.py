@@ -17,7 +17,7 @@ SYSTEM = (
     "Eres un proceso local. No buscas en internet. No conversas. No reescribes la frase.\n"
     "Miras el texto tal como lo entregó el reconocedor de voz. Decides solo esto: "
     "si es un comando de la lista, o una variación mal oída de uno de ellos.\n"
-    "Respondes un único JSON con las claves accion y orden.\n"
+    "Respondes un único JSON con las claves accion y orden. Sin explicar. Sin repetir la frase.\n"
     "El mensaje dice el nombre del asistente y si la conversación está abierta o cerrada.\n"
     "Si la conversación está cerrada y la frase le saluda, aunque el oído deforme el nombre, "
     "accion es \"saludo\" y orden es \"\".\n"
@@ -75,7 +75,7 @@ class LocalMind:
             return None
         name = " ".join((self.wake_name or "grok").split()) or "grok"
         state = "abierta" if in_conversation else "cerrada"
-        user = f"El asistente se llama {name}. Conversación {state}.\nFrase del reconocedor:\n{phrase}"
+        user = f"Nombre: {name}. Conversación: {state}.\nFrase:\n{phrase}"
         body = json.dumps({
             "messages": [
                 {"role": "system", "content": SYSTEM},
@@ -101,10 +101,7 @@ class LocalMind:
         parsed = parse_intent(str(content))
         if parsed:
             return parsed
-        snippet = " ".join(str(content).split())
-        if len(snippet) > 140:
-            snippet = snippet[:139] + "…"
-        return {"accion": "ilegible", "orden": "", "texto": snippet}
+        return {"accion": "ilegible", "orden": "", "texto": ""}
 
     def _ensure_server(self) -> bool:
         if self._healthy():

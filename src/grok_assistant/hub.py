@@ -34,6 +34,8 @@ def _intent_line(data: dict | None, heard: str = "") -> str:
     if not data:
         return "LLM: sin respuesta"
     accion = " ".join(str(data.get("accion") or "").split()) or "vacío"
+    if accion == "ilegible":
+        return "LLM: ilegible"
     bits = [accion]
     orden = " ".join(str(data.get("orden") or "").split())
     texto = " ".join(str(data.get("texto") or "").split())
@@ -104,6 +106,7 @@ class Hub:
         if turn.job is None or self.mind is None or not self.brain.settings.local_llm:
             return None
         if turn.job.kind == "converse":
+            self._note_open(turn)
             return None
         original = turn.job.text
         ready = self.mind.available() if hasattr(self.mind, "available") else True
@@ -148,6 +151,20 @@ class Hub:
         if stays:
             return Turn(status=self.brain.status_label())
         return self._pass_through(turn, original)
+
+    def _note_open(self, turn: Turn) -> None:
+        """Write the local reading under a phrase that still goes to Grok."""
+        original = turn.job.text if turn.job is not None else ""
+        ready = self.mind.available() if hasattr(self.mind, "available") else True
+        if not ready:
+            self.brain._log("LLM: sin modelo")
+            return
+        try:
+            self.mind.wake_name = self.brain.settings.wake_name
+            data = self.mind.interpret(original, True)
+        except Exception:
+            data = None
+        self.brain._log(_intent_line(data, original))
 
     def _identifier_ready(self) -> bool:
         if not self.brain.settings.local_llm or self.mind is None:

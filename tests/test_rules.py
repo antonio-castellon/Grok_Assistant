@@ -893,6 +893,89 @@ def test_conversation_goes_straight_to_grok(world):
     assert cli.calls
     assert cli.calls[0][0] == "converse"
     assert "tiempo" in cli.calls[0][1]
+    assert any(line.endswith("LLM: ignorar") for line in hub.brain.logs)
+
+
+def test_hola_miren_is_a_greeting_to_miguel(world):
+    from grok_assistant.match import near_greeting
+
+    assert near_greeting("Hola miren.", "Miguel") == "hola Miguel"
+    assert near_greeting("miren", "Miguel") is None
+    assert near_greeting("hola maria", "Miguel") is None
+    assert near_greeting("qué tiempo va a hacer mañana", "Miguel") is None
+
+    hub, cli, _clock = world
+    called = []
+
+    class Echo:
+        def available(self):
+            return True
+
+        def interpret(self, phrase, in_conversation):
+            called.append(phrase)
+            return {
+                "accion": "ilegible",
+                "orden": "",
+                "texto": "El reconocedor responde con el mensaje: " + phrase,
+            }
+
+    hub.mind = Echo()
+    hub.brain.settings.local_llm = True
+    hub.brain.settings.wake_name = "Miguel"
+    result = hub.run("Hola miren.")
+    assert result.spoken == ["Hola."]
+    assert hub.brain.in_conversation
+    assert cli.calls == []
+    assert called == []
+    text = "\n".join(hub.brain.logs)
+    assert "Hola miren." in text
+    assert "LLM: saludo · hola Miguel" in text
+    assert "reconocedor" not in text
+
+
+def test_an_illegible_reading_does_not_repeat_the_phrase(world):
+    hub, cli, _clock = world
+
+    class Echo:
+        def available(self):
+            return True
+
+        def interpret(self, phrase, in_conversation):
+            return {
+                "accion": "ilegible",
+                "orden": "",
+                "texto": "El reconocedor responde con el mensaje: " + phrase,
+            }
+
+    hub.mind = Echo()
+    hub.brain.settings.local_llm = True
+    hub.run("qué hora es en madrid")
+    assert cli.calls == []
+    assert not hub.brain.in_conversation
+    text = "\n".join(hub.brain.logs)
+    assert "LLM: ilegible" in text
+    assert "reconocedor" not in text
+
+
+def test_an_open_conversation_logs_the_reading_and_keeps_the_question(world):
+    hub, cli, _clock = world
+
+    class Read:
+        def available(self):
+            return True
+
+        def interpret(self, phrase, in_conversation):
+            assert in_conversation
+            return {"accion": "comando", "orden": "subir volumen", "texto": "reescrito"}
+
+    hub.mind = Read()
+    hub.brain.settings.local_llm = True
+    hub.run("hola grok")
+    result = hub.run("¿Qué tiempo va a hacer mañana?")
+    assert cli.calls[0][1] == "¿Qué tiempo va a hacer mañana?"
+    assert "Volumen" not in " ".join(result.spoken)
+    assert any(line.endswith("LLM: comando · subir volumen · reescrito") for line in hub.brain.logs)
+    assert any(line.endswith("Grok: Son las tres.") for line in hub.brain.logs)
 
 
 def test_one_loose_recognizer_character(world):
