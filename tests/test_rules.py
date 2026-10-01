@@ -481,21 +481,57 @@ def test_the_log_hangs_each_step_under_the_heard_line(world):
 def test_a_take_without_audio_does_not_erase_the_print(world):
     hub, _cli, _clock = world
     hub.brain.speakers.add("Ana", [[1.0, 0.0]], lock=True)
-    hub.brain.enroll = {"stage": "takes", "target": "Ana", "spoken": "Ana", "take": 0, "vectors": []}
-    missed = hub.brain.handle("hola grok")
+    hub.brain.enroll = {
+        "stage": "takes", "target": "Ana", "spoken": "Ana",
+        "take": 0, "vectors": [], "clips": [], "misses": 0,
+    }
+    missed = hub.brain.accept_take(None, None)
     assert "huella" in missed.speak[0].lower()
     assert hub.brain.enroll["take"] == 0
-    assert hub.brain.speakers.count("Ana", "teclado") == 1
-    hub.brain.enroll["ear"] = "whisper"
-    hub.brain.settings.recognizer = "whisper"
-    for _number in range(12):
-        hub.brain.handle("hola grok", vector=[0.2, 0.9])
+    assert hub.brain.speakers.take_count("Ana") == 1
+    samples = [0.01] * 1600
+    vector = [0.2, 0.98]
+    last = None
+    for _number in range(16):
+        last = hub.brain.accept_take(samples, vector)
     assert hub.brain.enroll is None
-    assert hub.brain.speakers.count("Ana", "whisper") == 12
-    assert hub.brain.speakers.count("Ana", "teclado") == 1
-    assert hub.brain.speakers.closest([0.2, 0.9], "teclado") is None
-    assert hub.brain.speakers.closest([0.2, 0.9], "whisper") == "Ana"
+    assert hub.brain.speakers.take_count("Ana") == 16
+    assert len(hub.brain.speakers.raw_clips("Ana")) == 16
+    assert hub.brain.speakers.closest(vector, "teclado") == "Ana"
+    assert hub.brain.speakers.closest(vector, "whisper") == "Ana"
+    assert hub.brain.speakers.closest(vector, "kroko") == "Ana"
     assert hub.brain.speakers.locked == "Ana"
+    assert "todos los motores" in last.speak[0]
+
+
+def test_a_split_recording_does_not_create_a_second_person(world):
+    hub, _cli, _clock = world
+    hub.brain.speakers.add("Ana", [[1.0, 0.0]], lock=True)
+    hub.brain.start_capture("Ana")
+    samples = [0.01] * 1600
+    turn = None
+    for number in range(16):
+        vector = [1.0, 0.0] if number < 8 else [0.0, 1.0]
+        turn = hub.brain.accept_take(samples, vector)
+    assert hub.brain.enroll is None
+    assert "otra persona" in turn.speak[0]
+    assert hub.brain.speakers.raw_clips("Ana") == []
+    assert hub.brain.speakers.closest([1.0, 0.0], "canary") == "Ana"
+    assert hub.brain.speakers.locked == "Ana"
+
+
+def test_three_empty_takes_stop_the_recording(world):
+    hub, _cli, _clock = world
+    started = hub.brain.start_capture("Ana")
+    assert "16" in started.speak[0]
+    assert any(item[0] == "record_take" for item in started.effects)
+    first = hub.brain.accept_take(None, None)
+    assert hub.brain.enroll["take"] == 0
+    assert any(effect[0] == "record_take" for effect in first.effects)
+    hub.brain.accept_take(None, None)
+    last = hub.brain.accept_take(None, None)
+    assert hub.brain.enroll is None
+    assert "micrófono" in last.speak[0]
 
 
 def test_prints_are_stored_next_to_the_executable(tmp_path, monkeypatch):

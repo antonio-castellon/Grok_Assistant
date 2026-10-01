@@ -16,6 +16,6 @@ Mit `--console` lässt sich der Text eintippen, der normalerweise vom Mikrofon k
 .venv\Scripts\python -m grok_assistant --console
 ```
 
-Die Stimmabdrücke liegen in `dist/data/speakers.json`, neben der Programmdatei, ein Satz pro Ohr. Daten, Sitzungen, der Passwort-Hash und das Ohr-Protokoll liegen unter `%APPDATA%\GrokAssistant` unter Windows und unter `~/.config/grok-assistant` unter Linux. Agenten-Dateien gehen nach `~/.grok/agents`, den Ordner des Grok-Kontos, nicht diese Git-Kopie. Der Assistent benutzt seinen eigenen Datenordner. Er arbeitet nicht in einem Quellbaum voller Projekte.
+Stimmabdrücke und der Roh-Ton liegen in `dist/data/`, neben der Programmdatei. Eine Person hat einen Abdruck. Jeder Motor wird mit demselben Ton bewertet. Daten, Sitzungen, der Passwort-Hash und das Ohr-Protokoll liegen unter `%APPDATA%\GrokAssistant` unter Windows und unter `~/.config/grok-assistant` unter Linux. Agenten-Dateien gehen nach `~/.grok/agents`, den Ordner des Grok-Kontos, nicht diese Git-Kopie. Der Assistent benutzt seinen eigenen Datenordner. Er arbeitet nicht in einem Quellbaum voller Projekte.
 
 Musik braucht `yt-dlp` und `mpv`. Fehlen sie, lädt das erste Lied sie herunter. Schlägt das fehl, sagt der Assistent es in einem Satz.

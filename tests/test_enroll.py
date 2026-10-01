@@ -1,0 +1,112 @@
+"""One recording, one person. Each listener is scored from the saved sound."""
+
+from grok_assistant.ear_score import score_person
+from grok_assistant.enroll_audio import PHRASES, MIN_KEEP, phrase_hit, one_voice, read_wav, record_phrase, write_wav
+from grok_assistant.store import SpeakerBook
+
+
+def test_sixteen_different_phrases():
+    assert len(PHRASES) == 16
+    assert len(set(PHRASES)) == 16
+    assert MIN_KEEP == 12
+
+
+def test_a_known_phrase_is_a_hit_only_when_the_words_arrive():
+    assert phrase_hit("hola grok", "Ola grok")
+    assert phrase_hit("qué hora es", "que hora es")
+    assert phrase_hit("pon una canción", "pon una cancion de jazz")
+    assert not phrase_hit("hola grok", "hola")
+    assert not phrase_hit("sube el volumen", "baja el volumen")
+    assert not phrase_hit("qué hora es", "")
+
+
+def test_one_person_stays_one_print_and_a_split_is_refused():
+    same = [[1.0, 0.0] for _ in range(16)]
+    assert one_voice(same) == list(range(16))
+    mixed = [[1.0, 0.0] for _ in range(12)] + [[0.0, 1.0] for _ in range(4)]
+    assert one_voice(mixed) == list(range(12))
+    split = [[1.0, 0.0] for _ in range(8)] + [[0.0, 1.0] for _ in range(8)]
+    assert one_voice(split) is None
+    short = [[1.0, 0.0] for _ in range(11)]
+    assert one_voice(short) is None
+
+
+def test_a_quiet_microphone_returns_nothing():
+    import numpy as np
+
+    quiet = np.zeros(1600, dtype=np.float32)
+
+    def read(_count):
+        return quiet
+
+    assert record_phrase(read=read, seconds=0.4) is None
+
+
+def test_a_phrase_ends_when_the_voice_stops():
+    import numpy as np
+
+    loud = np.full(1600, 0.05, dtype=np.float32)
+    quiet = np.zeros(1600, dtype=np.float32)
+    blocks = [loud] * 5 + [quiet] * 8
+
+    def read(_count):
+        return blocks.pop(0)
+
+    audio = record_phrase(read=read, seconds=5)
+    assert audio is not None
+    assert audio.size >= 1600 * 5
+
+
+def test_raw_sound_builds_one_print_for_every_listener(tmp_path):
+    book = SpeakerBook(tmp_path / "speakers.json")
+    samples = [0.01] * 1600
+    clips = [{"phrase": phrase, "samples": samples} for phrase in PHRASES]
+    book.store_recording("Ana", clips, [[1.0, 0.0] for _ in PHRASES], lock=True)
+    assert book.take_count("Ana") == 16
+    assert book.closest([1.0, 0.0], "whisper") == "Ana"
+    assert book.closest([1.0, 0.0], "kroko") == "Ana"
+    assert book.closest([1.0, 0.0], "windows") == "Ana"
+    assert book.closest([0.0, 1.0], "whisper") is None
+    wav = book.raw_root() / book.raw_clips("Ana")[0]["file"]
+    assert read_wav(wav) is not None
+    book.rename("Ana", "Ana María")
+    moved = book.raw_root() / book.raw_clips("Ana María")[0]["file"]
+    assert moved.exists()
+    assert not wav.exists()
+    book.delete("Ana María")
+    assert book.names() == []
+    assert not moved.exists()
+
+
+def test_each_listener_is_scored_from_the_same_raw(tmp_path):
+    book = SpeakerBook(tmp_path / "speakers.json")
+    clips = []
+    for index, phrase in enumerate(PHRASES):
+        clips.append({"phrase": phrase, "samples": [0.01 * (index + 1)] * 8})
+    book.store_recording("Ana", clips, [[1.0, 0.0] for _ in PHRASES], True)
+
+    def hear(ear, audio):
+        if ear != "whisper" or audio is None:
+            return ""
+        index = int(round(float(audio[0]) / 0.01)) - 1
+        if 0 <= index < len(PHRASES) and index % 2 == 0:
+            return PHRASES[index]
+        return "ruido"
+
+    hits, total = score_person(book, "Ana", "whisper", transcribe=hear)
+    assert total == 16
+    assert hits == 8
+    assert book.score_of("Ana", "whisper") == (8, 16)
+    assert book.pending_scores(["whisper", "kroko"]) == [("Ana", "kroko")]
+
+
+def test_wav_roundtrip_keeps_the_phrase(tmp_path):
+    import numpy as np
+
+    path = tmp_path / "00.wav"
+    source = np.linspace(-0.2, 0.2, 1600, dtype=np.float32)
+    write_wav(path, source)
+    back = read_wav(path)
+    assert back is not None
+    assert abs(float(back[0]) - float(source[0])) < 0.01
+    assert abs(float(back[-1]) - float(source[-1])) < 0.01

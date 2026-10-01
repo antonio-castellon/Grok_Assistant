@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import shutil
+import threading
 import time
+import unicodedata
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -166,6 +169,7 @@ class SpeakerBook:
         self.path = path
         self.locked: str | None = None
         self.people: dict[str, dict] = {}
+        self._lock = threading.Lock()
         self._load()
 
     def _load(self) -> None:
@@ -177,7 +181,11 @@ class SpeakerBook:
             self.locked = None
 
     def save(self) -> None:
-        _write(self.path, {"locked": self.locked, "people": self.people})
+        with self._lock:
+            _write(self.path, {"locked": self.locked, "people": self.people})
+
+    def raw_root(self) -> Path:
+        return self.path.parent / "raw"
 
     def names(self) -> list[str]:
         return sorted(self.people)
@@ -191,20 +199,42 @@ class SpeakerBook:
         return {}
 
     def has_prints(self, ear: str | None = None) -> bool:
-        for person in self.people.values():
-            book = self._book(person)
-            if ear:
-                if book.get(ear):
-                    return True
-            elif book:
-                return True
-        return False
+        """A saved print follows the person on every listener."""
+        del ear
+        return any(self._match_vectors(person) for person in self.people.values())
 
     def count(self, name: str, ear: str) -> int:
         found = self.resolve(name)
         if not found:
             return 0
-        return len(self._book(self.people[found]).get(ear) or [])
+        book = self._book(self.people[found])
+        if book.get(ear):
+            return len(book[ear])
+        return len(book.get("campplus") or [])
+
+    def take_count(self, name: str) -> int:
+        found = self.resolve(name)
+        if not found:
+            return 0
+        person = self.people[found]
+        raw = person.get("raw") or []
+        if isinstance(raw, list) and raw:
+            return len(raw)
+        book = self._book(person)
+        if book.get("campplus"):
+            return len(book["campplus"])
+        if not book:
+            return 0
+        return max(len(rows) for rows in book.values())
+
+    def _match_vectors(self, person: dict) -> list:
+        book = self._book(person)
+        if book.get("campplus"):
+            return list(book["campplus"])
+        rows: list = []
+        for items in book.values():
+            rows.extend(items)
+        return rows
 
     def resolve(self, name: str) -> str | None:
         key = " ".join(name.split()).casefold()
@@ -248,6 +278,76 @@ class SpeakerBook:
         self.save()
         return key
 
+    def store_recording(self, name: str, clips: list[dict], vectors: list, lock: bool) -> str:
+        """Save the raw phrases and one voice print derived from them."""
+        from grok_assistant.enroll_audio import write_wav
+
+        clean = " ".join(name.split())
+        found = self.resolve(clean)
+        key = found or clean
+        person = self.people.get(key) or {"prints": {}, "last": None}
+        self._clear_raw(person)
+        slug = self._fresh_slug(key)
+        stored = []
+        for index, clip in enumerate(clips):
+            rel = f"{slug}/{index:02d}.wav"
+            write_wav(self.raw_root() / rel, clip["samples"])
+            stored.append({"phrase": clip["phrase"], "file": rel})
+        person["prints"] = {"campplus": [list(map(float, vector)) for vector in vectors]}
+        person["raw"] = stored
+        person["scores"] = {}
+        person["last"] = time.time()
+        self.people[key] = person
+        if lock and vectors:
+            self.locked = key
+        self.save()
+        return key
+
+    def raw_clips(self, name: str) -> list[dict]:
+        found = self.resolve(name)
+        if not found:
+            return []
+        raw = self.people[found].get("raw") or []
+        if not isinstance(raw, list):
+            return []
+        return [
+            item for item in raw
+            if isinstance(item, dict) and item.get("phrase") and item.get("file")
+        ]
+
+    def score_of(self, name: str, ear: str) -> tuple[int, int] | None:
+        found = self.resolve(name)
+        if not found:
+            return None
+        row = (self.people[found].get("scores") or {}).get(ear)
+        if not isinstance(row, dict) or "hits" not in row or "total" not in row:
+            return None
+        return int(row["hits"]), int(row["total"])
+
+    def set_score(self, name: str, ear: str, hits: int, total: int) -> None:
+        found = self.resolve(name)
+        if not found:
+            return
+        scores = self.people[found].setdefault("scores", {})
+        if not isinstance(scores, dict):
+            scores = {}
+            self.people[found]["scores"] = scores
+        scores[ear] = {"hits": int(hits), "total": int(total)}
+        self.save()
+
+    def pending_scores(self, ears: list[str]) -> list[tuple[str, str]]:
+        pending = []
+        for name, person in self.people.items():
+            if not person.get("raw"):
+                continue
+            have = person.get("scores") or {}
+            if not isinstance(have, dict):
+                have = {}
+            for ear in ears:
+                if ear and ear != "teclado" and ear not in have:
+                    pending.append((name, ear))
+        return pending
+
     def rename(self, old: str, new: str) -> str | None:
         found = self.resolve(old)
         if not found:
@@ -259,6 +359,7 @@ class SpeakerBook:
         if other and other != found:
             return None
         person = self.people.pop(found)
+        self._move_raw(person, clean)
         self.people[clean] = person
         if self.locked == found:
             self.locked = clean
@@ -269,6 +370,7 @@ class SpeakerBook:
         found = self.resolve(name)
         if not found:
             return None
+        self._clear_raw(self.people[found])
         del self.people[found]
         if self.locked == found:
             self.locked = None
@@ -276,18 +378,68 @@ class SpeakerBook:
         return found
 
     def closest(self, vector: list[float] | None, ear: str | None = None, threshold: float = 0.55) -> str | None:
-        """Match only the prints recorded with this listener."""
-        if not vector or not ear:
+        """The same person matches on every listener. One recording is one print."""
+        del ear
+        if not vector:
             return None
         best_name = None
         best = threshold
         for name, person in self.people.items():
-            for print_ in self._book(person).get(ear) or []:
+            for print_ in self._match_vectors(person):
                 score = _cosine(vector, print_)
                 if score > best:
                     best = score
                     best_name = name
         return best_name
+
+    def _fresh_slug(self, name: str) -> str:
+        slug = _slug(name)
+        root = self.raw_root()
+        candidate = slug
+        number = 2
+        while (root / candidate).exists():
+            candidate = f"{slug}-{number}"
+            number += 1
+        return candidate
+
+    def _clear_raw(self, person: dict) -> None:
+        raw = person.get("raw") or []
+        if not isinstance(raw, list) or not raw or not isinstance(raw[0], dict):
+            return
+        folder = (self.raw_root() / str(raw[0].get("file") or "")).parent
+        root = self.raw_root().resolve()
+        try:
+            if folder.resolve().parent == root and folder.is_dir():
+                shutil.rmtree(folder)
+        except OSError:
+            return
+
+    def _move_raw(self, person: dict, name: str) -> None:
+        raw = person.get("raw") or []
+        if not isinstance(raw, list) or not raw or not isinstance(raw[0], dict):
+            return
+        old = (self.raw_root() / str(raw[0].get("file") or "")).parent
+        if not old.is_dir():
+            return
+        slug = self._fresh_slug(name)
+        dest = self.raw_root() / slug
+        try:
+            old.rename(dest)
+        except OSError:
+            return
+        person["raw"] = [
+            {"phrase": item.get("phrase"), "file": f"{slug}/{Path(str(item.get('file'))).name}"}
+            for item in raw
+            if isinstance(item, dict)
+        ]
+
+
+def _slug(name: str) -> str:
+    text = unicodedata.normalize("NFD", name)
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+    cleaned = "".join(ch.lower() if ch.isalnum() else "-" for ch in text)
+    parts = [part for part in cleaned.split("-") if part]
+    return "-".join(parts) or "voz"
 
 
 def _cosine(a: list[float], b: list[float]) -> float:

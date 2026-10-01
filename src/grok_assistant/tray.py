@@ -100,6 +100,8 @@ class TrayApp:
         self.dictation: Dictation | None = None
         self.kroko: KrokoEar | None = None
         self.offline: OfflineEar | None = None
+        self._ears_suspended = False
+        self._score_lock = threading.Lock()
         self.pause_file = hub.data_dir / "mic.pause"
         self._closing = False
         voices = self.speaker.list_voices() or ["Predeterminada"]
@@ -121,6 +123,7 @@ class TrayApp:
         self._poll_usage()
         threading.Thread(target=self._arm_voiceprint, daemon=True).start()
         threading.Thread(target=self._arm_refiner, daemon=True).start()
+        threading.Thread(target=self._score_pending, daemon=True).start()
         threading.Thread(target=self._warm_piper, daemon=True).start()
         self._note("ventana lista")
         self.root.after(200, self._pulse)
@@ -346,11 +349,17 @@ class TrayApp:
         return rows
 
     def _listener_label(self, name: str, ear: str, title: str, installed: bool) -> str:
+        book = self.hub.brain.speakers
         if not installed:
             return f"{title} · {_ui('menu.not_installed', '(no instalado)')}"
-        count = self.hub.brain.speakers.count(name, ear)
-        if count:
-            return f"{title} · {count}"
+        score = book.score_of(name, ear)
+        if score and score[1]:
+            percent = round(100 * score[0] / score[1])
+            return f"{title} · {percent}%"
+        if book.raw_clips(name):
+            return f"{title} · {_ui('menu.unscored', 'sin valorar')}"
+        if book.take_count(name):
+            return f"{title} · {_ui('menu.no_audio', 'sin audio')}"
         return f"{title} · {_ui('menu.no_print', '(sin huella)')}"
 
     def _fill_prints(self) -> None:
@@ -364,18 +373,22 @@ class TrayApp:
             child = tk.Menu(menu, **self._menu_kw())
             for ear, title, installed in self._listener_rows():
                 label = self._listener_label(name, ear, title, installed)
-                if installed:
+                if installed and book.raw_clips(name):
                     child.add_command(
                         label=label,
-                        command=lambda picked=name, heard=ear: self._recapture_print(picked, heard),
+                        command=lambda picked=name, heard=ear: self._rescore_print(picked, heard),
                     )
                 else:
                     child.add_command(label=label, state="disabled")
             child.add_separator()
+            child.add_command(label=_ui("menu.print_recapture", "Volver a grabar"), command=lambda picked=name: self._recapture_print(picked))
             child.add_command(label=_ui("menu.print_rename", "Renombrar…"), command=lambda picked=name: self._rename_print(picked))
             child.add_command(label=_ui("menu.print_delete", "Borrar"), command=lambda picked=name: self._delete_print(picked))
             label = _used(name == book.locked) + name
-            if not any(book.count(name, ear) for ear, _title, _installed in self._listener_rows()):
+            takes = book.take_count(name)
+            if takes:
+                label += f"  ·  {takes} {_ui('menu.takes', 'tomas')}"
+            else:
                 label += "  " + _ui("menu.no_print", "(sin huella)")
             menu.add_cascade(label=label, menu=child)
         menu.add_separator()
@@ -391,15 +404,19 @@ class TrayApp:
             children = []
             for ear, title, installed in self._listener_rows():
                 label = self._listener_label(name, ear, title, installed)
-                if installed:
-                    children.append(("cmd", label, f"print-again:{name}:{ear}", False))
+                if installed and book.raw_clips(name):
+                    children.append(("cmd", label, f"print-score:{name}:{ear}", False))
                 else:
                     children.append(("cmd", label, "noop", False))
             children.append(("sep",))
+            children.append(("cmd", _ui("menu.print_recapture", "Volver a grabar"), f"print-again:{name}", False))
             children.append(("cmd", _ui("menu.print_rename", "Renombrar…"), f"print-rename:{name}", False))
             children.append(("cmd", _ui("menu.print_delete", "Borrar"), f"print-delete:{name}", False))
             bare = _used(name == book.locked) + name
-            if not any(book.count(name, ear) for ear, _title, _installed in self._listener_rows()):
+            takes = book.take_count(name)
+            if takes:
+                bare += f"  ·  {takes} {_ui('menu.takes', 'tomas')}"
+            else:
                 bare += "  " + _ui("menu.no_print", "(sin huella)")
             rows.append(("sub", bare, children))
         rows.append(("sep",))
@@ -413,7 +430,7 @@ class TrayApp:
             parent=self.root,
         )
         if name and name.strip():
-            self._recapture_print(name.strip(), self.hub.brain.settings.recognizer)
+            self._recapture_print(name.strip())
 
     def _rename_print(self, name: str) -> None:
         new = simpledialog.askstring(
@@ -431,15 +448,11 @@ class TrayApp:
             self._note("ese nombre ya está")
 
     def _recapture_print(self, name: str, ear: str | None = None) -> None:
-        chosen = ear or self.hub.brain.settings.recognizer
-        if chosen == "teclado" or chosen not in self.hub.brain.recognizers:
-            self._note("ese oído no está instalado")
-            return
-        if self.hub.brain.settings.recognizer != chosen:
-            self.hub.brain.settings.recognizer = chosen
-            self.hub.brain.persist()
-            self._sync_ear()
-        self.jobs.put(("capture", name, None, chosen))
+        del ear
+        self.jobs.put(("capture", name))
+
+    def _rescore_print(self, name: str, ear: str) -> None:
+        threading.Thread(target=self._score_named, args=(name, ear), daemon=True).start()
 
     def _delete_print(self, name: str) -> None:
         title = _ui("dialog.print_name", "Huella")
@@ -694,9 +707,11 @@ class TrayApp:
             self._new_print()
         elif key.startswith("print-rename:"):
             self._rename_print(key.split(":", 1)[1])
-        elif key.startswith("print-again:"):
+        elif key.startswith("print-score:"):
             _tag, person, heard = key.split(":", 2)
-            self._recapture_print(person, heard)
+            self._rescore_print(person, heard)
+        elif key.startswith("print-again:"):
+            self._recapture_print(key.split(":", 1)[1])
         elif key.startswith("print-delete:"):
             self._delete_print(key.split(":", 1)[1])
         elif key == "install-windows":
@@ -1684,6 +1699,13 @@ class TrayApp:
             turn = self.hub.brain.start_capture(payload, speaker_id)
             for line in turn.speak:
                 self.say(line)
+            self._apply(turn)
+            if self.hub.brain.enroll is None:
+                self._resume_ears()
+            self._refresh()
+            return
+        if kind == "speak":
+            self.say(payload)
             self._refresh()
             return
         if kind == "phrase":
@@ -1732,7 +1754,11 @@ class TrayApp:
     def _apply(self, result) -> None:
         for effect in result.effects:
             kind = effect[0]
-            if kind == "play":
+            if kind == "record_take":
+                self._capture_phrase()
+            elif kind == "score_prints":
+                self._score_person_later(effect[1])
+            elif kind == "play":
                 title = effect[1]
                 threading.Thread(target=lambda title=title: self._play_song(title), daemon=True).start()
             elif kind == "pause_music":
@@ -1744,6 +1770,95 @@ class TrayApp:
             elif kind == "recognizer":
                 self._sync_ear()
 
+    def _capture_phrase(self) -> None:
+        from grok_assistant.enroll_audio import record_phrase
+
+        self._suspend_ears()
+        audio = record_phrase()
+        vector = None
+        if audio is not None:
+            if not self.voiceprint.ready():
+                self.hub.brain.enroll = None
+                self.say("Falta el modelo de la huella.")
+                self._resume_ears()
+                return
+            try:
+                vector = self.voiceprint.embed(audio)
+            except Exception as exc:
+                self._write_crash(exc)
+        turn = self.hub.brain.accept_take(audio, vector)
+        for line in turn.speak:
+            self.say(line)
+        self._apply(turn)
+        if self.hub.brain.enroll is None:
+            self._resume_ears()
+
+    def _suspend_ears(self) -> None:
+        self._ears_suspended = True
+        ears = [self.dictation, self.kroko, self.offline]
+        for ear in ears:
+            if ear is not None:
+                ear.stop()
+        for ear in ears:
+            thread = getattr(ear, "_thread", None) if ear is not None else None
+            if thread is not None:
+                thread.join(timeout=2)
+        self.dictation = None
+        self.kroko = None
+        self.offline = None
+
+    def _resume_ears(self) -> None:
+        if not self._ears_suspended:
+            return
+        self._ears_suspended = False
+        self._sync_ear()
+
+    def _score_person_later(self, name: str) -> None:
+        threading.Thread(target=self._score_named, args=(name, None), daemon=True).start()
+
+    def _score_pending(self) -> None:
+        self._score_named("", None)
+
+    def _score_named(self, name: str, only_ear: str | None) -> None:
+        from grok_assistant.ear_score import score_person
+
+        book = self.hub.brain.speakers
+        lines: list[str] = []
+        with self._score_lock:
+            ears = [ear for ear in self.hub.brain.recognizers if ear != "teclado"]
+            if only_ear:
+                pending = [(name, only_ear)] if book.raw_clips(name) else []
+            elif name:
+                pending = [
+                    (name, ear)
+                    for ear in ears
+                    if book.raw_clips(name) and book.score_of(name, ear) is None
+                ]
+            else:
+                pending = book.pending_scores(ears)
+            for person, ear in pending:
+                signature = tuple(clip["file"] for clip in book.raw_clips(person))
+                try:
+                    hits, total = score_person(book, person, ear)
+                except Exception as exc:
+                    self._write_crash(exc)
+                    continue
+                current = tuple(clip["file"] for clip in book.raw_clips(person))
+                if current != signature:
+                    scores = book.people.get(person, {}).get("scores")
+                    if isinstance(scores, dict):
+                        scores.pop(ear, None)
+                        book.save()
+                    continue
+                if not total:
+                    continue
+                label = _ui(f"ear.{ear}", ear)
+                percent = round(100 * hits / total)
+                lines.append(f"{label} {hits} de {total}")
+                self.ui.put(lambda person=person, label=label, percent=percent: self._note(f"{person} · {label}: {percent}%"))
+        if lines and name:
+            self.jobs.put(("speak", ". ".join(lines) + "."))
+
     def _hold_mic(self, hold: bool) -> None:
         paused = hold or self.user_paused
         if self.dictation is not None:
@@ -1754,6 +1869,8 @@ class TrayApp:
             self.offline.set_paused(paused)
 
     def _sync_ear(self) -> None:
+        if self._ears_suspended:
+            return
         want_windows = self.hub.brain.settings.recognizer == "windows" and not self.user_paused
         want_kroko = self.hub.brain.settings.recognizer == "kroko" and not self.user_paused
         if want_windows and self.dictation is None:

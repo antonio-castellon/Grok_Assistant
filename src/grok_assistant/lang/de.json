@@ -53,6 +53,9 @@
     "menu.print_delete": "Löschen",
     "menu.no_print": "(kein Abdruck)",
     "menu.no_prints": "Keine Abdrücke",
+    "menu.takes": "Aufnahmen",
+    "menu.unscored": "noch ohne Wert",
+    "menu.no_audio": "ohne Audio",
     "dialog.print_name": "Abdruck",
     "dialog.print_new": "Name der Person:",
     "dialog.print_rename": "Neuer Name:",
@@ -252,7 +255,8 @@
     {"title": "Musik", "body": "Pausiert, setzt fort oder stoppt das laufende Lied.", "example": "befehl pause die musik"},
     {"title": "Persönlichkeit", "body": "Persönlichkeit lädt eine Person. Die Regler ändern die Zahlen. Das Verhalten ist freier Text. Zurücksetzen holt die Anfangswerte.", "example": "hallo grok"},
     {"title": "Sprache", "body": "Sprache wechselt Befehle, Hilfe und Persönlichkeiten. Eine neue Sprache ist eine json-Datei im Ordner lang.", "example": "befehl hilfe"},
-    {"title": "Test", "body": "Der Testmodus schreibt auf, was das Ohr gehört hat, und führt nichts aus.", "example": "befehl test"}
+    {"title": "Test", "body": "Der Testmodus schreibt auf, was das Ohr gehört hat, und führt nichts aus.", "example": "befehl test"},
+    {"title": "Stimmabdruck", "body": "Eine Aufnahme speichert sechzehn Sätze. Daraus entsteht ein Abdruck für jeden Hörmotor, und jeder Motor wird bewertet, weil die Sätze bekannt sind. Dieselbe Person wird nicht zweimal gespeichert. Ein neuer Motor wird später mit dem gespeicherten Ton bewertet.", "example": "erkenne meine stimme"}
   ],
   "persons": {
     "alex": {"name": "Alex", "label": "klarer Kollege", "meaning": "Ein fähiger Kollege. Klar, etwas warm, ein wenig Humor.", "behavior": "Sprich wie ein fähiger Kollege. Klar, kein Lehrbuchton. Gib Zweifel zu. Leichter Humor nur, wenn er passt."},

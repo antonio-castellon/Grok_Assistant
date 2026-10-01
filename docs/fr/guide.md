@@ -19,7 +19,7 @@ Une fois, dans cet ordre.
 1. **Langue.** Choisis Español, Français, Deutsch ou English. Les menus et les réponses passent à cette langue.
 2. **Moteur d'écoute (STT).** C'est le programme qui transforme la parole en texte. Choisis-en un dans le menu. S'il manque, ouvre **Voice market**, onglet **Moteur d'écoute (STT)**, et télécharge-le. On peut le choisir à 100 %.
 3. **Voix.** Choisis une voix de la même langue. **Voice market**, onglet **Voix**, en propose d'autres. Seules les voix de la langue active apparaissent.
-4. **Empreinte.** **Admin → Empreintes.** Ouvre ton nom, ou **Nouvelle empreinte…**. Choisis le même moteur STT que tu vas utiliser. Dis les douze phrases. Si une prise ne capte pas le micro, le programme demande de la répéter. Le menu montre un nombre quand ce moteur a une empreinte, ou **sans empreinte** sinon. Une empreinte d'un moteur ne sert pas pour un autre.
+4. **Empreinte.** **Admin → Empreintes → Nouvelle empreinte…**. Dis les seize phrases une fois. Le programme garde le son, en fait une empreinte pour tous les moteurs, et note ce que chacun retrouve. Changer de moteur ne demande pas un nouvel enregistrement.
 5. **Mot de passe.** Seulement pour créer des agents. **Admin → Mot de passe…**. Écris-le deux fois. Le programme garde un résumé, pas le mot de passe en clair.
 6. **Démarrer avec Windows** reste éteint tant que tu ne l'actives pas dans **Admin**.
 

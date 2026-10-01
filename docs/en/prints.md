@@ -2,8 +2,10 @@
 
 # Voice prints and listeners
 
-A voice print is a measurement of the microphone clip, not of the words. Each listener cuts that clip in its own way. Each STT engine — Whisper tiny, Whisper base, Canary, and Windows speech — does not hand the same audio to the print, so a print recorded with one listener does not identify the person when another listener is active.
+The print is recorded once. The program saves the raw sound of each phrase with the person. From that same sound it builds the voice print, then runs every listening engine over the phrases. The phrases are known, so it writes down how many each engine gets right.
 
-**Administrador → Huellas** lists every person. Under the name, every listener shows how many takes are saved, or *sin huella* when that listener has none. A listener that is not installed is marked and cannot be recorded yet. Choosing a listener switches the ear and records twelve takes for that ear only.
+There are sixteen different phrases, once each. Several are needed so the print and the percentage come out fine. A take that does not sit with the others is left out. If one clear voice does not remain, the program does not save a second person.
 
-The file is `dist/data/speakers.json`, next to `GrokAssistant.exe`. A rebuild replaces the program and leaves that folder. `dist/data/` is listed in `.gitignore`, so the prints are not pushed to the repository. The keyboard has no print: there is no microphone clip.
+**Administrador → Huellas** lists every person. Under the name is the number of takes and, for each installed engine, the percentage. An engine that is not here yet is scored when it is installed, without speaking again. **Record again** repeats the sixteen phrases. Choosing an engine does not start another recording.
+
+The sound and the print live in `dist/data/`, next to `GrokAssistant.exe`. A rebuild replaces the program and leaves that folder. `dist/data/` is listed in `.gitignore`. The keyboard has no print: there is no microphone.

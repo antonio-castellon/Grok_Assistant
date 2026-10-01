@@ -53,6 +53,9 @@
     "menu.print_delete": "Delete",
     "menu.no_print": "(no print)",
     "menu.no_prints": "No prints",
+    "menu.takes": "takes",
+    "menu.unscored": "not scored",
+    "menu.no_audio": "no audio",
     "dialog.print_name": "Print",
     "dialog.print_new": "Person's name:",
     "dialog.print_rename": "New name:",
@@ -252,7 +255,8 @@
     {"title": "Music", "body": "Pause, resume, or stop the song that is playing.", "example": "command pause the music"},
     {"title": "Personality", "body": "Personality loads a person. Sliders change the numbers. The behavior box is free text. Restore puts the original numbers and text back.", "example": "hello grok"},
     {"title": "Language", "body": "Language switches the commands, the help, and the personalities. A new language is a json file in the lang folder.", "example": "command help"},
-    {"title": "Test", "body": "Test mode writes what the ear heard and runs nothing. Say exit to leave.", "example": "command test"}
+    {"title": "Test", "body": "Test mode writes what the ear heard and runs nothing. Say exit to leave.", "example": "command test"},
+    {"title": "Voice print", "body": "One recording saves sixteen phrases. That sound builds one print for every listening engine, and each engine is scored because the phrases are known. The same person is not stored twice. A new engine is scored later from the saved sound.", "example": "identify my voice"}
   ],
   "persons": {
     "alex": {"name": "Alex", "label": "intelligent colleague", "meaning": "A capable colleague. Clear, lightly warm, a little humor. For everyday talk and technical work.", "behavior": "Speak like a capable colleague. Clear, no textbook tone. Admit doubt. Light humor only when it fits."},

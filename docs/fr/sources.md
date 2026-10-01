@@ -16,6 +16,6 @@ py -3 -m venv .venv
 .venv\Scripts\python -m grok_assistant --console
 ```
 
-Les empreintes vivent dans `dist/data/speakers.json`, à côté de l'exécutable, un jeu par oreille. Les données, les sessions, le hash du mot de passe et le journal de l'oreille vivent dans `%APPDATA%\GrokAssistant` sous Windows et dans `~/.config/grok-assistant` sous Linux. Les fichiers d'agents vont dans `~/.grok/agents`, le dossier du compte Grok, pas cette copie git. L'assistant utilise son propre dossier de données. Il ne travaille pas dans un arbre de sources plein de projets.
+Les empreintes et le son brut vivent dans `dist/data/`, à côté de l'exécutable. Une personne a une empreinte. Chaque moteur est noté avec ce même son. Les données, les sessions, le hash du mot de passe et le journal de l'oreille vivent dans `%APPDATA%\GrokAssistant` sous Windows et dans `~/.config/grok-assistant` sous Linux. Les fichiers d'agents vont dans `~/.grok/agents`, le dossier du compte Grok, pas cette copie git. L'assistant utilise son propre dossier de données. Il ne travaille pas dans un arbre de sources plein de projets.
 
 La musique a besoin de `yt-dlp` et de `mpv`. S'ils manquent, la première chanson les télécharge. Si ça échoue, l'assistant le dit en une phrase.

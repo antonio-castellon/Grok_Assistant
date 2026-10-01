@@ -2,8 +2,10 @@
 
 # Huellas y oídos
 
-Una huella mide el trozo de audio del micrófono, no las palabras. Cada oído corta ese trozo a su manera. Cada motor de STT —Whisper pequeño, Whisper base, Canary y el dictado de Windows— no entrega el mismo audio, así que una huella grabada con un oído no identifica a la persona cuando está activo otro oído.
+La huella se graba una vez. El programa guarda el sonido de cada frase, en crudo, junto a la persona. Con ese mismo sonido hace la huella de la voz, y después pasa cada motor por las frases. Como las frases se conocen, anota cuántas acierta cada motor.
 
-**Administrador → Huellas** lista a cada persona. Debajo del nombre, cada oído muestra cuántas tomas tiene guardadas, o *sin huella* si no tiene ninguna. Un oído que no está instalado aparece marcado y todavía no se puede grabar. Al elegir un oído, el programa cambia a ese oído y graba doce tomas solo para él.
+Son dieciséis frases distintas, una vez cada una. Hacen falta varias para que la huella y el porcentaje salgan finos. Una toma que no encaja con las demás se deja fuera. Si no queda una sola voz clara, no se guarda a otra persona.
 
-El archivo es `dist/data/speakers.json`, junto a `GrokAssistant.exe`. Reconstruir el programa sustituye el ejecutable y deja esa carpeta. `dist/data/` está en `.gitignore`, así que las huellas no se suben al repositorio. El teclado no tiene huella: no hay un trozo de micrófono.
+**Administrador → Huellas** lista a cada persona. Debajo del nombre está el número de tomas y, en cada motor instalado, el porcentaje. Un motor que aún no está se valora cuando se instala, sin volver a hablar. **Volver a grabar** repite las dieciséis frases. Elegir un motor no abre otra grabación.
+
+El sonido y la huella están en `dist/data/`, junto a `GrokAssistant.exe`. Reconstruir el programa sustituye el ejecutable y deja esa carpeta. `dist/data/` está en `.gitignore`. El teclado no tiene huella: no hay micrófono.

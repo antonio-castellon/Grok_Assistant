@@ -7,6 +7,7 @@ import time
 from dataclasses import dataclass, field
 
 from grok_assistant.auth import AdminAuth
+from grok_assistant.enroll_audio import PHRASES, one_voice
 from grok_assistant.helptext import SCREEN_HELP, spoken_help
 from grok_assistant.i18n import say, text
 from grok_assistant.match import (
@@ -32,7 +33,20 @@ from grok_assistant.store import SHARED, AgentBook, SessionStore, SpeakerBook
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 _COMANDO = re.compile(r"^\s*COMANDO:\s*(.+?)\s*$", re.IGNORECASE)
-_ENROLL = ("hola grok", "estás ahí", "qué hora es", "pon una canción")
+
+
+def _blank_enroll() -> dict:
+    return {
+        "stage": "name",
+        "target": None,
+        "spoken": "",
+        "take": 0,
+        "vectors": [],
+        "clips": [],
+        "misses": 0,
+    }
+
+
 EXTRAS = (
     "Cuánto tiempo.",
     "Ya era hora.",
@@ -855,7 +869,7 @@ class Brain:
             self.naming = {"stage": "choose", "name": "", "heard": []}
             return self._said(["¿Cómo quieres llamarme? Di solo el nombre."])
         if name == "identifica mi voz":
-            self.enroll = {"stage": "name", "target": None, "spoken": "", "take": 0, "vectors": []}
+            self.enroll = _blank_enroll()
             return self._said(["¿Cómo te llamas?"], effects=[("enroll", "¿Cómo te llamas?", "")])
         if name == "lista las personas":
             found = self.speakers.names()
@@ -917,42 +931,69 @@ class Brain:
             if is_yes(norms):
                 self.enroll["stage"] = "takes"
                 self.enroll["take"] = 0
+                self.enroll["clips"] = []
+                self.enroll["vectors"] = []
+                self.enroll["misses"] = 0
                 return self._prompt_take()
             self.enroll["stage"] = "name"
             return self._said(["Di otro nombre."])
         if stage == "takes":
-            if not vector:
-                return self._said(["No he cogido la huella. Repite."])
-            self.enroll["vectors"].append(vector)
-            self.enroll["take"] += 1
-            self._step(f"huella: {self.enroll['take']} de 12")
-            heard_show = heard
-            prompt = _ENROLL[(self.enroll["take"] - 1) // 3]
-            if self.enroll["take"] >= 12:
-                return self._finish_enroll(prompt, heard_show)
-            follow = self._prompt_take()
-            follow.effects.insert(0, ("enroll", prompt, heard_show))
-            return follow
+            return self._said(["No he cogido la huella. Repite."])
         self.enroll = None
         return self._said(["Vale."])
 
+    def accept_take(self, samples, vector) -> Turn:
+        """One phrase of the shared recording. The microphone audio is kept raw."""
+        if not self.enroll or self.enroll.get("stage") != "takes":
+            return Turn()
+        phrase = PHRASES[self.enroll["take"]]
+        if samples is None or not vector:
+            self.enroll["misses"] = int(self.enroll.get("misses") or 0) + 1
+            if self.enroll["misses"] >= 3:
+                self.enroll = None
+                return self._said(["No oigo el micrófono. Lo dejo."])
+            return self._said(["No he cogido la huella. Repite."], effects=[("record_take", phrase)])
+        self.enroll["misses"] = 0
+        self.enroll["clips"].append({"phrase": phrase, "samples": samples})
+        self.enroll["vectors"].append(list(vector))
+        self.enroll["take"] += 1
+        total = len(PHRASES)
+        self._step(f"huella: {self.enroll['take']} de {total}")
+        if self.enroll["take"] >= total:
+            return self._finish_enroll()
+        return self._prompt_take()
+
     def _prompt_take(self) -> Turn:
         index = self.enroll["take"]
-        phrase = _ENROLL[index // 3]
-        said = phrase if index % 3 == 0 else f"Otra vez. {phrase}"
-        return self._said([said], effects=[("enroll", phrase, "")])
+        phrase = PHRASES[index]
+        total = len(PHRASES)
+        if index == 0:
+            said = (
+                f"Grabaré {total} frases una sola vez. El sonido vale para todos los motores. "
+                f"1 de {total}. {phrase}"
+            )
+        else:
+            said = f"{index + 1} de {total}. {phrase}"
+        return self._said([said], effects=[("record_take", phrase)])
 
-    def _finish_enroll(self, prompt: str, heard_show: str) -> Turn:
-        vectors = [item for item in self.enroll["vectors"] if item]
+    def _finish_enroll(self) -> Turn:
+        vectors = list(self.enroll["vectors"])
+        clips = list(self.enroll["clips"])
         name = self.enroll["target"] or self.enroll["spoken"]
-        if len(vectors) < 12:
-            return self._said([f"Solo tengo {len(vectors)} de 12. Repite."])
-        ear = self.enroll.get("ear") or self.settings.recognizer
-        stored = self.speakers.add(name, vectors, True, ear)
+        kept = one_voice(vectors)
+        if not kept:
+            self.enroll = None
+            return self._said(["Estas tomas no son una sola voz. No guardo a otra persona."])
+        kept_clips = [clips[index] for index in kept]
+        kept_vectors = [vectors[index] for index in kept]
+        stored = self.speakers.store_recording(name, kept_clips, kept_vectors, True)
         self.enroll = None
+        kept_n = len(kept_vectors)
+        total = len(PHRASES)
+        detail = f" Guardo {kept_n} de {total}." if kept_n < total else ""
         return self._said(
-            [f"Listo, {stored}. A partir de ahora te oigo a ti."],
-            effects=[("enroll", prompt, heard_show)],
+            [f"Listo, {stored}.{detail} El sonido queda guardado y vale para todos los motores. Valoro cada uno."],
+            effects=[("score_prints", stored)],
         )
 
     def _next_wait(self) -> str:
@@ -983,15 +1024,17 @@ class Brain:
             self._step(f"orden: {detail}")
 
     def start_capture(self, name: str, ear: str | None = None) -> Turn:
-        """Record twelve takes for this person on one listener."""
+        """Record the phrases once. Every listener is built from that sound."""
+        del ear
         clean = " ".join((name or "").split())
-        chosen = ear if ear and ear != "teclado" else self.settings.recognizer
         if not clean:
-            self.enroll = {"stage": "name", "target": None, "spoken": "", "take": 0, "vectors": [], "ear": chosen}
+            self.enroll = _blank_enroll()
             return self._said(["¿Cómo te llamas?"], effects=[("enroll", "¿Cómo te llamas?", "")])
         found = self.speakers.resolve(clean) or clean
-        ear = chosen
-        self.enroll = {"stage": "takes", "target": found, "spoken": found, "take": 0, "vectors": [], "ear": ear}
+        self.enroll = _blank_enroll()
+        self.enroll["stage"] = "takes"
+        self.enroll["target"] = found
+        self.enroll["spoken"] = found
         return self._prompt_take()
 
     def note(self, line: str) -> None:

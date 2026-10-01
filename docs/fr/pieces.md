@@ -11,12 +11,12 @@ Le schéma ci-dessus résume le produit dans son ensemble. Voici les composants 
 | Cahier | `store.py`, `%APPDATA%\GrokAssistant` | Garder les sessions, les noms et l'historique de dépuration. La session partagée est remplacée au bout de 24 heures. |
 | Mot de passe | `auth.py` | Garder un hash salé. Le mot de passe lui-même n'est jamais écrit. |
 | Bouche | `speech.py`, `scripts/speak.ps1` | Parler avec une voix locale. Les voix espagnoles sont proposées d'abord. |
-| Musique | `music.py` | Jouer l'audio avec `yt-dlp` et `mpv` quand les deux sont là. Pendant une chanson, le micro reste ouvert et ne suit qu'une empreinte enregistrée avec l'oreille active. |
+| Musique | `music.py` | Jouer l'audio avec `yt-dlp` et `mpv` quand les deux sont là. Pendant une chanson, le micro reste ouvert et ne suit qu'une empreinte enregistrée. |
 | Porte du nuage | `hub.py`, `grok_cli.py` | Appeler la commande locale `grok` avec une ligne de texte finie. Il n'y a pas d'argument audio. |
 | Agents | `~/.grok/agents` | Définitions sur ce compte. En ouvrir un est un choix. Leur mémoire n'est pas le cahier local. |
 | Coque | `tray.py` | Icône de barre, fenêtre d'information, journal. Fermer une fenêtre laisse le programme tourner. |
 
-Une phrase se termine quand la personne s'est arrêtée. Le moteur STT et l'oreille Windows la ferment en moins de deux secondes. Un bonjour seul reste ouvert deux secondes, au cas où la question suit dans le même souffle. Pendant que l'assistant parle, cette oreille est en pause, pour que la réponse ne soit pas prise pour un nouvel ordre. Pendant une chanson le micro reste ouvert et ne suit qu'une empreinte de l'oreille active. Voir [Empreintes et oreilles](empreintes.md). Dans une conversation, ce qui a été entendu va droit à Grok jusqu'à l'au revoir.
+Une phrase se termine quand la personne s'est arrêtée. Le moteur STT et l'oreille Windows la ferment en moins de deux secondes. Un bonjour seul reste ouvert deux secondes, au cas où la question suit dans le même souffle. Pendant que l'assistant parle, cette oreille est en pause, pour que la réponse ne soit pas prise pour un nouvel ordre. Pendant une chanson le micro reste ouvert et ne suit qu'une empreinte enregistrée. Voir [Empreintes et oreilles](empreintes.md). Dans une conversation, ce qui a été entendu va droit à Grok jusqu'à l'au revoir.
 
 Hors conversation, les règles sont étroites. Plus de six mots est laissé, sauf si la ligne est un vrai appel ou `mets la chanson` plus un titre, jusqu'à seize mots. Dans une conversation, la barrière des six mots n'est plus là. Soixante secondes sans rien de nouveau terminent la discussion. Le temps passé à attendre le nuage ne compte pas. Le mode administrateur dure cinq minutes.
 

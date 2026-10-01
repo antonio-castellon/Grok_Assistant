@@ -26,6 +26,55 @@ def _model(folder: Path, prefix: str) -> Path | None:
     return sorted(int8 or files)[0]
 
 
+_clip_recognizer = None
+
+
+def transcribe_clip(samples) -> str:
+    """Read one saved phrase with Kroko. The live microphone is not involved."""
+    global _clip_recognizer
+    try:
+        import numpy as np
+        import sherpa_onnx
+    except ImportError:
+        return ""
+    folder = kroko_dir()
+    if folder is None or samples is None:
+        return ""
+    try:
+        if _clip_recognizer is None:
+            encoder = _model(folder, "encoder")
+            decoder = _model(folder, "decoder")
+            joiner = _model(folder, "joiner")
+            tokens = folder / "tokens.txt"
+            if not all([encoder, decoder, joiner, tokens.exists()]):
+                return ""
+            _clip_recognizer = sherpa_onnx.OnlineRecognizer.from_transducer(
+                tokens=str(tokens),
+                encoder=str(encoder),
+                decoder=str(decoder),
+                joiner=str(joiner),
+                num_threads=2,
+                sample_rate=16000,
+                feature_dim=80,
+                decoding_method="greedy_search",
+                enable_endpoint_detection=False,
+            )
+        audio = np.ascontiguousarray(samples, dtype=np.float32).reshape(-1)
+        if audio.size < 1600:
+            return ""
+        stream = _clip_recognizer.create_stream()
+        stream.accept_waveform(16000, audio)
+        stream.accept_waveform(16000, np.zeros(int(16000 * 0.8), dtype=np.float32))
+        stream.input_finished()
+        while _clip_recognizer.is_ready(stream):
+            _clip_recognizer.decode_stream(stream)
+        result = _clip_recognizer.get_result(stream)
+        text = result if isinstance(result, str) else getattr(result, "text", "")
+        return str(text or "").strip()
+    except (OSError, RuntimeError, ValueError, TypeError):
+        return ""
+
+
 class KrokoEar:
     def __init__(self, on_line, on_status=None, wake_name=None):
         self.on_line = on_line

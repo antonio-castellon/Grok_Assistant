@@ -2,8 +2,10 @@
 
 # Stimmabdrücke und Ohren
 
-Ein Stimmabdruck misst das Mikrofonstück, nicht die Wörter. Jedes Ohr schneidet dieses Stück auf seine Weise. Jeder STT-Motor — Whisper klein, Whisper base, Canary und das Windows-Diktat — liefert nicht dasselbe Audio. Ein Abdruck, der mit einem Ohr aufgenommen wurde, erkennt die Person nicht, wenn ein anderes Ohr aktiv ist.
+Der Abdruck wird einmal aufgenommen. Das Programm speichert den Ton jeder Phrase roh bei der Person. Aus demselben Ton entsteht der Stimmabdruck, und danach läuft jeder Motor über die Sätze. Die Sätze sind bekannt, also schreibt es auf, wie viele jeder Motor trifft.
 
-**Administrador → Huellas** listet jede Person. Unter dem Namen zeigt jedes Ohr, wie viele Aufnahmen gespeichert sind, oder *sin huella*, wenn keine da ist. Ein Ohr, das nicht installiert ist, ist markiert und kann noch nicht aufgenommen werden. Die Wahl eines Ohrs schaltet auf dieses Ohr und nimmt zwölf Aufnahmen nur dafür auf.
+Es sind sechzehn verschiedene Sätze, jeder einmal. Mehrere braucht es, damit Abdruck und Prozent fein werden. Eine Aufnahme, die nicht zu den anderen passt, bleibt draußen. Bleibt keine klare Stimme übrig, wird keine zweite Person gespeichert.
 
-Die Datei ist `dist/data/speakers.json`, neben `GrokAssistant.exe`. Ein neuer Bau ersetzt das Programm und lässt diesen Ordner stehen. `dist/data/` steht in `.gitignore`, die Abdrücke gehen also nicht ins Repository. Die Tastatur hat keinen Abdruck: es gibt kein Mikrofonstück.
+**Administrador → Huellas** listet jede Person. Unter dem Namen steht die Zahl der Aufnahmen und, bei jedem installierten Motor, der Prozentwert. Ein Motor, der noch fehlt, wird beim Installieren bewertet, ohne noch einmal zu sprechen. **Neu aufnehmen** wiederholt die sechzehn Sätze. Einen Motor zu wählen startet keine neue Aufnahme.
+
+Ton und Abdruck liegen in `dist/data/`, neben `GrokAssistant.exe`. Ein neuer Bau ersetzt das Programm und lässt diesen Ordner stehen. `dist/data/` steht in `.gitignore`. Die Tastatur hat keinen Abdruck: es gibt kein Mikrofon.

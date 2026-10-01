@@ -35,6 +35,36 @@ def _tokens(folder: Path) -> Path | None:
     return sorted(found)[0] if found else None
 
 
+_clip_recognizers: dict = {}
+
+
+def transcribe_clip(kind: str, samples) -> str:
+    """Read one saved phrase with Whisper or Canary."""
+    if kind not in OFFLINE_KINDS or samples is None:
+        return ""
+    try:
+        import numpy as np
+    except ImportError:
+        return ""
+    try:
+        recognizer = _clip_recognizers.get(kind)
+        if recognizer is None:
+            folder = model_dir(kind)
+            if folder is None:
+                return ""
+            recognizer = OfflineEar(kind, lambda *_args: None)._recognizer(folder)
+            _clip_recognizers[kind] = recognizer
+        audio = np.ascontiguousarray(samples, dtype=np.float32).reshape(-1)
+        if audio.size < 1600:
+            return ""
+        stream = recognizer.create_stream()
+        stream.accept_waveform(16000, audio)
+        recognizer.decode_stream(stream)
+        return str(getattr(stream.result, "text", "") or "").strip()
+    except (OSError, RuntimeError, ValueError, TypeError, FileNotFoundError, ImportError):
+        return ""
+
+
 class OfflineEar:
     def __init__(self, kind: str, on_line, on_status=None):
         self.kind = kind

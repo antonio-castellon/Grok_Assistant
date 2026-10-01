@@ -1,6 +1,7 @@
 param(
     [string]$Culture = "es-ES",
     [string]$PauseFile = "",
+    [string]$ScoreDir = "",
     [switch]$Probe
 )
 $ErrorActionPreference = "Stop"
@@ -29,6 +30,28 @@ try {
 if ($Probe) {
     [Console]::Out.WriteLine("READY")
     [Console]::Out.Flush()
+    exit 0
+}
+if ($ScoreDir) {
+    try {
+        $engine.LoadGrammar((New-Object System.Speech.Recognition.DictationGrammar))
+    } catch {
+        [Console]::Out.WriteLine("ERR:no-recognizer")
+        [Console]::Out.Flush()
+        exit 2
+    }
+    Get-ChildItem -LiteralPath $ScoreDir -Filter *.wav | Sort-Object Name | ForEach-Object {
+        $text = ""
+        try {
+            $engine.SetInputToWaveFile($_.FullName)
+            $result = $engine.Recognize()
+            if ($result -and $result.Text) { $text = $result.Text }
+        } catch {
+            $text = ""
+        }
+        [Console]::Out.WriteLine("LINE:" + $_.Name + "|" + $text)
+        [Console]::Out.Flush()
+    }
     exit 0
 }
 try {

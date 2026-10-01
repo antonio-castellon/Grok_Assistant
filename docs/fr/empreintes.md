@@ -2,8 +2,10 @@
 
 # Empreintes et oreilles
 
-Une empreinte mesure le morceau de micro, pas les mots. Chaque oreille coupe ce morceau à sa façon. Chaque moteur STT — Whisper petit, Whisper base, Canary et la dictée Windows — ne donne pas le même audio, donc une empreinte enregistrée avec une oreille n'identifie pas la personne quand une autre oreille est active.
+L'empreinte s'enregistre une fois. Le programme garde le son brut de chaque phrase avec la personne. Avec ce même son il fait l'empreinte, puis passe chaque moteur sur les phrases. Les phrases sont connues, donc il note combien chacun en retrouve.
 
-**Administrador → Huellas** liste chaque personne. Sous le nom, chaque oreille montre combien de prises sont gardées, ou *sin huella* s'il n'y en a aucune. Une oreille qui n'est pas installée est marquée et ne peut pas encore être enregistrée. La choisir bascule l'écoute et enregistre douze prises pour cette oreille seulement.
+Ce sont seize phrases différentes, une fois chacune. Il en faut plusieurs pour que l'empreinte et le pourcentage soient fins. Une prise qui ne va pas avec les autres est laissée de côté. S'il ne reste pas une seule voix claire, le programme ne garde pas une autre personne.
 
-Le fichier est `dist/data/speakers.json`, à côté de `GrokAssistant.exe`. Reconstruire le programme remplace l'exécutable et laisse ce dossier. `dist/data/` est dans `.gitignore`, donc les empreintes ne partent pas dans le dépôt. Le clavier n'a pas d'empreinte : il n'y a pas de morceau de micro.
+**Administrador → Huellas** liste chaque personne. Sous le nom, le nombre de prises, et pour chaque moteur installé, le pourcentage. Un moteur qui n'est pas encore là est noté à l'installation, sans reparler. **Réenregistrer** répète les seize phrases. Choisir un moteur n'ouvre pas un autre enregistrement.
+
+Le son et l'empreinte sont dans `dist/data/`, à côté de `GrokAssistant.exe`. Reconstruire le programme remplace l'exécutable et laisse ce dossier. `dist/data/` est dans `.gitignore`. Le clavier n'a pas d'empreinte : il n'y a pas de micro.
