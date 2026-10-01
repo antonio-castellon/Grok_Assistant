@@ -183,10 +183,13 @@ class RoundButton(tk.Canvas):
 class RoundNotebook(tk.Frame):
     """Rounded tabs in front of one visible page. Same add, select, and tab calls as a notebook."""
 
-    def __init__(self, parent, **_extra) -> None:
+    def __init__(self, parent, bar_parent=None, **_extra) -> None:
         super().__init__(parent, bg=look.bg, highlightthickness=0, bd=0)
-        self._bar = tk.Frame(self, bg=look.bg, highlightthickness=0, bd=0)
-        self._bar.pack(side="top", fill="x", pady=(0, 4))
+        band = bar_parent is not None
+        self._idle = look.button if band else look.panel
+        holder = bar_parent if band else self
+        self._bar = tk.Frame(holder, bg=look.panel if band else look.bg, highlightthickness=0, bd=0)
+        self._bar.pack(side="top", fill="x", padx=18 if band else 0, pady=(2, 10) if band else (0, 4))
         self._tabs: list[tuple[tk.Misc, RoundButton]] = []
         self._current: tk.Misc | None = None
 
@@ -195,7 +198,7 @@ class RoundNotebook(tk.Frame):
             self._bar,
             text=text,
             command=lambda chosen=page: self.select(chosen),
-            bg=look.panel,
+            bg=self._idle,
             fg=look.ink,
             activebackground=look.button_active,
             activeforeground=look.ink,
@@ -234,7 +237,7 @@ class RoundNotebook(tk.Frame):
         for page, button in self._tabs:
             on = page is self._current
             button.set_colors(
-                look.button_active if on else look.panel,
+                look.button_active if on else self._idle,
                 look.ink,
                 look.button_active,
                 look.ink,

@@ -1,6 +1,6 @@
 [project]
 name = "grok-assistant"
-version = "0.1.0"
+version = "1.0"
 description = "A PC voice assistant that listens at home and only calls Grok on purpose."
 readme = "README.md"
 requires-python = ">=3.11"

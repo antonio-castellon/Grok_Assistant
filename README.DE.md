@@ -4,7 +4,7 @@
 
 # Grok Assistant
 
-Version 0.1.0, noch ein Release-Kandidat.
+Release-Kandidat 1.0.
 
 Jahrelang habe ich darauf gewartet, dass der Amazon Echo wirklich besser zuhören lernt. Am Ende blieb er vor allem ein Lautsprecher mit einem Lichtring. Also habe ich beschlossen, meinen eigenen Assistenten zu bauen – für einen älteren Menschen, der bereits einen kleinen Laptop in der Nähe hat.
 

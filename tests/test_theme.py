@@ -103,6 +103,12 @@ def test_changing_theme_repaints_the_window(tmp_path):
         assert app.detail_label.master.pack_slaves()[1] is app.title_label
         assert app.state_label.master.pack_info()["side"] == "right"
         assert app.state_label.master.pack_info()["anchor"] == "n"
+        assert app.chrome.cget("bg") == theme.look.panel
+        assert app.detail_label.cget("bg") == theme.look.panel
+        assert app.state_label.cget("bg") == theme.look.panel
+        assert app.pages._bar.master is app.chrome
+        assert app.pages._bar.cget("bg") == theme.look.panel
+        assert app.footer.cget("bg") == theme.look.panel
         app.pages.select(app.page_flow)
         root.update()
         assert str(app.pages.select()) == str(app.page_flow)
@@ -112,21 +118,24 @@ def test_changing_theme_repaints_the_window(tmp_path):
         app.pages.select(app.page_simple)
         root.update()
 
-        def _plate_is_round(button, fill: str) -> None:
+        def _plate_is_round(button, fill: str, ground: str | None = None) -> None:
             plate = button.plate
             width, height = plate.size
-            assert _near(_rgb(plate, 0, 0), _hex(theme.look.bg))
-            assert _near(_rgb(plate, height // 4, 0), _hex(theme.look.bg))
+            expected = _hex(ground or theme.look.bg)
+            assert _near(_rgb(plate, 0, 0), expected)
+            assert _near(_rgb(plate, height // 4, 0), expected)
             assert _near(_rgb(plate, width // 2, height // 2), _hex(fill), tol=6)
             assert not _near(_rgb(plate, 0, 0), _hex(fill), tol=6)
 
         _plate_is_round(app.simple_pause, theme.look.pause)
-        _plate_is_round(app.pages._tabs[0][1], theme.look.button_active)
+        _plate_is_round(app.pages._tabs[0][1], theme.look.button_active, theme.look.panel)
         app._apply_theme("dia")
         root.update()
         assert theme.look.id == "dia"
         assert root.cget("bg") == "#f4f1ea"
         assert app.talk_hint.cget("bg") == "#f4f1ea"
+        assert app.chrome.cget("bg") == "#e7e1d6"
+        assert app.pages._bar.cget("bg") == "#e7e1d6"
         assert len(root.winfo_children()) > 0
         _plate_is_round(app.simple_pause, "#d5ebe4")
         app._apply_theme("noche")
@@ -134,6 +143,55 @@ def test_changing_theme_repaints_the_window(tmp_path):
         assert root.cget("bg") == "#14181e"
         assert app.talk_hint.cget("bg") == "#14181e"
         _plate_is_round(app.simple_pause, "#1c3a36")
+    finally:
+        root.destroy()
+
+
+def _flow_text(app) -> str:
+    return "\n".join(
+        app.flow.itemcget(item, "text")
+        for item in app.flow.find_all()
+        if app.flow.type(item) == "text"
+    )
+
+
+def test_open_chat_shows_a_direct_path_to_grok(tmp_path):
+    import tkinter as tk
+
+    from grok_assistant.i18n import activate
+    from grok_assistant.rules.hub import build
+    from grok_assistant.ui.app import TrayApp
+
+    activate("es")
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
+        app.pages.select(app.page_flow)
+        root.geometry("980x760+-2400+-2400")
+        root.deiconify()
+        root.update_idletasks()
+        root.update()
+        snap = {
+            "banner_kind": "wait",
+            "identifier": "sin identificador",
+            "model": "grok-4.7",
+            "recognizer": "Whisper small",
+            "voice": "4. Sharvard · España",
+            "last_heard": "qué hora es",
+        }
+        app.hub.brain.settings.talk_mode = "abierta"
+        app.hub.brain.in_conversation = False
+        app._draw_flow(snap)
+        closed = _flow_text(app)
+        assert "Charla abierta: el texto va directo a Grok" in closed
+        assert "Aún cerrada" in closed
+        snap["banner_kind"] = "talk"
+        app.hub.brain.in_conversation = True
+        app._draw_flow(snap)
+        opened = _flow_text(app)
+        assert "Directo a Grok, el modelo local no decide" in opened
+        assert "no decide" in opened
     finally:
         root.destroy()
 

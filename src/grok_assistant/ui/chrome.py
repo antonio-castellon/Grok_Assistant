@@ -27,7 +27,7 @@ def detail_line(snap: dict) -> str:
 def _version_line() -> str:
     from grok_assistant import __version__
 
-    return f"{__version__} · {_ui('about.channel', 'still a release candidate')}"
+    return f"{_ui('about.channel', 'release candidate')} {__version__}"
 
 def _used(active: bool) -> str:
     if not active:

@@ -169,28 +169,30 @@ class WindowMixin:
                 pass
         self.root.protocol("WM_DELETE_WINDOW", self._hide)
 
-        head = tk.Frame(self.root, bg=look.bg)
-        head.pack(fill="x", padx=18, pady=(8, 0))
-        corner = tk.Frame(head, bg=look.bg)
+        self.chrome = tk.Frame(self.root, bg=look.panel)
+        self.chrome.pack(fill="x")
+        head = tk.Frame(self.chrome, bg=look.panel)
+        head.pack(fill="x", padx=18, pady=(10, 0))
+        corner = tk.Frame(head, bg=look.panel)
         corner.pack(side="right", anchor="n")
-        left = tk.Frame(head, bg=look.bg)
+        left = tk.Frame(head, bg=look.panel)
         left.pack(side="left", fill="both", expand=True)
         self.detail_label = tk.Label(
-            left, textvariable=self.detail_var, bg=look.bg, fg=look.muted,
+            left, textvariable=self.detail_var, bg=look.panel, fg=look.muted,
             font=("Segoe UI", 11), anchor="nw", justify="left",
         )
         self.detail_label.pack(anchor="nw", fill="x")
         self.title_label = tk.Label(
-            left, text="Grok Assistant", bg=look.bg, fg=look.amber, font=look.font_bold, anchor="w",
+            left, text="Grok Assistant", bg=look.panel, fg=look.amber, font=look.font_bold, anchor="w",
         )
         self.title_label.pack(anchor="w", pady=(2, 0))
         left.bind("<Configure>", lambda event: self.detail_label.configure(wraplength=max(240, event.width)))
         self.state_var = tk.StringVar(value=_ui("status.banner_wait", "ESPERA"))
         self.state_label = tk.Label(
-            corner, textvariable=self.state_var, bg=look.bg, fg=look.teal, font=("Segoe UI", 26, "bold"),
+            corner, textvariable=self.state_var, bg=look.panel, fg=look.teal, font=("Segoe UI", 26, "bold"),
         )
         self.state_label.pack(anchor="e")
-        self.usage_label = tk.Label(corner, textvariable=self.usage_var, bg=look.bg, fg=look.muted, font=("Segoe UI", 12, "bold"))
+        self.usage_label = tk.Label(corner, textvariable=self.usage_var, bg=look.panel, fg=look.muted, font=("Segoe UI", 12, "bold"))
         self.usage_label.pack(anchor="e")
 
         self.footer = tk.Frame(self.root, bg=look.panel, height=46)
@@ -202,8 +204,8 @@ class WindowMixin:
         )
         self.version_label.pack(fill="both", padx=18)
 
-        self.pages = RoundNotebook(self.root)
-        self.pages.pack(fill="both", expand=True, padx=18, pady=(4, 8))
+        self.pages = RoundNotebook(self.root, bar_parent=self.chrome)
+        self.pages.pack(fill="both", expand=True, padx=18, pady=(8, 8))
         self.page_simple = tk.Frame(self.pages, bg=look.bg, highlightthickness=0, bd=0)
         self.page_debug = tk.Frame(self.pages, bg=look.bg, highlightthickness=0, bd=0)
         self.page_flow = tk.Frame(self.pages, bg=look.bg, highlightthickness=0, bd=0)
@@ -362,6 +364,7 @@ class WindowMixin:
             self.hub.brain.settings.talk_mode = mode
             self.hub.brain.persist()
         self._paint_simple()
+        self._draw_flow(None)
 
     def _phrase_silence(self) -> float:
         brain = self.hub.brain
