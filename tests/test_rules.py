@@ -199,6 +199,9 @@ def test_the_second_reading_keeps_an_english_name():
     assert choose_transcript("pon la cancion de de bi tles", "pon la canción de The Beatles") == "pon la canción de The Beatles"
     assert choose_transcript("pon la cancion", "") == "pon la cancion"
     assert choose_transcript("Hola, Grok, ¿me escuches?", "[MUSIC]") == "Hola, Grok, ¿me escuches?"
+    assert choose_transcript("qué hora es", "Kuala meringainya") == "qué hora es"
+    assert choose_transcript("para la música", "aile, na me laan na tisia ar") == "para la música"
+    assert choose_transcript("pon la cancion de mozart", "pon la canción de Batman") == "pon la cancion de mozart"
 
 
 def test_test_mode_keeps_the_selected_ear(world):

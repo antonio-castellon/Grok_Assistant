@@ -17,16 +17,52 @@ def pick_transcript(primary: str, second: str, testing: bool) -> str:
 
 
 def choose_transcript(first: str, second: str) -> str:
+    """Keep the selected engine unless the reread is the same sentence."""
     from grok_assistant.match import noise_phrase, thin_phrase
 
     cleaned = (second or "").strip()
     primary = (first or "").strip()
-    if cleaned and not noise_phrase(cleaned):
-        # A one-token reread such as "1.0" must not erase a real sentence.
-        if primary and thin_phrase(cleaned) and not thin_phrase(primary):
-            return primary
+    if not cleaned or noise_phrase(cleaned):
+        return primary or cleaned
+    if not primary:
         return cleaned
-    return primary or cleaned
+    # A one-token reread such as "1.0" must not erase a real sentence.
+    if thin_phrase(cleaned) and not thin_phrase(primary):
+        return primary
+    if _same_utterance(primary, cleaned):
+        return cleaned
+    return primary
+
+
+_STOP = {
+    "a", "al", "de", "del", "el", "la", "las", "lo", "los", "un", "una",
+    "y", "o", "u", "en", "con", "por", "para", "que", "se", "me", "te", "es",
+    "the", "of", "and", "to", "mi", "tu",
+}
+
+
+def _same_utterance(primary: str, second: str) -> bool:
+    """True when the reread still says the selected engine's sentence."""
+    from grok_assistant.match import words_norm
+
+    first = [word for word in words_norm(primary) if word not in _STOP and len(word) > 1]
+    other = {word for word in words_norm(second) if word not in _STOP and len(word) > 1}
+    if not first or not other:
+        return False
+    covered = [word for word in first if _covered(word, other)]
+    if any(len(word) > 4 for word in first if word not in covered):
+        return False
+    if len(first) == 1:
+        return bool(covered)
+    return len(covered) >= 2 and len(covered) * 2 >= len(first)
+
+
+def _covered(word: str, other: set[str]) -> bool:
+    if word in other:
+        return True
+    if len(word) < 3:
+        return False
+    return any(word in token or token in word for token in other if len(token) >= 3)
 
 
 class Refiner:

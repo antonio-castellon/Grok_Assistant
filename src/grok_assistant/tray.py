@@ -1950,8 +1950,9 @@ class TrayApp:
             payload = item[1] if len(item) > 1 else ""
             embedding = item[2] if len(item) > 2 else None
             speaker_id = item[3] if len(item) > 3 else None
+            heard_by = item[4] if len(item) > 4 else ""
             try:
-                self._job(kind, payload, embedding, speaker_id)
+                self._job(kind, payload, embedding, speaker_id, heard_by)
             except Exception as exc:
                 self._write_crash(exc)
 
@@ -1968,7 +1969,7 @@ class TrayApp:
             return
         self.ui.put(lambda: self._note(f"fallo interno: {exc}"))
 
-    def _job(self, kind: str, payload: str, embedding, speaker_id=None) -> None:
+    def _job(self, kind: str, payload: str, embedding, speaker_id=None, heard_by: str = "") -> None:
         if kind == "note":
             self._note(payload)
             self._refresh()
@@ -2013,6 +2014,8 @@ class TrayApp:
                     self._apply(follow)
             finally:
                 self._hold_mic(False)
+            if heard_by:
+                self.hub.brain._step(heard_by)
             self._refresh()
 
     def say(self, text: str) -> None:
@@ -2543,9 +2546,17 @@ class TrayApp:
                 self._write_crash(exc)
                 second = ""
         chosen = pick_transcript(text, second, testing)
-        if not testing and second and second.casefold() != (text or "").casefold():
-            self.jobs.put(("note", f"{self.refiner.label()} relee: {second}"))
-        self.jobs.put(("phrase", chosen, embedding, who))
+        primary = " ".join((text or "").split())
+        heard_by = ""
+        if not testing:
+            label = RECOGNIZER_LABELS.get(self.hub.brain.settings.recognizer, self.hub.brain.settings.recognizer)
+            replaced = (
+                bool(second)
+                and chosen.casefold() == " ".join(second.split()).casefold()
+                and chosen.casefold() != primary.casefold()
+            )
+            heard_by = f"{label} · relectura" if replaced else label
+        self.jobs.put(("phrase", chosen, embedding, who, heard_by))
 
     def _mic_voice(self, embedding) -> tuple[bool, str | None]:
         brain = self.hub.brain
