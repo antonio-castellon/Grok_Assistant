@@ -97,7 +97,34 @@ def test_each_listener_is_scored_from_the_same_raw(tmp_path):
     assert total == 16
     assert hits == 8
     assert book.score_of("Ana", "whisper") == (8, 16)
+    assert book.accuracies("Ana") == {"whisper": 50}
     assert book.pending_scores(["whisper", "kroko"]) == [("Ana", "kroko")]
+
+
+def test_a_score_is_a_whole_percent_beside_the_library(tmp_path):
+    from grok_assistant.listen import eligible_ears, highest_accuracy, with_accuracy
+
+    book = SpeakerBook(tmp_path / "speakers.json")
+    book.people["Ana"] = {
+        "prints": {},
+        "scores": {
+            "whisper": {"hits": 15, "total": 16},
+            "kroko": {"hits": 1, "total": 3},
+            "base": {"hits": 1, "total": 0},
+            "canary": "no",
+        },
+    }
+    assert book.accuracies("Ana") == {"whisper": 94, "kroko": 33}
+    assert book.accuracies("Nadie") == {}
+    assert with_accuracy("Whisper pequeño", 94) == "Whisper pequeño (94%)"
+    assert with_accuracy("Kroko", None) == "Kroko"
+    available = ["teclado", "windows", "kroko", "whisper"]
+    assert highest_accuracy({"kroko": 80, "whisper": 94, "windows": 70}, available, "kroko") == "whisper"
+    assert highest_accuracy({"kroko": 90, "whisper": 90}, available, "kroko") == "kroko"
+    assert highest_accuracy({}, available, "windows") == "windows"
+    assert highest_accuracy({"teclado": 100, "whisper": 10}, ["whisper"], "kroko") == "whisper"
+    assert eligible_ears(available, "es") == ["windows", "kroko", "whisper"]
+    assert eligible_ears(available + ["base"], "en") == ["whisper", "base"]
 
 
 def test_wav_roundtrip_keeps_the_phrase(tmp_path):

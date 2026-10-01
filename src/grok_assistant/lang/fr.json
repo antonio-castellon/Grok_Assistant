@@ -256,7 +256,7 @@
     {"title": "Personnalité", "body": "Personnalité charge une personne. Les curseurs changent les nombres. Le comportement est un texte libre. Rétablir rend les valeurs d'origine.", "example": "bonjour grok"},
     {"title": "Langue", "body": "Langue change les commandes, l'aide et les personnalités. Une langue nouvelle est un fichier json dans le dossier lang.", "example": "commande aide"},
     {"title": "Essai", "body": "Le mode essai écrit ce que l'oreille a entendu et n'exécute rien.", "example": "commande essai"},
-    {"title": "Empreinte", "body": "Un seul enregistrement garde seize phrases. Ce son fait une empreinte pour chaque moteur, et chaque moteur est noté parce que les phrases sont connues. La même personne ne devient pas deux empreintes. Un moteur nouveau est noté plus tard avec le son gardé.", "example": "identifie ma voix"}
+    {"title": "Empreinte", "body": "Un seul enregistrement garde seize phrases. Ce son fait une empreinte pour chaque moteur, et chaque moteur est noté parce que les phrases sont connues. Le menu montre le taux à côté du moteur, par exemple (92%). Le moteur en service est le plus haut. La même personne ne devient pas deux empreintes. Un moteur nouveau est noté plus tard avec le son gardé.", "example": "identifie ma voix"}
   ],
   "persons": {
     "alex": {"name": "Alex", "label": "collègue lucide", "meaning": "Un collègue capable. Clair, un peu chaleureux, un humour léger.", "behavior": "Parle comme un collègue capable. Clair, sans ton de manuel. Avoue le doute. Un humour léger seulement s'il va."},

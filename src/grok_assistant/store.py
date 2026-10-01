@@ -324,6 +324,24 @@ class SpeakerBook:
             return None
         return int(row["hits"]), int(row["total"])
 
+    def accuracies(self, name: str) -> dict[str, int]:
+        """Hit rate of each scored listener, as a whole percent."""
+        found = self.resolve(name)
+        if not found:
+            return {}
+        scores = self.people[found].get("scores") or {}
+        if not isinstance(scores, dict):
+            return {}
+        rated: dict[str, int] = {}
+        for ear, row in scores.items():
+            if not isinstance(row, dict) or "hits" not in row or "total" not in row:
+                continue
+            total = int(row["total"])
+            if total <= 0:
+                continue
+            rated[str(ear)] = round(100 * int(row["hits"]) / total)
+        return rated
+
     def set_score(self, name: str, ear: str, hits: int, total: int) -> None:
         found = self.resolve(name)
         if not found:

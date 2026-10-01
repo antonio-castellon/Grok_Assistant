@@ -39,6 +39,33 @@ def preferred_recognizer(current: str, available: list[str]) -> str:
     return current
 
 
+def with_accuracy(title: str, percent: int | None) -> str:
+    """The library name with its hit rate, as in 'Whisper pequeño (92%)'."""
+    if percent is None:
+        return title
+    return f"{title} ({percent}%)"
+
+
+def eligible_ears(recognizers: list[str], language: str) -> list[str]:
+    """Ears that can be chosen from a score. Kroko and Windows stay on Spanish."""
+    ears = [ear for ear in recognizers if ear != "teclado"]
+    if language != "es":
+        ears = [ear for ear in ears if ear not in {"kroko", "windows"}]
+    return ears
+
+
+def highest_accuracy(percents: dict[str, int], available: list[str], current: str) -> str:
+    """The installed ear with the highest score. A tie keeps the ear already in use."""
+    ranked = [(ear, percents[ear]) for ear in available if ear in percents]
+    if not ranked:
+        return current
+    best = max(value for _, value in ranked)
+    winners = [ear for ear, value in ranked if value == best]
+    if current in winners:
+        return current
+    return winners[0]
+
+
 def discover_recognizers() -> list[str]:
     """Engines that exist on this machine. The keyboard is always one of them."""
     found = ["teclado"]

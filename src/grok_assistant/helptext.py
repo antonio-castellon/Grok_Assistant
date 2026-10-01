@@ -108,6 +108,7 @@ HELP_TOPICS = (
         "identifica mi voz pregunta el nombre y graba dieciséis frases una sola vez. "
         "El sonido se guarda y con él se hace la huella, la misma para todos los motores. "
         "Cada motor se valora con esas frases, porque ya se sabe lo que había que decir. "
+        "Al lado del motor sale el acierto, por ejemplo (92%). El motor en uso es el de mayor porcentaje. "
         "Si las tomas no son una sola voz, no se guarda a otra persona. "
         "Sin el modelo de huella de voz te apunta, pero no cierra la puerta: sigue oyendo a todo el mundo. "
         "Con el modelo, solo esa persona pasa. Listar y borrar personas pide administrador.",

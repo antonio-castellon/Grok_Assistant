@@ -17,8 +17,11 @@ from grok_assistant.listen import (
     RECOGNIZER_LABELS,
     Dictation,
     discover_recognizers,
+    eligible_ears,
+    highest_accuracy,
     install_windows_speech,
     preferred_recognizer,
+    with_accuracy,
 )
 from grok_assistant.marketplace import Offer, download, offers, offers_for
 from grok_assistant.music import Music
@@ -111,6 +114,7 @@ class TrayApp:
         if chosen != self.hub.brain.settings.recognizer:
             self.hub.brain.settings.recognizer = chosen
             self.hub.brain.persist()
+        self._choose_best_ear(False)
         self._style()
         self._build_window()
 
@@ -337,6 +341,49 @@ class TrayApp:
         else:
             menu.add_command(label=_ui("menu.startup_on", "Activar arranque con Windows"), command=self._toggle_startup)
 
+    def _scored_person(self) -> str | None:
+        """Whose hit rates choose the ear: the locked person, or the only scored one."""
+        book = self.hub.brain.speakers
+        locked = book.locked
+        if locked and book.accuracies(locked):
+            return locked
+        scored = [name for name in book.names() if book.accuracies(name)]
+        if len(scored) == 1:
+            return scored[0]
+        return None
+
+    def _ear_percent(self, ear: str) -> int | None:
+        if ear == "teclado":
+            return None
+        person = self._scored_person()
+        if not person:
+            return None
+        return self.hub.brain.speakers.accuracies(person).get(ear)
+
+    def _choose_best_ear(self, sync: bool) -> None:
+        person = self._scored_person()
+        if not person:
+            return
+        current = self.hub.brain.settings.recognizer
+        chosen = highest_accuracy(
+            self.hub.brain.speakers.accuracies(person),
+            eligible_ears(self.hub.brain.recognizers, self.hub.brain.settings.language),
+            current,
+        )
+        if chosen == current or chosen not in self.hub.brain.recognizers:
+            return
+        self.hub.brain.settings.recognizer = chosen
+        self.hub.brain.persist()
+        if sync:
+            self._sync_ear()
+        percent = self.hub.brain.speakers.accuracies(person).get(chosen)
+        label = with_accuracy(_ui(f"ear.{chosen}", chosen), percent)
+        self._note(f"motor escucha: {label}")
+
+    def _apply_best_ear(self) -> None:
+        self._choose_best_ear(True)
+        self._paint()
+
     def _listener_rows(self) -> list[tuple[str, str, bool]]:
         from grok_assistant.listen import RECOGNIZER_LABELS
 
@@ -354,8 +401,7 @@ class TrayApp:
             return f"{title} · {_ui('menu.not_installed', '(no instalado)')}"
         score = book.score_of(name, ear)
         if score and score[1]:
-            percent = round(100 * score[0] / score[1])
-            return f"{title} · {percent}%"
+            return with_accuracy(title, round(100 * score[0] / score[1]))
         if book.raw_clips(name):
             return f"{title} · {_ui('menu.unscored', 'sin valorar')}"
         if book.take_count(name):
@@ -371,8 +417,9 @@ class TrayApp:
             menu.add_command(label=_ui("menu.no_prints", "No hay huellas"), state="disabled")
         for name in names:
             child = tk.Menu(menu, **self._menu_kw())
+            active = self.hub.brain.settings.recognizer
             for ear, title, installed in self._listener_rows():
-                label = self._listener_label(name, ear, title, installed)
+                label = _used(installed and ear == active) + self._listener_label(name, ear, title, installed)
                 if installed and book.raw_clips(name):
                     child.add_command(
                         label=label,
@@ -402,12 +449,14 @@ class TrayApp:
             rows.append(("cmd", _ui("menu.no_prints", "No hay huellas"), "noop", False))
         for name in names:
             children = []
+            active = self.hub.brain.settings.recognizer
             for ear, title, installed in self._listener_rows():
                 label = self._listener_label(name, ear, title, installed)
+                picked = installed and ear == active
                 if installed and book.raw_clips(name):
-                    children.append(("cmd", label, f"print-score:{name}:{ear}", False))
+                    children.append(("cmd", label, f"print-score:{name}:{ear}", picked))
                 else:
-                    children.append(("cmd", label, "noop", False))
+                    children.append(("cmd", label, "noop", picked))
             children.append(("sep",))
             children.append(("cmd", _ui("menu.print_recapture", "Volver a grabar"), f"print-again:{name}", False))
             children.append(("cmd", _ui("menu.print_rename", "Renombrar…"), f"print-rename:{name}", False))
@@ -483,7 +532,7 @@ class TrayApp:
         current = self.hub.brain.settings.recognizer
         present = set(self.hub.brain.recognizers)
         for name, label in RECOGNIZER_LABELS.items():
-            shown_name = _ui(f"ear.{name}", label)
+            shown_name = with_accuracy(_ui(f"ear.{name}", label), self._ear_percent(name) if name in present else None)
             if name in present:
                 self.menu_ear.add_command(
                     label=_used(name == current) + shown_name,
@@ -621,7 +670,7 @@ class TrayApp:
         ears = []
         present = set(brain.recognizers)
         for name, label in RECOGNIZER_LABELS.items():
-            shown = _ui(f"ear.{name}", label)
+            shown = with_accuracy(_ui(f"ear.{name}", label), self._ear_percent(name) if name in present else None)
             if name in present:
                 ears.append(("cmd", shown, f"ear:{name}", name == brain.settings.recognizer))
             elif name == "windows":
@@ -866,6 +915,7 @@ class TrayApp:
                 if candidate in installed:
                     self.hub.brain.settings.recognizer = candidate
                     break
+        self._choose_best_ear(False)
         self.hub.brain.persist()
         self.hub.brain.set_devices(self.speaker.list_voices(code), self.hub.brain.recognizers)
         self._build_menus()
@@ -1858,6 +1908,8 @@ class TrayApp:
                 self.ui.put(lambda person=person, label=label, percent=percent: self._note(f"{person} · {label}: {percent}%"))
         if lines and name:
             self.jobs.put(("speak", ". ".join(lines) + "."))
+        if lines:
+            self.ui.put(self._apply_best_ear)
 
     def _hold_mic(self, hold: bool) -> None:
         paused = hold or self.user_paused
@@ -2092,7 +2144,8 @@ class TrayApp:
         stt_on = alive and not keyboard and not testing
         stt_detail = library_for_ear()
         if ear != "teclado":
-            stt_detail = clip(f"{snap.get('recognizer') or ear} · {stt_detail}")
+            engine = with_accuracy(str(snap.get("recognizer") or ear), self._ear_percent(ear))
+            stt_detail = clip(f"{engine} · {stt_detail}")
         box(pad, y, inner, box_h, _ui("flow.stt", "Motor escucha (STT)"), stt_detail, stt_on or (testing and not keyboard))
         y += box_h
         down(width / 2, y, y + gap + 2, alive)
@@ -2146,8 +2199,9 @@ class TrayApp:
         kind = snap.get("banner_kind") or "wait"
         self.state_label.configure(fg={"talk": GREEN, "pause": AMBER, "test": AMBER}.get(kind, TEAL))
         self._refresh_market_marks()
+        ear_name = with_accuracy(snap["recognizer"], self._ear_percent(self.hub.brain.settings.recognizer))
         self.detail_var.set(
-            f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {snap['recognizer']}  ·  {snap['identifier']}  ·  {snap['session']}  ·  {snap['volume']}%"
+            f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {ear_name}  ·  {snap['identifier']}  ·  {snap['session']}  ·  {snap['volume']}%"
         )
         self._draw_flow(snap)
         if self.tray_ok and self.tray is not None:
