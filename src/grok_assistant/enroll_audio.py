@@ -127,8 +127,8 @@ def read_wav(path: Path):
     return np.interp(positions, np.arange(audio.size), audio).astype(np.float32)
 
 
-# A take stays open through a short breath. Two seconds of quiet means the phrase ended.
-TAKE_QUIET = 2.0
+# A take stays open through a short breath. One second of quiet means the phrase ended.
+TAKE_QUIET = 1.0
 TAKE_MIN_VOICE = 0.8
 TAKE_MAX_VOICE = 8.0
 

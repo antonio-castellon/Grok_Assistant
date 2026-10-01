@@ -554,6 +554,27 @@ def test_a_take_writes_what_the_ear_heard(world):
     assert any("silencio" in line and "Kroko" in line for line in hub.brain.logs)
 
 
+def test_words_show_while_they_are_still_being_said(world):
+    hub, _cli, _clock = world
+    hub.brain.hearing = True
+    assert hub.brain.banner_label() == "OYENDO"
+    hub.brain.preview("qué")
+    hub.brain.preview("qué hora")
+    assert len(hub.brain.logs) == 1
+    assert hub.brain.logs[-1].endswith("qué hora")
+    assert hub.brain.banner_label() == "qué hora"
+    hub.brain.preview("qué hora")
+    assert len(hub.brain.logs) == 1
+    hub.brain._flow("qué hora es")
+    assert len(hub.brain.logs) == 1
+    assert hub.brain.logs[-1].endswith("qué hora es")
+    assert hub.brain._live_open is False
+    hub.brain.preview("qué hora es")
+    assert len(hub.brain.logs) == 1
+    hub.brain.hearing = False
+    assert hub.brain.banner_label() == "ESPERA"
+
+
 def test_three_empty_takes_stop_the_recording(world):
     hub, _cli, _clock = world
     started = hub.brain.start_capture("Ana")

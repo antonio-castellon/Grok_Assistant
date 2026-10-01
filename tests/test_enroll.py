@@ -12,6 +12,7 @@ def test_a_print_take_stays_open_through_a_short_pause():
     ear = KrokoEar(lambda *_: None)
     assert ear._ready("qué hora es", 0.7, True) is True
     assert ear._ready("hola grok", 0.7, True) is False
+    assert TAKE_QUIET == 1.0
     assert ear._capture_ready("qué hora es", 0.5, 2.0) is False
     assert ear._capture_ready("qué hora es", TAKE_QUIET, 2.0) is True
     assert ear._capture_ready("qué", TAKE_QUIET, TAKE_MIN_VOICE - 0.1) is False

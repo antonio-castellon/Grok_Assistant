@@ -89,9 +89,10 @@ def transcribe_clip(samples, kind: str = "kroko") -> str:
 
 
 class KrokoEar:
-    def __init__(self, on_line, on_status=None, wake_name=None, kind: str = "kroko"):
+    def __init__(self, on_line, on_status=None, wake_name=None, kind: str = "kroko", on_partial=None):
         self.kind = kind if kind in STREAMING_KINDS else "kroko"
         self.on_line = on_line
+        self.on_partial = on_partial or (lambda *_ignored: None)
         self.on_status = on_status or (lambda _text: None)
         self._wake_name = wake_name or (lambda: "grok")
         self.error = ""
@@ -99,6 +100,8 @@ class KrokoEar:
         self._paused = threading.Event()
         self._capture = threading.Event()
         self._thread: threading.Thread | None = None
+        self._partial_seq = 0
+        self._last_partial = ""
 
     def start(self) -> bool:
         folder = streaming_dir(self.kind)
@@ -216,6 +219,7 @@ class KrokoEar:
                         voiced = 0.0
                         heard_audio.clear()
                         parts.clear()
+                        self._last_partial = ""
                         continue
                     chunk = np.ascontiguousarray(samples, dtype=np.float32).reshape(-1)
                     heard_audio.append(chunk)
@@ -243,6 +247,10 @@ class KrokoEar:
                         if capturing
                         else self._ready(segment, quiet, recognizer.is_endpoint(stream))
                     )
+                    if heard and heard != self._last_partial and not ready:
+                        self._partial_seq += 1
+                        self._last_partial = heard
+                        self.on_partial(heard, self._partial_seq)
                     if ready:
                         recognizer.reset(stream)
                         quiet = 0.0
@@ -250,6 +258,7 @@ class KrokoEar:
                         audio = np.concatenate(heard_audio) if heard_audio else None
                         heard_audio.clear()
                         parts.clear()
+                        self._last_partial = ""
                         if heard or capturing:
                             self.on_line(heard, audio)
                     elif not capturing and recognizer.is_endpoint(stream) and not segment:
@@ -258,6 +267,7 @@ class KrokoEar:
                         voiced = 0.0
                         heard_audio.clear()
                         parts.clear()
+                        self._last_partial = ""
         except Exception as exc:
             self.error = f"{_label(self.kind)} se detuvo: {exc}"
             self._report(self.error)

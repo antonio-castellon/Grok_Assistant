@@ -129,6 +129,7 @@ class TrayApp:
         self._ears_suspended = False
         self._take_box: queue.Queue = queue.Queue()
         self._take_open = False
+        self._settled_seq = 0
         self._score_lock = threading.Lock()
         self._downloads: dict[str, dict] = {}
         self._download_rows: dict[str, dict] = {}
@@ -2072,7 +2073,7 @@ class TrayApp:
         self._hold_mic(True)
         import time
 
-        time.sleep(0.3)
+        time.sleep(0.1)
         self._drop_queued_phrases()
         while True:
             try:
@@ -2080,26 +2081,30 @@ class TrayApp:
             except queue.Empty:
                 break
         self._begin_take()
-        self._hold_mic(False)
         return True
 
     def _begin_take(self) -> None:
-        """Open the long window, then beep while the microphone is still paused."""
-        import time
-
+        """Open the microphone and beep together. The tone does not delay the ear."""
         from grok_assistant.enroll_audio import play_tone
 
+        brain = self.hub.brain
+        brain.hearing = True
+        brain._live_text = ""
+        brain._live_open = False
         self._take_open = True
         self._set_capture(True)
-        play_tone(True)
-        time.sleep(0.25)
+        self._hold_mic(False)
+        threading.Thread(target=play_tone, args=(True,), daemon=True).start()
+        self._refresh()
 
     def _end_take(self) -> None:
         """Close the long window and beep while the microphone is paused."""
         from grok_assistant.enroll_audio import play_tone
 
+        self.hub.brain.hearing = False
         self._set_capture(False)
         play_tone(False)
+        self._refresh()
 
     def _set_capture(self, capture: bool) -> None:
         for ear in (self.kroko, self.offline):
@@ -2108,8 +2113,8 @@ class TrayApp:
 
     def _wait_take(self) -> tuple[str, object]:
         try:
-            # Reaction, then up to eight seconds of speech, then two of silence.
-            text, audio = self._take_box.get(timeout=16)
+            # Reaction, then up to eight seconds of speech, then one of silence.
+            text, audio = self._take_box.get(timeout=12)
         except queue.Empty:
             return "", None
         finally:
@@ -2228,6 +2233,7 @@ class TrayApp:
                 self._kroko_status,
                 wake_name=lambda: self.hub.brain.settings.wake_name,
                 kind=kind,
+                on_partial=self._preview,
             )
             if ear.start():
                 self.kroko = ear
@@ -2258,9 +2264,29 @@ class TrayApp:
     def _kroko_status(self, text: str) -> None:
         self.ui.put(lambda text=text: self._note(text))
 
+    def _preview(self, text: str, seq: int = 0) -> None:
+        if seq and seq <= self._settled_seq:
+            return
+        heard = " ".join((text or "").split())
+        if not heard:
+            return
+        self.ui.put(lambda heard=heard, seq=seq: self._show_preview(heard, seq))
+
+    def _show_preview(self, heard: str, seq: int) -> None:
+        if seq and seq <= self._settled_seq:
+            return
+        self.hub.brain.preview(heard)
+
+    def _settle_preview(self) -> None:
+        ear = self.kroko
+        seq = getattr(ear, "_partial_seq", 0) if ear is not None else 0
+        if seq > self._settled_seq:
+            self._settled_seq = seq
+
     def _heard(self, text: str, audio=None) -> None:
         if self.user_paused:
             return
+        self._settle_preview()
         enroll = self.hub.brain.enroll
         if isinstance(enroll, dict) and enroll.get("stage") == "takes":
             if self._take_open:
@@ -2359,7 +2385,8 @@ class TrayApp:
                 self._write_crash(exc)
         self.jobs.put(("tick", ""))
         self._paint()
-        self.root.after(400, self._pulse)
+        delay = 120 if self.hub.brain.hearing else 400
+        self.root.after(delay, self._pulse)
 
     def _refresh(self) -> None:
         self.ui.put(self._paint)
@@ -2503,7 +2530,7 @@ class TrayApp:
         self.status_var.set(snap["status"])
         self.state_var.set(snap.get("banner") or _ui("status.banner_wait", "ESPERA"))
         kind = snap.get("banner_kind") or "wait"
-        self.state_label.configure(fg={"talk": GREEN, "pause": AMBER, "test": AMBER}.get(kind, TEAL))
+        self.state_label.configure(fg={"talk": GREEN, "hear": GREEN, "pause": AMBER, "test": AMBER}.get(kind, TEAL))
         self._refresh_market_marks()
         self.detail_var.set(
             f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {snap['recognizer']}  ·  {snap['identifier']}  ·  {snap['session']}  ·  {snap['volume']}%"

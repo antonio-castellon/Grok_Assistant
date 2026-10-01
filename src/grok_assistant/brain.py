@@ -146,6 +146,9 @@ class Brain:
         self.effort_now = "low"
         self.logs: list[str] = []
         self._flow_heard = ""
+        self.hearing = False
+        self._live_open = False
+        self._live_text = ""
 
     def set_devices(self, voices: list[str], recognizers: list[str]) -> None:
         previous = ""
@@ -236,6 +239,8 @@ class Brain:
     def banner_label(self) -> str:
         if self.paused:
             return text("status.banner_pause", "EN PAUSA")
+        if self.hearing:
+            return self._live_text or text("status.banner_hear", "OYENDO")
         if self.test_mode:
             return text("status.banner_test", "PRUEBA")
         if self.in_conversation:
@@ -249,7 +254,13 @@ class Brain:
         return {
             "status": self.status_label(),
             "banner": self.banner_label(),
-            "banner_kind": "pause" if self.paused else "test" if self.test_mode else "talk" if self.in_conversation else "wait",
+            "banner_kind": (
+                "pause" if self.paused
+                else "hear" if self.hearing
+                else "test" if self.test_mode
+                else "talk" if self.in_conversation
+                else "wait"
+            ),
             "model": self.settings.model,
             "effort": text("status.effort_high", "alto") if self.effort_now == "high" else text("status.effort_low", "bajo"),
             "voice": f"{voice_no}. {voice_name}",
@@ -1058,6 +1069,23 @@ class Brain:
         self.enroll["spoken"] = found
         return self._prompt_take()
 
+    def preview(self, text: str) -> None:
+        """Replace one line while the person is still speaking."""
+        heard = " ".join((text or "").split())
+        if not heard or heard == self._live_text:
+            return
+        self._live_text = heard
+        self.last_heard = heard
+        stamp = time.strftime("%H:%M:%S")
+        line = f"{stamp}  ·  {heard}"
+        if self._live_open and self.logs and "  ·  " in self.logs[-1]:
+            self.logs[-1] = line
+            return
+        self.logs.append(line)
+        if len(self.logs) > 500:
+            self.logs = self.logs[-500:]
+        self._live_open = True
+
     def note(self, line: str) -> None:
         self._write_log(line, branch=False)
 
@@ -1065,7 +1093,18 @@ class Brain:
         self._step(line)
 
     def _flow(self, heard: str) -> None:
-        if not heard or heard == self._flow_heard:
+        if not heard:
+            return
+        if self._live_open and self.logs and "  ·  " in self.logs[-1]:
+            stamp = self.logs[-1].split("  ·  ", 1)[0]
+            self.logs[-1] = f"{stamp}  ·  {heard}"
+            self._flow_heard = heard
+            self.last_heard = heard
+            self._live_text = heard
+            self._live_open = False
+            return
+        self._live_open = False
+        if heard == self._flow_heard:
             return
         self._flow_heard = heard
         self._write_log(heard, branch=False)
