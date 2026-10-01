@@ -188,6 +188,27 @@ def test_a_score_is_a_whole_percent_beside_the_library(tmp_path):
     assert eligible_ears(available + ["base"], "en") == ["whisper", "base"]
 
 
+def test_a_heard_take_gets_a_campplus_vector():
+    import numpy as np
+    import pytest
+
+    pytest.importorskip("sherpa_onnx")
+    from grok_assistant.voiceprint import VoicePrint
+
+    printer = VoicePrint()
+    if not printer.ready():
+        pytest.skip("campplus model is not installed")
+    short = np.zeros(1600, dtype=np.float32)
+    assert printer.embed(short) is None
+    audio = np.random.default_rng(1).normal(0, 0.02, 16000).astype(np.float32)
+    vector = printer.embed(audio)
+    assert vector is not None
+    assert len(vector) == 192
+    again = printer.embed(audio)
+    assert again is not None
+    assert len(again) == len(vector)
+
+
 def test_wav_roundtrip_keeps_the_phrase(tmp_path):
     import numpy as np
 

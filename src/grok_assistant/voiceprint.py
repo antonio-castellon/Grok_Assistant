@@ -55,12 +55,15 @@ class VoicePrint:
             return None
         try:
             if self._extractor is None:
-                self._extractor = sherpa_onnx.SpeakerEmbeddingExtractor(
+                # sherpa-onnx 1.13 takes one config object. Keyword arguments
+                # raise TypeError, and that used to throw away a heard take.
+                config = sherpa_onnx.SpeakerEmbeddingExtractorConfig(
                     model=str(self.path),
                     num_threads=1,
                     debug=False,
                     provider="cpu",
                 )
+                self._extractor = sherpa_onnx.SpeakerEmbeddingExtractor(config)
             stream = self._extractor.create_stream()
             stream.accept_waveform(16000, audio)
             stream.input_finished()
