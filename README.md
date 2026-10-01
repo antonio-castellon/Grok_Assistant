@@ -14,11 +14,11 @@ In my case, that person is my father. His eyesight is limited, and he spends man
 
 While the program is running, it can keep listening. Speech is turned into text on this computer. Grok only receives text when the assistant has actually been addressed: after a greeting, for a question, for a command beginning with `comando`, or when someone asks for a song. Ordinary conversation stays in the local session. If a command is unclear or misheard, Grok can help interpret it, but the assistant still asks for a `sí` before doing anything.
 
-That is the basic idea. Below you can see the listening window and the tray menu with **Idioma** open.
+That is the basic idea. Below are the listening window and the icon menu, with Escucha open. The pictures are the same in every language.
 
-![The information window in English, waiting, with the live log underneath](docs/img/en/app-window.png)
+![The window waiting, with the live log](docs/img/app-window.png)
 
-<img src="docs/img/en/tray-menu.png" alt="The tray menu in English" width="194">
+![The icon menu, with Escucha open](docs/img/tray-menu.png)
 
 The diagram below shows what happens to a spoken phrase from the moment it is heard.
 

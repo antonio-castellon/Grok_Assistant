@@ -12,11 +12,11 @@ Dans mon cas, cette personne est mon père. Sa vue est limitée et il passe de l
 
 Tant que le programme fonctionne, l'assistant peut rester à l'écoute. L'audio reste sur l'ordinateur et y est converti en texte. Grok ne reçoit du texte que lorsque l'assistant a réellement été sollicité : après un bonjour, pour une question, pour une commande commençant par `commande`, ou lorsqu'on demande une chanson. Les conversations ordinaires restent dans la session locale. Si une commande a été mal comprise, Grok peut aider à l'interpréter, mais l'assistant demande toujours confirmation avant de l'exécuter.
 
-C'est l'idée générale. Ci-dessous, on voit la fenêtre pendant l'écoute ainsi que le menu de la barre des tâches avec **Langue** ouvert.
+C'est l'idée générale. Ci-dessous, la fenêtre pendant l'écoute et le menu de l'icône, avec Escucha ouvert. Les images sont les mêmes dans chaque langue.
 
-![La fenêtre en français, en attente, avec le journal en direct](docs/img/fr/app-window.png)
+![La fenêtre en attente, avec le journal en direct](docs/img/app-window.png)
 
-<img src="docs/img/fr/tray-menu.png" alt="Le menu de la barre en français" width="227">
+![Le menu de l'icône, avec Escucha ouvert](docs/img/tray-menu.png)
 
 Le schéma ci-dessous montre ce qui arrive à une phrase à partir du moment où elle est prononcée.
 

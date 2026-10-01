@@ -12,11 +12,11 @@ In meinem Fall ist dieser Mensch mein Vater. Seine Sehkraft ist eingeschränkt, 
 
 Solange das Programm läuft, kann der Assistent weiter zuhören. Das Audio bleibt auf dem Computer und wird dort lokal in Text umgewandelt. Grok erhält nur dann Text, wenn der Assistent tatsächlich angesprochen wurde: nach einer Begrüßung, bei einer Frage, bei einem Befehl, der mit `befehl` beginnt, oder wenn ein Lied gewünscht wird. Alltägliche Gespräche bleiben in der lokalen Sitzung. Wird ein Befehl falsch verstanden, kann Grok bei der Interpretation helfen – ausgeführt wird er trotzdem erst nach einer ausdrücklichen Bestätigung.
 
-Das ist die Grundidee. Unten sieht man das Fenster während des Zuhörens sowie das Tray-Menü mit geöffnetem Bereich **Sprache**.
+Das ist die Grundidee. Unten das Fenster beim Zuhören und das Symbolmenü mit geöffnetem Escucha. Die Bilder sind in jeder Sprache dieselben.
 
-![Das Fenster auf Deutsch, im Warten, mit dem laufenden Protokoll](docs/img/de/app-window.png)
+![Das Fenster im Warten, mit dem laufenden Protokoll](docs/img/app-window.png)
 
-<img src="docs/img/de/tray-menu.png" alt="Das Menü der Taskleiste auf Deutsch" width="203">
+![Das Symbolmenü mit geöffnetem Escucha](docs/img/tray-menu.png)
 
 Die folgende Grafik zeigt, was mit einem gesprochenen Satz passiert.
 

@@ -12,11 +12,11 @@ En mi caso, esa persona es mi padre. Tiene la vista limitada y pasa muchas horas
 
 Mientras el programa está abierto, puede seguir escuchando. El audio se queda en el ordenador y se convierte en texto de forma local. Grok solo recibe texto cuando realmente se está hablando con el asistente: después de un saludo, al hacer una pregunta, al dar una orden que empieza por `comando` o al pedir una canción. La conversación cotidiana permanece en la sesión local. Si una orden se entiende mal, Grok puede ayudar a interpretarla, pero el asistente seguirá pidiendo un `sí` antes de ejecutarla.
 
-Esa es la idea básica. Debajo se puede ver la ventana mientras escucha y el menú de la bandeja con **Idioma** abierto.
+Esa es la idea básica. Debajo se puede ver la ventana mientras escucha y el menú del icono, con Escucha abierto.
 
-![La ventana en español, en espera, con el registro en vivo debajo](docs/img/es/app-window.png)
+![La ventana en espera, con el registro en vivo](docs/img/app-window.png)
 
-<img src="docs/img/es/tray-menu.png" alt="El menú de la bandeja en español" width="260">
+![El menú del icono, con Escucha abierto](docs/img/tray-menu.png)
 
 El diagrama de abajo muestra qué ocurre con una frase desde que se pronuncia.
 
