@@ -2,7 +2,7 @@
 
 # Voice prints and listeners
 
-The print is recorded once. The program saves the raw sound of each phrase with the person. From that same sound it builds the voice print, then runs every listening engine over the phrases. The phrases are known, so it writes down how many each engine gets right.
+The print is recorded once. The program saves the raw sound of each phrase with the person. The engine that is listening does not decide whether the phrase was the expected one. From that same sound it builds the voice print, then runs every listening engine over the phrases. The phrases are known, so it writes down how many each engine gets right. The user picks, under Listen, the engine that hears well on that microphone.
 
 There are sixteen different phrases, once each. Several are needed so the print and the percentage come out fine. A take that does not sit with the others is left out. If one clear voice does not remain, the program does not save a second person.
 

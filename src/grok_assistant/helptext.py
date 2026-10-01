@@ -107,7 +107,7 @@ HELP_TOPICS = (
         "Personas e identificar la voz",
         "identifica mi voz pregunta el nombre y graba dieciséis frases una sola vez. "
         "Un pitido agudo abre cada frase y otro más grave la cierra. Una pausa breve deja la frase abierta. "
-        "El sonido se guarda y con él se hace la huella, la misma para todos los motores. "
+        "El motor que escucha no decide si la frase era la esperada. Se guarda el sonido en crudo y con él se hace la huella, la misma para todos los motores. "
         "Cada motor se valora con esas frases, porque ya se sabe lo que había que decir. "
         "Al lado del motor sale el acierto de esa persona, por ejemplo (92%). Es información. "
         "El motor se elige sumando todas las huellas, al arrancar, y se escribe en Depuración. "

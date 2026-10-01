@@ -151,11 +151,13 @@ class KrokoEar:
         return bool(endpoint) and limit <= 0.7
 
     def _capture_ready(self, text: str, quiet: float, voiced: float) -> bool:
+        """The raw sound ends the take. The listening engine does not."""
         from grok_assistant.enroll_audio import TAKE_MAX_VOICE, TAKE_MIN_VOICE, TAKE_QUIET
 
+        del text
         if voiced >= TAKE_MAX_VOICE:
             return True
-        return bool(text) and voiced >= TAKE_MIN_VOICE and quiet >= TAKE_QUIET
+        return voiced >= TAKE_MIN_VOICE and quiet >= TAKE_QUIET
 
     def _report(self, text: str) -> None:
         self.on_status(text)

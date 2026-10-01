@@ -967,13 +967,15 @@ class Brain:
             return Turn()
         heard = " ".join((heard or "").split())
         label = _ear_label(self.settings.recognizer)
+        phrase = PHRASES[self.enroll["take"]]
         if heard:
             self._flow_heard = ""
             self._flow(heard)
             self._step(label)
-        else:
+        if samples is None:
             self.note(f"huella: silencio · {label}")
-        phrase = PHRASES[self.enroll["take"]]
+        elif not heard:
+            self.note(f"huella: sonido guardado · {label}")
         if samples is None or not vector:
             self.enroll["misses"] = int(self.enroll.get("misses") or 0) + 1
             if self.enroll["misses"] >= 3:
@@ -1003,7 +1005,8 @@ class Brain:
         total = len(PHRASES)
         if index == 0:
             said = (
-                f"Grabaré {total} frases una sola vez. El sonido vale para todos los motores. "
+                f"Grabaré {total} frases una sola vez. Guardo el sonido en crudo, sin comprobar las palabras. "
+                f"El sonido vale para todos los motores. "
                 f"Habla después del pitido, y espera el segundo pitido. "
                 f"1 de {total}. {phrase}"
             )

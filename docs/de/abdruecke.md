@@ -2,7 +2,7 @@
 
 # Stimmabdrücke und Ohren
 
-Der Abdruck wird einmal aufgenommen. Das Programm speichert den Ton jeder Phrase roh bei der Person. Aus demselben Ton entsteht der Stimmabdruck, und danach läuft jeder Motor über die Sätze. Die Sätze sind bekannt, also schreibt es auf, wie viele jeder Motor trifft.
+Der Abdruck wird einmal aufgenommen. Das Programm speichert den Ton jeder Phrase roh bei der Person. Der Motor, der zuhört, entscheidet nicht, ob der Satz der erwartete war. Aus demselben Ton entsteht der Stimmabdruck, und danach läuft jeder Motor über die Sätze. Die Sätze sind bekannt, also schreibt es auf, wie viele jeder Motor trifft. Unter Hören wählt man den Motor, der an diesem Mikrofon gut hört.
 
 Es sind sechzehn verschiedene Sätze, jeder einmal. Mehrere braucht es, damit Abdruck und Prozent fein werden. Eine Aufnahme, die nicht zu den anderen passt, bleibt draußen. Bleibt keine klare Stimme übrig, wird keine zweite Person gespeichert.
 

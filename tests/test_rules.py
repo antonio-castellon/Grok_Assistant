@@ -552,6 +552,13 @@ def test_a_take_writes_what_the_ear_heard(world):
     assert any("estás ahí" in line for line in hub.brain.logs)
     hub.brain.accept_take(None, None)
     assert any("silencio" in line and "Kroko" in line for line in hub.brain.logs)
+    kept = hub.brain.accept_take(samples, [0.2, 0.98], "")
+    assert hub.brain.enroll["take"] == 2
+    assert "micrófono" not in kept.speak[0]
+    assert any("sonido guardado" in line for line in hub.brain.logs)
+    wrong = hub.brain.accept_take(samples, [0.2, 0.98], "otra frase")
+    assert hub.brain.enroll["take"] == 3
+    assert "repite" not in wrong.speak[0].lower()
 
 
 def test_words_show_while_they_are_still_being_said(world):

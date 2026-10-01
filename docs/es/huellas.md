@@ -2,7 +2,7 @@
 
 # Huellas y oídos
 
-La huella se graba una vez. El programa guarda el sonido de cada frase, en crudo, junto a la persona. Con ese mismo sonido hace la huella de la voz, y después pasa cada motor por las frases. Como las frases se conocen, anota cuántas acierta cada motor.
+La huella se graba una vez. El programa guarda el sonido de cada frase, en crudo, junto a la persona. El motor que está escuchando no decide si la frase era la esperada. Con ese mismo sonido hace la huella de la voz, y después pasa cada motor por las frases. Como las frases se conocen, anota cuántas acierta cada motor. El usuario elige en Escucha el motor que oye bien en ese micrófono.
 
 Son dieciséis frases distintas, una vez cada una. Hacen falta varias para que la huella y el porcentaje salgan finos. Una toma que no encaja con las demás se deja fuera. Si no queda una sola voz clara, no se guarda a otra persona.
 

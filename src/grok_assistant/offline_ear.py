@@ -208,7 +208,7 @@ class OfflineEar:
                     stream.accept_waveform(rate, audio)
                     recognizer.decode_stream(stream)
                     text = str(getattr(stream.result, "text", "")).strip()
-                    if text:
+                    if capturing or text:
                         self.on_line(text, audio)
         except Exception as exc:
             self.error = f"el oído se detuvo: {exc}"

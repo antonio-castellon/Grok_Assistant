@@ -16,7 +16,7 @@ def test_a_print_take_stays_open_through_a_short_pause():
     assert ear._capture_ready("qué hora es", 0.5, 2.0) is False
     assert ear._capture_ready("qué hora es", TAKE_QUIET, 2.0) is True
     assert ear._capture_ready("qué", TAKE_QUIET, TAKE_MIN_VOICE - 0.1) is False
-    assert ear._capture_ready("", TAKE_QUIET, 2.0) is False
+    assert ear._capture_ready("", TAKE_QUIET, 2.0) is True
     assert ear._capture_ready("frase larga", 0.2, TAKE_MAX_VOICE) is True
     assert tone(True) == (880, 140)
     assert tone(False) == (494, 220)
