@@ -147,6 +147,7 @@ class Brain:
         self.logs: list[str] = []
         self._flow_heard = ""
         self.hearing = False
+        self.sessions.roll(self.wall(), self.settings.shared_days)
         self._live_open = False
         self._live_text = ""
 
@@ -284,8 +285,10 @@ class Brain:
             if self.pending and self.pending[0] == "leave_admin":
                 self.pending = None
             spoken.append("Se acabó el modo administrador.")
+        self.sessions.roll(self.wall(), self.settings.shared_days)
         if (
             self.in_conversation
+            and self.settings.talk_mode != "abierta"
             and not self.busy
             and not self.test_mode
             and self.enroll is None
@@ -315,7 +318,7 @@ class Brain:
             self._record(heard, "ignorar", False, "ruido")
             self.last_heard = heard
             return Turn()
-        self.sessions.roll(self.wall())
+        self.sessions.roll(self.wall(), self.settings.shared_days)
         pairs = tokenize(heard)
         norms = [norm for _, norm in pairs]
         if self.test_mode:
@@ -895,7 +898,7 @@ class Brain:
                 return self._said(["No tengo esa sesión."])
             return self._said([f"Sesión {opened}."])
         if name == "cerrar sesion":
-            self.sessions.close_to_shared()
+            self.sessions.close_to_shared(self.wall(), self.settings.shared_days)
             self.in_conversation = False
             self.opener = None
             self.detail_used = False

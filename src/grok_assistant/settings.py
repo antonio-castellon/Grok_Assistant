@@ -9,6 +9,21 @@ from pathlib import Path
 from grok_assistant.banter import KINDS, THEMES, normalize_choice
 from grok_assistant.personality import blank_personality, normalize_personality
 
+TALK_MODES = ("seguida", "saludo", "abierta")
+
+
+def normalize_talk_mode(value) -> str:
+    key = str(value or "").strip().lower()
+    return key if key in TALK_MODES else "seguida"
+
+
+def normalize_shared_days(value) -> int:
+    try:
+        days = int(value)
+    except (TypeError, ValueError):
+        return 1
+    return max(1, min(365, days))
+
 
 @dataclass
 class Settings:
@@ -27,6 +42,8 @@ class Settings:
     personality: dict = field(default_factory=blank_personality)
     line_kinds: list = field(default_factory=lambda: list(KINDS))
     line_themes: list = field(default_factory=lambda: list(THEMES))
+    talk_mode: str = "seguida"
+    shared_days: int = 1
 
     @classmethod
     def load(cls, path: Path) -> "Settings":
@@ -50,6 +67,8 @@ class Settings:
         item.language = str(item.language or "es").strip().lower() or "es"
         item.line_kinds = normalize_choice(item.line_kinds, KINDS)
         item.line_themes = normalize_choice(item.line_themes, THEMES)
+        item.talk_mode = normalize_talk_mode(item.talk_mode)
+        item.shared_days = normalize_shared_days(item.shared_days)
         return item
 
     def save(self, path: Path) -> None:

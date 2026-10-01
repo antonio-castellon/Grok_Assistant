@@ -2,9 +2,9 @@
 
 # Sitzungen und Agenten
 
-Meistens muss man sich über Sitzungen überhaupt keine Gedanken machen. Sobald ein Gespräch mit dem Assistenten beginnt, verwendet es automatisch eine **gemeinsame Sitzung**. Sie behält den Kontext 24 Stunden lang, sodass man später zurückkommen und ein kürzlich begonnenes Gespräch fortsetzen kann, ohne wieder von vorne anzufangen. Danach wird sie automatisch gelöscht.
+Meistens muss man sich über Sitzungen überhaupt keine Gedanken machen. Sobald ein Gespräch mit dem Assistenten beginnt, verwendet es automatisch eine **gemeinsame Sitzung**. Im Tab Einfach legt man fest, wie viele Tage sie zurückbehält. Der neue Tag kommt dazu und der älteste fällt weg. Voreingestellt ist ein Tag.
 
-Für Gespräche, die länger erhalten bleiben sollen, gibt es benannte Sitzungen. Anders als die gemeinsame Sitzung laufen sie nicht nach 24 Stunden ab: Ihr Kontext bleibt so lange erhalten, bis die Sitzung ausdrücklich gelöscht wird. Die gemeinsame Sitzung eignet sich damit für alltägliche, vorübergehende Gespräche, während benannte Sitzungen Themen getrennt halten können, die über Tage, Wochen oder länger weitergeführt werden sollen.
+Für Gespräche, die länger erhalten bleiben sollen, gibt es benannte Sitzungen. Anders als die gemeinsame Sitzung laufen sie nicht von allein ab: Ihr Kontext bleibt so lange erhalten, bis die Sitzung ausdrücklich gelöscht wird. Die gemeinsame Sitzung eignet sich damit für alltägliche Gespräche, während benannte Sitzungen Themen getrennt halten können, die über Tage, Wochen oder länger weitergeführt werden sollen.
 
 Man muss also nicht vor jedem Gespräch entscheiden, wo es gespeichert werden soll. Normale Unterhaltungen landen automatisch in der gemeinsamen Sitzung und räumen sich später selbst auf. Eine eigene Sitzung wird erst dann wichtig, wenn ein Thema bewusst erhalten bleiben soll.
 

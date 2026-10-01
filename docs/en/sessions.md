@@ -2,7 +2,7 @@
 
 # Sessions and agents
 
-Think of a session as the conversation's local notebook. It stays on this computer. The shared session resets after 24 hours, while a named session remains until you delete it. These local sessions are separate from your Grok account.
+Think of a session as the conversation's local notebook. It stays on this computer. The shared session keeps the last days you choose on the Simple tab: a new day comes in and the oldest day leaves. The default is one day. A named session remains until you delete it. These local sessions are separate from your Grok account.
 
 An agent belongs to your Grok account and is opened explicitly with `comando abrir agente …`. The Agent menu lists the files on this PC (`~/.grok/agents`) and the agents the signed-in account already publishes. It can remember things such as dates, places, and lists, and it can look information up when needed. Because that memory belongs to the account, the same agent is available on another computer where you are signed in. Creating one saves a file on this PC and requires the administrator password.
 

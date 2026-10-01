@@ -83,7 +83,7 @@ HELP_TOPICS = (
     ),
     (
         "Sesiones",
-        "La compartida es el cuaderno de esta máquina y se tira a las veinticuatro horas. "
+        "La compartida es el cuaderno de esta máquina. En la pestaña Simple eliges cuántos días guarda: entra el día nuevo y sale el más antiguo. Por defecto es un día. "
         "Una sesión con nombre se queda hasta que la borras. Abrir cambia de cuaderno. "
         "Cerrar sesión vuelve a la compartida y, si había charla, la acaba. Crear y borrar piden sí o no. "
         "Nada de esto se sube solo: solo salen las preguntas que hagas dentro.",

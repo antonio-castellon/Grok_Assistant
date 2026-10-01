@@ -190,6 +190,23 @@ class TrayApp:
         style.configure("Compact.TButton", background="#2a3340", foreground=INK, font=("Segoe UI", 10), padding=(10, 2), borderwidth=0)
         style.map("Compact.TButton", background=[("active", "#3a4656")])
         style.configure("TEntry", fieldbackground=FIELD, foreground=INK, insertcolor=INK, font=FONT)
+        style.configure(
+            "Simple.TCombobox",
+            fieldbackground=FIELD,
+            background=PANEL,
+            foreground=INK,
+            arrowcolor=INK,
+            borderwidth=0,
+            padding=8,
+            font=("Segoe UI", 16),
+        )
+        style.map(
+            "Simple.TCombobox",
+            fieldbackground=[("readonly", FIELD)],
+            foreground=[("readonly", INK)],
+            selectbackground=[("readonly", FIELD)],
+            selectforeground=[("readonly", INK)],
+        )
         style.configure("Market.TNotebook", background=BG, borderwidth=0)
         style.configure("Market.TNotebook.Tab", background=PANEL, foreground=INK, padding=(14, 8), font=("Segoe UI", 11))
         style.map("Market.TNotebook.Tab", background=[("selected", "#3a4656")], foreground=[("selected", INK)])
@@ -249,6 +266,17 @@ class TrayApp:
 
         simple = tk.Frame(self.page_simple, bg=BG)
         simple.pack(expand=True)
+        mode_row = tk.Frame(simple, bg=BG)
+        mode_row.pack(pady=(0, 22))
+        self.talk_label = tk.Label(
+            mode_row, text="", bg=BG, fg=MUTED, font=("Segoe UI", 14),
+        )
+        self.talk_label.pack(anchor="center")
+        self.talk_mode_box = ttk.Combobox(
+            mode_row, state="readonly", width=26, style="Simple.TCombobox", font=("Segoe UI", 16),
+        )
+        self.talk_mode_box.pack(pady=(8, 0))
+        self.talk_mode_box.bind("<<ComboboxSelected>>", self._pick_talk_mode)
         row = tk.Frame(simple, bg=BG)
         row.pack()
         big = {
@@ -269,6 +297,35 @@ class TrayApp:
             bg="#3a2a22", fg=AMBER, activebackground="#5a4030", activeforeground=AMBER, **big,
         )
         self.simple_quit.pack(side="left", padx=14)
+        self.talk_hint = tk.Label(
+            simple, text="", wraplength=680, justify="center",
+            bg=BG, fg=INK, font=("Segoe UI", 13),
+        )
+        self.talk_hint.pack(pady=(26, 6))
+        days = tk.Frame(simple, bg=BG)
+        days.pack(pady=(16, 0))
+        self.shared_label = tk.Label(days, text="", bg=BG, fg=MUTED, font=("Segoe UI", 14))
+        self.shared_label.pack()
+        days_row = tk.Frame(days, bg=BG)
+        days_row.pack(pady=(8, 0))
+        self.shared_days_var = tk.StringVar(value=str(self.hub.brain.settings.shared_days))
+        self.shared_days_box = tk.Spinbox(
+            days_row, from_=1, to=365, width=4, textvariable=self.shared_days_var,
+            command=self._pick_shared_days, justify="center",
+            font=("Segoe UI", 18), bg=FIELD, fg=INK, buttonbackground=PANEL,
+            insertbackground=INK, relief="flat", highlightthickness=1, highlightbackground=TEAL,
+        )
+        self.shared_days_box.pack(side="left")
+        self.shared_days_box.bind("<FocusOut>", lambda _event: self._pick_shared_days())
+        self.shared_days_box.bind("<Return>", lambda _event: self._pick_shared_days())
+        self.shared_unit = tk.Label(days_row, text="", bg=BG, fg=INK, font=("Segoe UI", 16))
+        self.shared_unit.pack(side="left", padx=(10, 0))
+        self.days_hint = tk.Label(
+            simple, text="", wraplength=680, justify="center",
+            bg=BG, fg=MUTED, font=("Segoe UI", 12),
+        )
+        self.days_hint.pack(pady=(12, 0))
+        self._paint_simple()
 
         self.debug_label = ttk.Label(self.page_debug, text=_ui("window.debug", "Depuración — lo que oye y lo que hace después"), style="Muted.TLabel")
         self.debug_label.pack(anchor="w", padx=12, pady=(12, 4))
@@ -1397,6 +1454,81 @@ class TrayApp:
         setattr(self, attr, None)
         return alive
 
+    def _talk_choices(self) -> list[tuple[str, str]]:
+        return [
+            ("seguida", _ui("window.mode_seguida", "Pregunta seguida")),
+            ("saludo", _ui("window.mode_saludo", "Primero el saludo")),
+            ("abierta", _ui("window.mode_abierta", "Charla abierta")),
+        ]
+
+    def _paint_simple(self) -> None:
+        if not hasattr(self, "talk_mode_box"):
+            return
+        choices = self._talk_choices()
+        self._talk_ids = {label: mode for mode, label in choices}
+        self.talk_label.configure(text=_ui("window.talk_label", "Forma de hablar"))
+        self.talk_mode_box.configure(values=[label for _mode, label in choices])
+        current = self.hub.brain.settings.talk_mode
+        shown = next((label for mode, label in choices if mode == current), choices[0][1])
+        self._painting_simple = True
+        try:
+            self.talk_mode_box.set(shown)
+        finally:
+            self._painting_simple = False
+        name = " ".join(str(self.hub.brain.settings.wake_name or "Grok").split()) or "Grok"
+        banner = _ui("status.banner_talk", "EN CONVERSACIÓN")
+        hint_key = {
+            "seguida": "window.hint_seguida",
+            "saludo": "window.hint_saludo",
+            "abierta": "window.hint_abierta",
+        }.get(current, "window.hint_seguida")
+        fallback = {
+            "seguida": "Di «Hola {name}» y la pregunta en la misma frase. Por ejemplo: «Hola {name}, ¿qué hora es?». Al callar, responde. Es la forma más rápida.",
+            "saludo": "Di «Hola {name}» y espera a que conteste. Luego haz la pregunta, sin repetir el nombre. Si paras un momento después del nombre, el micrófono sigue por si la pregunta viene detrás.",
+            "abierta": "Di «Hola {name}» para abrir. Mientras la esquina diga {banner}, pregunta cuando quieras, sin el nombre. Se cierra con gracias, vale o adiós, y no se apaga sola.",
+        }[current if current in {"seguida", "saludo", "abierta"} else "seguida"]
+        self.talk_hint.configure(text=_ui(hint_key, fallback).replace("{name}", name).replace("{banner}", banner))
+        self.shared_label.configure(text=_ui("window.shared_label", "Días de la sesión compartida"))
+        self.shared_unit.configure(text=_ui("window.shared_unit", "días"))
+        self.days_hint.configure(text=_ui(
+            "window.hint_days",
+            "El cuaderno guarda como máximo estos días hacia atrás. Entra el día nuevo y sale el más antiguo. Una sesión con nombre no caduca.",
+        ))
+        shown_days = str(self.hub.brain.settings.shared_days)
+        try:
+            editing = self.shared_days_box.focus_get() is self.shared_days_box
+        except tk.TclError:
+            editing = False
+        if not editing and self.shared_days_var.get() != shown_days:
+            self.shared_days_var.set(shown_days)
+
+    def _pick_talk_mode(self, _event=None) -> None:
+        if getattr(self, "_painting_simple", False):
+            return
+        mode = self._talk_ids.get(self.talk_mode_box.get(), "seguida")
+        if self.hub.brain.settings.talk_mode != mode:
+            self.hub.brain.settings.talk_mode = mode
+            self.hub.brain.persist()
+        self._paint_simple()
+
+    def _phrase_silence(self) -> float:
+        brain = self.hub.brain
+        if brain.settings.talk_mode == "saludo" and not brain.in_conversation:
+            return 2.0
+        return 0.7
+
+    def _pick_shared_days(self) -> None:
+        from grok_assistant.settings import normalize_shared_days
+
+        days = normalize_shared_days(self.shared_days_var.get())
+        if self.shared_days_var.get() != str(days):
+            self.shared_days_var.set(str(days))
+        settings = self.hub.brain.settings
+        if settings.shared_days != days:
+            settings.shared_days = days
+            self.hub.brain.persist()
+        self.hub.brain.sessions.roll(self.hub.brain.wall(), days)
+
     def _pause_caption(self, big: bool = False) -> str:
         if self.user_paused:
             return _ui("window.big_resume" if big else "menu.resume", "Seguir")
@@ -1416,6 +1548,7 @@ class TrayApp:
         self.simple_quit.configure(text=_ui("window.big_quit", "Salir"))
         self.pause_button.configure(text=self._pause_caption(False))
         self.simple_pause.configure(text=self._pause_caption(True))
+        self._paint_simple()
         self._draw_flow(None)
         self._show_usage()
 
@@ -2463,6 +2596,7 @@ class TrayApp:
                 wake_name=lambda: self.hub.brain.settings.wake_name,
                 kind=kind,
                 on_partial=self._preview,
+                talk_mode=lambda: self.hub.brain.settings.talk_mode,
             )
             if ear.start():
                 self.kroko = ear
@@ -2479,7 +2613,7 @@ class TrayApp:
         if want_offline and (self.offline is None or self.offline.kind != kind):
             if self.offline is not None:
                 self.offline.stop()
-            ear = OfflineEar(kind, self._heard, self._kroko_status)
+            ear = OfflineEar(kind, self._heard, self._kroko_status, silence=self._phrase_silence)
             if ear.start():
                 self.offline = ear
                 self._note(f"cargo {RECOGNIZER_LABELS[kind]}")

@@ -8,7 +8,7 @@ Die Grafik oben fasst das gesamte Produkt zusammen. Diese Komponenten setzen es 
 | --- | --- | --- |
 | STT-Motor | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Ton auf diesem PC in Text verwandeln. Der STT-Motor im Streaming spricht Spanisch lokal. Windows-Diktat auf Spanisch, wenn der Motor da ist. Die Tastatur ist immer da. |
 | Regeln | `brain.py`, `match.py`, `textutil.py` | Entscheiden: ignorieren, lokaler Auftrag, oder Wolke. Ein falscher Buchstabe trifft einen lokalen Auftrag noch. Zwei nicht. |
-| Heft | `store.py`, `%APPDATA%\GrokAssistant` | Sitzungen, Namen und das Debug-Protokoll halten. Die geteilte Sitzung wird nach 24 Stunden ersetzt. |
+| Heft | `store.py`, `%APPDATA%\GrokAssistant` | Sitzungen, Namen und das Debug-Protokoll halten. Die geteilte Sitzung behält die im Tab Einfach gewählten Tage und lässt den ältesten Tag fallen. |
 | Passwort | `auth.py` | Einen gesalzenen Hash speichern. Das Passwort selbst wird nie geschrieben. |
 | Mund | `speech.py`, `scripts/speak.ps1` | Mit einer lokalen Stimme sprechen. Spanische Stimmen kommen zuerst. |
 | Musik | `music.py` | Audio über `yt-dlp` und `mpv` spielen, wenn beide da sind. Während ein Lied läuft, bleibt das Mikrofon offen und folgt nur einem gespeicherten Abdruck. |

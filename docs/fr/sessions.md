@@ -2,7 +2,7 @@
 
 # Sessions et agents
 
-Une session peut être vue comme le carnet local de la conversation. Elle reste sur cet ordinateur. La session partagée repart de zéro après 24 heures, tandis qu'une session nommée reste disponible jusqu'à sa suppression. Ces sessions locales sont indépendantes du compte Grok.
+Une session peut être vue comme le carnet local de la conversation. Elle reste sur cet ordinateur. La session partagée garde les derniers jours choisis dans l'onglet Simple : le jour nouveau entre et le plus ancien sort. Par défaut, c'est un jour. Une session nommée reste disponible jusqu'à sa suppression. Ces sessions locales sont indépendantes du compte Grok.
 
 Un agent appartient à ton compte Grok et s'ouvre explicitement avec `commande ouvre l'agent …` (ou `comando abrir agente …` en espagnol). Le menu Agent montre les fichiers de ce PC (`~/.grok/agents`) et les agents que le compte connecté publie déjà. Il peut mémoriser des dates, des lieux et des listes, et rechercher des informations lorsque c'est nécessaire. Cette mémoire étant liée au compte, le même agent reste disponible sur un autre ordinateur où tu es connecté. En créer un enregistre un fichier sur ce PC et demande le mot de passe administrateur.
 

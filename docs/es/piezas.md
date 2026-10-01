@@ -8,7 +8,7 @@ El diagrama anterior resume el producto completo. Estas son las piezas que hacen
 | --- | --- | --- |
 | Motor de STT | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Convertir el sonido en texto en este PC. El motor de STT en streaming transmite el español en local. El dictado de Windows en español, cuando ese motor está. El teclado está siempre. |
 | Reglas | `brain.py`, `match.py`, `textutil.py` | Decidir si se ignora, si es una orden local o si va a la nube. Un carácter mal puesto sigue coincidiendo con una orden local. Dos, no. |
-| Cuaderno | `store.py`, `%APPDATA%\GrokAssistant` | Guardar sesiones, nombres de quien habla y el historial de depuración. La sesión compartida se sustituye a las 24 horas. |
+| Cuaderno | `store.py`, `%APPDATA%\GrokAssistant` | Guardar sesiones, nombres de quien habla y el historial de depuración. La sesión compartida guarda los días elegidos en Simple y suelta el día más antiguo. |
 | Contraseña | `auth.py` | Guardar un hash con sal. La contraseña en sí no se escribe nunca. |
 | Boca | `speech.py`, `scripts/speak.ps1` | Hablar con una voz local. Las voces en español se ofrecen primero. |
 | Música | `music.py` | Reproducir audio con `yt-dlp` y `mpv` cuando los dos existen. Mientras suena una canción, el micrófono sigue abierto y solo sigue una huella guardada. |

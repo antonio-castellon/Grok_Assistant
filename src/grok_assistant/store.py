@@ -33,6 +33,16 @@ def _write(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _line_time(line: dict, fallback: float) -> float:
+    raw = line.get("ts") if isinstance(line, dict) else None
+    if raw is None or raw == "":
+        return fallback
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return fallback
+
+
 @dataclass
 class Session:
     name: str
@@ -40,9 +50,6 @@ class Session:
     grok_id: str | None = None
     lines: list[dict] = field(default_factory=list)
     shared: bool = False
-
-    def expired(self, now: float) -> bool:
-        return self.shared and now - self.created >= DAY
 
 
 class SessionStore:
@@ -71,7 +78,6 @@ class SessionStore:
         self.active = data.get("active") or SHARED
         if self.active not in self.sessions:
             self.active = SHARED
-        self.roll(time.time())
 
     def save(self) -> None:
         _write(self.path, {
@@ -80,20 +86,34 @@ class SessionStore:
                 name: {
                     "created": item.created,
                     "grok_id": item.grok_id,
-                    "lines": item.lines[-400:],
+                    "lines": item.lines[-4000 if item.shared else -400:],
                     "shared": item.shared,
                 }
                 for name, item in self.sessions.items()
             },
         })
 
-    def roll(self, now: float) -> None:
+    def roll(self, now: float, days: int = 1) -> None:
+        """Keep the shared notebook for the last `days`. The oldest day leaves."""
         current = self.sessions.get(SHARED)
-        if current and current.expired(now):
-            self.sessions[SHARED] = Session(SHARED, now, shared=True)
-            if self.active == SHARED:
-                self.active = SHARED
-            self.save()
+        if current is None:
+            return
+        window = max(1, int(days)) * DAY
+        kept: list[dict] = []
+        dropped = False
+        for line in current.lines:
+            stamp = _line_time(line, current.created)
+            if now - stamp >= window:
+                dropped = True
+                continue
+            kept.append(line)
+        if not dropped:
+            return
+        current.lines = kept
+        if not kept:
+            current.grok_id = None
+            current.created = now
+        self.save()
 
     def current(self) -> Session:
         return self.sessions[self.active]
@@ -132,8 +152,8 @@ class SessionStore:
         self.save()
         return found
 
-    def close_to_shared(self) -> None:
-        self.roll(time.time())
+    def close_to_shared(self, now: float | None = None, days: int = 1) -> None:
+        self.roll(time.time() if now is None else now, days)
         self.active = SHARED
         self.save()
 

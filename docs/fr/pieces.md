@@ -8,7 +8,7 @@ Le schéma ci-dessus résume le produit dans son ensemble. Voici les composants 
 | --- | --- | --- |
 | Moteur STT | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Transformer le son en texte sur ce PC. Le moteur STT en flux diffuse l'espagnol en local. Dictée Windows en espagnol quand ce moteur est là. Le clavier est toujours là. |
 | Règles | `brain.py`, `match.py`, `textutil.py` | Décider d'ignorer, d'un ordre local, ou du nuage. Une lettre fausse correspond encore à un ordre local. Deux, non. |
-| Cahier | `store.py`, `%APPDATA%\GrokAssistant` | Garder les sessions, les noms et l'historique de dépuration. La session partagée est remplacée au bout de 24 heures. |
+| Cahier | `store.py`, `%APPDATA%\GrokAssistant` | Garder les sessions, les noms et l'historique de dépuration. La session partagée garde les jours choisis dans Simple et lâche le jour le plus ancien. |
 | Mot de passe | `auth.py` | Garder un hash salé. Le mot de passe lui-même n'est jamais écrit. |
 | Bouche | `speech.py`, `scripts/speak.ps1` | Parler avec une voix locale. Les voix espagnoles sont proposées d'abord. |
 | Musique | `music.py` | Jouer l'audio avec `yt-dlp` et `mpv` quand les deux sont là. Pendant une chanson, le micro reste ouvert et ne suit qu'une empreinte enregistrée. |

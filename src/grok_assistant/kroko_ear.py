@@ -104,12 +104,13 @@ def transcribe_clip(samples, kind: str = "kroko") -> str:
 
 
 class KrokoEar:
-    def __init__(self, on_line, on_status=None, wake_name=None, kind: str = "kroko", on_partial=None):
+    def __init__(self, on_line, on_status=None, wake_name=None, kind: str = "kroko", on_partial=None, talk_mode=None):
         self.kind = kind if kind in STREAMING_KINDS else "kroko"
         self.on_line = on_line
         self.on_partial = on_partial or (lambda *_ignored: None)
         self.on_status = on_status or (lambda _text: None)
         self._wake_name = wake_name or (lambda: "grok")
+        self._talk_mode = talk_mode or (lambda: "seguida")
         self.error = ""
         self._stop = threading.Event()
         self._paused = threading.Event()
@@ -169,9 +170,13 @@ class KrokoEar:
             name = self._wake_name() or "grok"
         except Exception:
             name = "grok"
-        limit = endpoint_quiet(text, name)
-        # A bare "hola grok" waits up to two seconds for the question.
-        # Anything else still closes at 0.7 s, or at the model's own endpoint.
+        try:
+            mode = self._talk_mode() or "seguida"
+        except Exception:
+            mode = "seguida"
+        limit = endpoint_quiet(text, name, mode)
+        # «Primero el saludo» keeps a bare hello open for two seconds.
+        # The other ways close at 0.7 s, or at the model's own endpoint.
         if quiet >= limit - 0.051:
             return True
         return bool(endpoint) and limit <= 0.7

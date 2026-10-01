@@ -520,6 +520,53 @@ def test_admin_lasts_five_minutes(world):
     assert any("administrador" in line for line in result.spoken)
 
 
+def test_open_chat_mode_stays_up_past_a_minute(world):
+    hub, _cli, clock = world
+    hub.brain.settings.talk_mode = "abierta"
+    hub.run("hola grok")
+    clock.t += 120
+    hub.tick()
+    assert hub.brain.in_conversation
+
+
+def test_shared_notebook_rolls_by_the_chosen_days(world):
+    hub, _cli, clock = world
+    hub.brain.settings.shared_days = 20
+    shared = hub.brain.sessions.sessions["compartida"]
+    shared.grok_id = "vieja"
+    now = clock.wall()
+    day = 24 * 60 * 60
+    shared.lines = [
+        {"ts": now - 21 * day, "heard": "dia 1", "decision": "ignorar", "sent": False},
+        {"ts": now - 2 * day, "heard": "dia reciente", "decision": "ignorar", "sent": False},
+    ]
+    hub.run("otro ruido")
+    heard = [item.get("heard") for item in hub.brain.sessions.current().lines]
+    assert "dia 1" not in heard
+    assert "dia reciente" in heard
+    assert hub.brain.sessions.current().grok_id == "vieja"
+
+    shared = hub.brain.sessions.sessions["compartida"]
+    shared.lines = [
+        {"ts": now - 21 * day, "heard": "solo viejo", "decision": "ignorar", "sent": False}
+    ]
+    shared.grok_id = "vieja"
+    hub.run("otro ruido")
+    heard = [item.get("heard") for item in hub.brain.sessions.current().lines]
+    assert "solo viejo" not in heard
+    assert hub.brain.sessions.current().grok_id is None
+
+    made = hub.brain.sessions.create("cocina")
+    assert made == "cocina"
+    hub.brain.sessions.open("cocina")
+    hub.brain.sessions.current().lines.append(
+        {"ts": now - 40 * day, "heard": "receta vieja", "decision": "ignorar", "sent": False}
+    )
+    hub.run("otro ruido")
+    named = [item.get("heard") for item in hub.brain.sessions.current().lines]
+    assert "receta vieja" in named
+
+
 def test_conversation_timeout_ignores_time_spent_busy(world):
     hub, _cli, clock = world
     hub.run("hola grok")
@@ -832,8 +879,10 @@ def test_a_short_reread_does_not_erase_the_sentence():
     from grok_assistant.match import endpoint_quiet
     from grok_assistant.refine import choose_transcript
 
-    assert endpoint_quiet("Ola Grok", "grok") == 2.0
-    assert endpoint_quiet("Ola Grok qué hora es", "grok") == 0.7
+    assert endpoint_quiet("Ola Grok", "grok", "saludo") == 2.0
+    assert endpoint_quiet("Ola Grok qué hora es", "grok", "saludo") == 0.7
+    assert endpoint_quiet("Ola Grok", "grok", "seguida") == 0.7
+    assert endpoint_quiet("Ola Grok", "grok", "abierta") == 0.7
     assert choose_transcript("qué tiempo hace mañana", "1.0") == "qué tiempo hace mañana"
 
 
@@ -982,3 +1031,52 @@ def test_one_loose_recognizer_character(world):
     hub, _cli, _clock = world
     said = hub.run("comando otro reconocedot").spoken[0]
     assert "teclado" in said.lower()
+
+
+def test_simple_tab_chooses_how_to_talk_and_how_many_days(tmp_path):
+    import tkinter as tk
+
+    from grok_assistant.hub import build
+    from grok_assistant.i18n import activate
+    from grok_assistant.tray import TrayApp
+
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        hub = build(tmp_path, tmp_path / "agents")
+        hub.brain.settings.wake_name = "Miguel"
+        activate("es")
+        app = TrayApp(root, hub)
+        root.update()
+        assert app.talk_mode_box.get() == "Pregunta seguida"
+        hint = app.talk_hint.cget("text")
+        assert "Miguel" in hint and "qué hora es" in hint and "más rápida" in hint
+        app.talk_mode_box.set("Primero el saludo")
+        app._pick_talk_mode()
+        assert hub.brain.settings.talk_mode == "saludo"
+        assert app._phrase_silence() == 2.0
+        hub.brain.in_conversation = True
+        assert app._phrase_silence() == 0.7
+        hub.brain.in_conversation = False
+        app.talk_mode_box.set("Charla abierta")
+        app._pick_talk_mode()
+        assert hub.brain.settings.talk_mode == "abierta"
+        assert "EN CONVERSACIÓN" in app.talk_hint.cget("text")
+        app.shared_days_var.set("20")
+        app._pick_shared_days()
+        assert hub.brain.settings.shared_days == 20
+        app.shared_days_var.set("0")
+        app._pick_shared_days()
+        assert hub.brain.settings.shared_days == 1
+        app.shared_days_var.set("400")
+        app._pick_shared_days()
+        assert hub.brain.settings.shared_days == 365
+        activate("en")
+        app._apply_chrome()
+        root.update()
+        assert app.talk_mode_box.get() == "Open chat"
+        assert "Hello Miguel" in app.talk_hint.cget("text")
+        assert "days" in app.days_hint.cget("text")
+    finally:
+        activate("es")
+        root.destroy()

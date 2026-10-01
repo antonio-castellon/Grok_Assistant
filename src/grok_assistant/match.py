@@ -234,11 +234,16 @@ def _slip_matches(norms: list[str], parts: list[str], called: str, limit: int) -
     return True
 
 
-def endpoint_quiet(text: str, wake_name: str = "grok") -> float:
-    """A bare greeting stays open for two seconds so the question can follow."""
-    rest = wake_split(words_norm(text), wake_name)
-    if rest == []:
-        return 2.0
+def endpoint_quiet(text: str, wake_name: str = "grok", mode: str = "seguida") -> float:
+    """How long the microphone stays quiet before the phrase ends.
+
+    «Primero el saludo» keeps a bare hello open for two seconds so the
+    question can still follow. The other ways close at 0.7 s.
+    """
+    if mode == "saludo":
+        rest = wake_split(words_norm(text), wake_name)
+        if rest == []:
+            return 2.0
     return 0.7
 
 

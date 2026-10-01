@@ -2,7 +2,7 @@
 
 # Sesiones y agentes
 
-Una sesión funciona como el cuaderno local de una conversación. Se guarda en este ordenador. La sesión compartida se reinicia a las 24 horas, mientras que una sesión con nombre permanece hasta que la borras. Estas sesiones locales son independientes de tu cuenta de Grok.
+Una sesión funciona como el cuaderno local de una conversación. Se guarda en este ordenador. La sesión compartida guarda los últimos días que eliges en la pestaña Simple: entra el día nuevo y sale el más antiguo. Por defecto es un día. Una sesión con nombre permanece hasta que la borras. Estas sesiones locales son independientes de tu cuenta de Grok.
 
 Un agente pertenece a tu cuenta de Grok y se abre de forma explícita con `comando abrir agente …`. El menú Agente muestra los archivos de este PC (`~/.grok/agents`) y los agentes que la cuenta iniciada ya publica. Puede recordar fechas, lugares y listas, además de buscar información cuando la necesite. Esa memoria pertenece a la cuenta, por lo que el mismo agente estará disponible en otro ordenador donde hayas iniciado sesión. Crear uno guarda un archivo en este PC y pide la contraseña de administrador.
 

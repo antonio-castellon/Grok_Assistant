@@ -67,10 +67,11 @@ def transcribe_clip(kind: str, samples) -> str:
 
 
 class OfflineEar:
-    def __init__(self, kind: str, on_line, on_status=None):
+    def __init__(self, kind: str, on_line, on_status=None, silence=None):
         self.kind = kind
         self.on_line = on_line
         self.on_status = on_status or (lambda _text: None)
+        self._silence = silence or (lambda: 0.7)
         self.error = ""
         self._stop = threading.Event()
         self._paused = threading.Event()
@@ -219,7 +220,12 @@ class OfflineEar:
                             )
                         )
                     else:
-                        ended = speech and ((silent >= 0.7 and voiced >= 0.4) or voiced >= 30.0)
+                        try:
+                            pause = float(self._silence())
+                        except (TypeError, ValueError):
+                            pause = 0.7
+                        pause = min(2.0, max(0.7, pause))
+                        ended = speech and ((silent >= pause and voiced >= 0.4) or voiced >= 30.0)
                     if not ended:
                         continue
                     audio = np.concatenate(speech)

@@ -8,7 +8,7 @@ The diagram above captures the whole product at a glance. Underneath it are the 
 | --- | --- | --- |
 | STT engine | `listen.py`, `kroko_ear.py`, `listeners/dictation.ps1` | Turn sound into text on this PC. The streaming STT engine handles Spanish locally. Windows Spanish dictation when that engine is present. The keyboard is always there. |
 | Rules | `brain.py`, `match.py`, `textutil.py` | Decide ignore, local order, or cloud. One wrong character still matches a local order. Two do not. |
-| Notebook | `store.py`, `%APPDATA%\GrokAssistant` | Keep sessions, speaker names, and the debug history. The shared session is replaced after 24 hours. |
+| Notebook | `store.py`, `%APPDATA%\GrokAssistant` | Keep sessions, speaker names, and the debug history. The shared session keeps the days chosen on Simple and drops the oldest day. |
 | Password | `auth.py` | Store a salted hash. The password itself is never written. |
 | Mouth | `speech.py`, `scripts/speak.ps1` | Speak with a local voice. Spanish voices are offered first. |
 | Music | `music.py` | Play audio through `yt-dlp` and `mpv` when both exist. While a song plays, the microphone stays open and only follows a saved print. |
