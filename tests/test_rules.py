@@ -566,7 +566,7 @@ def test_the_log_hangs_each_step_under_the_heard_line(world):
     hub.brain.settings.local_llm = True
     hub.run("qué hora es en madrid")
     assert any(line.split("  ")[1] == "·" and line.endswith("qué hora es en madrid") for line in hub.brain.logs)
-    assert any(line.split("  ")[1] == "¦" and "LLM: texto · se queda" in line for line in hub.brain.logs)
+    assert any(line.split("  ")[1] == "¦" and line.endswith("LLM: texto") for line in hub.brain.logs)
 
 
 def test_a_local_order_that_is_not_on_the_list_stays_visible(world):
@@ -582,7 +582,7 @@ def test_a_local_order_that_is_not_on_the_list_stays_visible(world):
     hub.mind = Mind()
     hub.brain.settings.local_llm = True
     hub.run("apaga la tele")
-    assert any("LLM: comando · apaga la tele · se queda" in line for line in hub.brain.logs)
+    assert any(line.endswith("LLM: comando · apaga la tele") for line in hub.brain.logs)
     hub.run("hola grok")
     hub.run("qué tiempo hará mañana")
     assert any(line.split("  ")[1] == "¦" and line.endswith("Grok: Son las tres.") for line in hub.brain.logs)

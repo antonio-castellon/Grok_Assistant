@@ -29,6 +29,6 @@ Einmal, in dieser Reihenfolge.
 2. Sprich. Eine Frage geht an Grok. Ein Auftrag kann mit `befehl` beginnen.
 3. `danke` oder `tschüss` kehrt zu **WARTEN** zurück. Die Sitzung wird nicht gelöscht.
 4. Für ein Lied sag den Titel. Beim ersten Mal lädt der Spieler.
-5. Das Protokoll im Fenster zeigt, was gehört wurde. Darunter zeigt `LLM:`, was das lokale Modell verstanden hat (`Text`, `Befehl`, `Gruß` oder `Schluss`) und ob es bleibt oder weitergeht. `Grok:` ist die Antwort.
+5. Das Protokoll im Fenster zeigt, was gehört wurde. Darunter zeigt `LLM:`, was das lokale Modell verstanden hat (`Text`, `Befehl`, `Gruß` oder `Schluss`). `Grok:` ist die Antwort.
 
 Mehr dazu: [Stimmabdrücke und Ohren](abdruecke.md) · [Was man sagen kann](sagen.md) · [Die Programmdatei starten](start.md)

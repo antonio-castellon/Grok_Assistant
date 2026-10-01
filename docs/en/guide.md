@@ -29,6 +29,6 @@ Do this once, in this order.
 2. Then talk. A question goes to Grok. An order can start with `command`.
 3. `thanks`, `okay`, or `goodbye` returns to **WAITING**. The session is not deleted.
 4. For a song, say the title. The first time, the player downloads.
-5. The window log shows what was heard. Under it, `LLM:` is what the local model interpreted (`text`, `command`, `greeting`, or `closing`) and whether it stays or goes on. `Grok:` is the answer.
+5. The window log shows what was heard. Under it, `LLM:` is what the local model interpreted (`text`, `command`, `greeting`, or `closing`). `Grok:` is the answer.
 
 More detail: [Voice prints and listeners](prints.md) · [What you can say](saying.md) · [Run the executable](run.md)

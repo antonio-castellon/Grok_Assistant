@@ -29,10 +29,10 @@ class Result:
     sent: list[tuple] = field(default_factory=list)
 
 
-def _intent_line(data: dict | None, outcome: str, heard: str = "") -> str:
-    """One debug line: what the local model returned, then what we did with it."""
+def _intent_line(data: dict | None, heard: str = "") -> str:
+    """One debug line: what the local model returned."""
     if not data:
-        return f"LLM: sin respuesta · {outcome}" if outcome else "LLM: sin respuesta"
+        return "LLM: sin respuesta"
     accion = " ".join(str(data.get("accion") or "").split()) or "vacío"
     bits = [accion]
     orden = " ".join(str(data.get("orden") or "").split())
@@ -42,8 +42,6 @@ def _intent_line(data: dict | None, outcome: str, heard: str = "") -> str:
         bits.append(orden)
     if texto and texto.casefold() not in {orden.casefold(), heard_fold}:
         bits.append(texto)
-    if outcome and outcome.casefold() not in {item.casefold() for item in bits}:
-        bits.append(outcome)
     return "LLM: " + " · ".join(bits)
 
 
@@ -111,10 +109,10 @@ class Hub:
         ready = self.mind.available() if hasattr(self.mind, "available") else True
         if not ready:
             if turn.job.kind == "review" and self.brain.in_conversation:
-                self.brain._log("LLM: sin modelo · sigue")
+                self.brain._log("LLM: sin modelo")
                 return self._pass_through(turn, original)
             if turn.job.kind == "review":
-                self.brain._log("LLM: sin modelo · se queda")
+                self.brain._log("LLM: sin modelo")
                 return Turn(status=self.brain.status_label())
             return None
         try:
@@ -126,7 +124,7 @@ class Hub:
             from grok_assistant.match import tokenize
 
             self.brain.phase = ""
-            self.brain._log(_intent_line(data, "abre", original))
+            self.brain._log(_intent_line(data, original))
             norms = [norm for _, norm in tokenize(original)]
             return self.brain._wake(original, norms, None, logged=False)
         if data and data.get("accion") == "comando":
@@ -135,19 +133,19 @@ class Hub:
             hit = canonicalize(str(data.get("orden") or ""))
             if hit is not None:
                 self.brain.phase = ""
-                self.brain._log(_intent_line(data, "", original))
+                self.brain._log(_intent_line(data, original))
                 return self.brain.perform(hit)
         close = self._close_kind(original, data)
         if close:
             self.brain.phase = ""
-            self.brain._log(_intent_line(data, f"cierre {close}", original))
+            self.brain._log(_intent_line(data, original))
             return self.brain._goodbye(close)
         from grok_assistant.match import blank_phrase
 
         self.brain.phase = ""
-        outcome = "se queda" if not self.brain.in_conversation or blank_phrase(original) else "sigue"
-        self.brain._log(_intent_line(data, outcome, original))
-        if outcome == "se queda":
+        stays = not self.brain.in_conversation or blank_phrase(original)
+        self.brain._log(_intent_line(data, original))
+        if stays:
             return Turn(status=self.brain.status_label())
         return self._pass_through(turn, original)
 

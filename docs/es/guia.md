@@ -29,6 +29,6 @@ Hazlo una vez, en este orden.
 2. Habla. Una pregunta va a Grok. Una orden puede empezar por `comando`.
 3. `gracias`, `vale` o `adiós` vuelven a **ESPERA**. La sesión no se borra.
 4. Para una canción, di el título. La primera vez se descarga el reproductor.
-5. El registro de la ventana muestra lo que se oyó. Debajo, `LLM:` es lo que interpretó el modelo local (`texto`, `comando`, `saludo` o `cierre`) y si se queda o sigue. `Grok:` es la respuesta.
+5. El registro de la ventana muestra lo que se oyó. Debajo, `LLM:` es lo que interpretó el modelo local (`texto`, `comando`, `saludo` o `cierre`). `Grok:` es la respuesta.
 
 Más detalle: [Huellas y oídos](huellas.md) · [Qué se puede decir](decir.md) · [Ejecutar el programa](ejecutar.md)
