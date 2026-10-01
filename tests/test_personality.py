@@ -127,10 +127,16 @@ def test_windows_follow_the_selected_language(tmp_path):
         app.hub.brain.settings.recognizer = "kroko"
         app._build_market()
         root.update()
-        used = [mark.cget("text") for _offer, mark in app._market_marks if "IN USE" in mark.cget("text")]
+        used = [
+            (offer, button, chip)
+            for offer, button, chip in app._market_marks
+            if chip.cget("text") == "IN USE" and chip.winfo_manager()
+        ]
         assert used
-        assert used[0].startswith("✓")
-        assert app._market_marks[0][1].cget("fg") == GREEN
+        offer, button, chip = used[0]
+        assert offer.engine_id == "kroko"
+        assert chip.cget("bg") == GREEN
+        assert not button.winfo_manager()
     finally:
         activate("es")
         root.destroy()

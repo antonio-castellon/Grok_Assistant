@@ -1293,11 +1293,6 @@ class TrayApp:
             return filename == settings.llm_file
         return False
 
-    def _used_mark(self, offer: Offer) -> str:
-        if not self._offer_used(offer):
-            return ""
-        return "✓   " + _ui("market.used", "EN USO")
-
     def _offer_title(self, offer: Offer) -> str:
         if offer.kind == "stt" and offer.engine_id:
             return _ui(f"offer.{offer.engine_id}.title", offer.title)
@@ -1319,11 +1314,25 @@ class TrayApp:
         return compact[: limit - 1].rstrip() + "…"
 
     def _refresh_market_marks(self) -> None:
-        for offer, mark in list(getattr(self, "_market_marks", [])):
+        for offer, button, chip in list(getattr(self, "_market_marks", [])):
             try:
-                mark.configure(text=self._used_mark(offer))
+                self._show_market_action(offer, button, chip)
             except tk.TclError:
                 return
+
+    def _show_market_action(self, offer: Offer, button: ttk.Button, chip: tk.Label) -> None:
+        """The active row keeps a green mark where Usar would be."""
+        if offer.ready() and self._offer_used(offer):
+            if button.winfo_manager():
+                button.pack_forget()
+            if not chip.winfo_manager():
+                chip.pack(side="left")
+            chip.configure(text=_ui("market.used", "EN USO"))
+            return
+        if chip.winfo_manager():
+            chip.pack_forget()
+        if not button.winfo_manager():
+            button.pack(side="left")
 
     def _warm_piper(self) -> None:
         from grok_assistant.marketplace import fetch_piper_index, piper_cached
@@ -1464,19 +1473,21 @@ class TrayApp:
         ready = offer.ready()
         percent = tk.IntVar(value=100 if ready else 0)
         label = tk.StringVar(value="")
-        mark = tk.Label(
-            row,
-            text=self._used_mark(offer),
-            bg=BG, fg=GREEN, font=("Segoe UI", 9, "bold"),
-            width=18, anchor="w",
-        )
-        mark.pack(side="left", padx=(6, 2))
-        self._market_marks.append((offer, mark))
         side = tk.Frame(row, bg=BG)
-        side.pack(side="right", padx=(6, 4))
+        side.pack(side="right", padx=(6, 8))
         tk.Label(side, text=offer.size, bg=BG, fg=MUTED, font=("Segoe UI", 9), width=16, anchor="e").pack(side="left", padx=(0, 6))
-        button = ttk.Button(side, style="Compact.TButton")
-        button.pack(side="left")
+        chip = tk.Label(
+            side,
+            text=_ui("market.used", "EN USO"),
+            bg=GREEN, fg="#10241c", font=("Segoe UI", 10, "bold"),
+            width=12, padx=8, pady=2,
+        )
+        button = ttk.Button(side, style="Compact.TButton", width=12)
+        self._market_marks.append((offer, button, chip))
+        if ready and self._offer_used(offer):
+            chip.pack(side="left")
+        else:
+            button.pack(side="left")
         body = tk.Frame(row, bg=BG)
         body.pack(side="left", fill="x", expand=True, padx=(2, 4))
         tk.Label(body, text=self._offer_title(offer), bg=BG, fg=INK, font=("Segoe UI", 11), anchor="w").pack(fill="x")
