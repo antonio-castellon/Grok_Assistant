@@ -18,7 +18,8 @@ SYSTEM = (
     "Miras el texto tal como lo entregó el reconocedor de voz. Decides solo esto: "
     "si es un comando de la lista, o una variación mal oída de uno de ellos.\n"
     "Respondes un único JSON con las claves accion y orden.\n"
-    "Si es un saludo al asistente, aunque el oído lo haya deformado (hola grok oído como hola groo), "
+    "El mensaje dice el nombre del asistente y si la conversación está abierta o cerrada.\n"
+    "Si la conversación está cerrada y la frase le saluda, aunque el oído deforme el nombre, "
     "accion es \"saludo\" y orden es \"\".\n"
     "Si es un comando o una variación, accion es \"comando\" y orden es la línea estricta, sin cambiar el sentido.\n"
     "Si cierra la conversación (gracias, nada gracias, ok, vale, adiós, cierra, hasta luego, o una variación), "
@@ -60,6 +61,7 @@ class LocalMind:
     def __init__(self, data_dir: Path | None = None):
         self.data_dir = data_dir or default_data_dir()
         self.selected = ""
+        self.wake_name = ""
         self._server: subprocess.Popen | None = None
 
     def available(self) -> bool:
@@ -71,7 +73,9 @@ class LocalMind:
             return None
         if not self._ensure_server():
             return None
-        user = f"Frase del reconocedor:\n{phrase}"
+        name = " ".join((self.wake_name or "grok").split()) or "grok"
+        state = "abierta" if in_conversation else "cerrada"
+        user = f"El asistente se llama {name}. Conversación {state}.\nFrase del reconocedor:\n{phrase}"
         body = json.dumps({
             "messages": [
                 {"role": "system", "content": SYSTEM},
@@ -94,7 +98,13 @@ class LocalMind:
             content = payload["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError):
             return None
-        return parse_intent(str(content))
+        parsed = parse_intent(str(content))
+        if parsed:
+            return parsed
+        snippet = " ".join(str(content).split())
+        if len(snippet) > 140:
+            snippet = snippet[:139] + "…"
+        return {"accion": "ilegible", "orden": "", "texto": snippet}
 
     def _ensure_server(self) -> bool:
         if self._healthy():

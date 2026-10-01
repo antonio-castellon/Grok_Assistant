@@ -566,7 +566,23 @@ def test_the_log_hangs_each_step_under_the_heard_line(world):
     hub.brain.settings.local_llm = True
     hub.run("qué hora es en madrid")
     assert any(line.split("  ")[1] == "·" and line.endswith("qué hora es en madrid") for line in hub.brain.logs)
-    assert any(line.split("  ")[1] == "¦" and "LLM: se queda" in line for line in hub.brain.logs)
+    assert any(line.split("  ")[1] == "¦" and "LLM: texto · se queda" in line for line in hub.brain.logs)
+
+
+def test_a_local_order_that_is_not_on_the_list_stays_visible(world):
+    hub, _cli, _clock = world
+
+    class Mind:
+        def available(self):
+            return True
+
+        def interpret(self, phrase, in_conversation):
+            return {"accion": "comando", "orden": "apaga la tele", "texto": ""}
+
+    hub.mind = Mind()
+    hub.brain.settings.local_llm = True
+    hub.run("apaga la tele")
+    assert any("LLM: comando · apaga la tele · se queda" in line for line in hub.brain.logs)
     hub.run("hola grok")
     hub.run("qué tiempo hará mañana")
     assert any(line.split("  ")[1] == "¦" and line.endswith("Grok: Son las tres.") for line in hub.brain.logs)

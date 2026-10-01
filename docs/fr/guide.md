@@ -29,6 +29,6 @@ Une fois, dans cet ordre.
 2. Parle. Une question va à Grok. Un ordre peut commencer par `commande`.
 3. `merci` ou `d'accord` ramène à **EN ATTENTE**. La session n'est pas effacée.
 4. Pour une chanson, dis le titre. La première fois, le lecteur se télécharge.
-5. Le journal de la fenêtre montre ce qui a été entendu. En dessous, `LLM:` est la décision du modèle local et `Grok:` est la réponse.
+5. Le journal de la fenêtre montre ce qui a été entendu. En dessous, `LLM:` est ce que le modèle local a interprété (`texte`, `commande`, `salut` ou `clôture`) et s'il reste ou continue. `Grok:` est la réponse.
 
 Plus de détail : [Empreintes et oreilles](empreintes.md) · [Ce qu'on peut dire](dire.md) · [Lancer l'exécutable](lancer.md)
