@@ -32,6 +32,24 @@ def test_a_file_beside_the_exe_overrides_and_fills_missing_keys(tmp_path, monkey
     assert theme.theme_by_id("no-such").id == "noche"
 
 
+def test_the_extra_themes_keep_their_own_colors(tmp_path, monkeypatch):
+    monkeypatch.setattr(theme, "user_dir", lambda: tmp_path)
+    expect = {
+        "aurora": ("Aurora", "#22243a", "#f4f5fb"),
+        "cobre": ("Cobre", "#3a2c24", "#f8f1e8"),
+        "lino": ("Lino", "#f7f4ec", "#241e16"),
+        "oliva": ("Oliva", "#243028", "#f2f6f0"),
+    }
+    ids = [row.id for row in theme.available()]
+    assert ids[0] == "noche"
+    for theme_id, (name, bg, ink) in expect.items():
+        item = theme.theme_by_id(theme_id)
+        assert item.name == name
+        assert item.colors["bg"] == bg
+        assert item.colors["ink"] == ink
+        assert theme_id in ids
+
+
 def test_changing_theme_repaints_the_window(tmp_path):
     import tkinter as tk
 

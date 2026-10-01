@@ -24,7 +24,7 @@ El diagrama de abajo muestra qué ocurre con una frase desde que se pronuncia.
 
 ## Aspecto
 
-Ajustes → Aspecto lista Noche, Día y Mar. Noche es el de las fotos.
+Ajustes → Aspecto lista Noche, Aurora, Cobre, Día, Lino, Mar y Oliva. Noche es el de las fotos. Aurora es índigo, Cobre es madera con cobre, Lino es un lino claro y Oliva es verde oscuro.
 
 Para cambiar el aspecto, pon un archivo `themes/<id>.json` en la misma carpeta que `GrokAssistant.exe`. El menú muestra el campo `name`. Un archivo con el mismo id sustituye al tema incluido. Un color que falte se queda en Noche. Si arrancas desde el código, esa carpeta es `dist/themes/`.
 

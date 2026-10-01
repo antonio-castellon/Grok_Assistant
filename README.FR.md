@@ -24,7 +24,7 @@ Le schéma ci-dessous montre ce qui arrive à une phrase à partir du moment où
 
 ## Aspect
 
-Réglages → Aspect liste Noche, Día et Mar. Noche est celui des photos.
+Réglages → Aspect liste Noche, puis Aurora, Cobre, Día, Lino, Mar et Oliva. Noche est celui des photos. Aurora est indigo, Cobre est bois et cuivre, Lino est un lin clair, et Oliva est un vert profond.
 
 Pour changer l'aspect, place un fichier `themes/<id>.json` dans le même dossier que `GrokAssistant.exe`. Le menu affiche le champ `name`. Un fichier du même id remplace le thème inclus. Une couleur absente reste celle de Noche. Un lancement depuis les sources lit `dist/themes/`.
 
