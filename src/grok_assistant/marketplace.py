@@ -73,7 +73,7 @@ def offers() -> list[Offer]:
             id="windows-es",
             kind="stt",
             title="Windows español",
-            detail="Dictado de escritorio de Windows. El audio se queda en este PC. Si falta, el botón lo instala y Windows pide permiso.",
+            detail="Dictado de escritorio de Windows. Si falta, el botón lo instala y Windows pide permiso.",
             size="idioma de Windows",
             engine_id="windows",
             local="windows-speech",
@@ -82,7 +82,7 @@ def offers() -> list[Offer]:
             id="kroko",
             kind="stt",
             title="Kroko · español",
-            detail="Oído en streaming. Es el que escucha frases en español mientras hablas, sin subir el audio.",
+            detail="Oído en streaming. Escucha frases en español mientras hablas.",
             size="119 MB",
             engine_id="kroko",
             files=((
@@ -94,7 +94,7 @@ def offers() -> list[Offer]:
             id="zipfr",
             kind="stt",
             title="Zipformer francés",
-            detail="Oído en streaming, solo francés. El audio no sale de este PC.",
+            detail="Oído en streaming, solo francés. Oye mientras hablas.",
             size="380 MB",
             engine_id="zipfr",
             files=((
@@ -106,7 +106,7 @@ def offers() -> list[Offer]:
             id="zipen",
             kind="stt",
             title="Zipformer inglés",
-            detail="Oído en streaming, solo inglés, modelo pequeño. El audio no sale de este PC.",
+            detail="Oído en streaming, solo inglés, modelo pequeño. Oye mientras hablas.",
             size="122 MB",
             engine_id="zipen",
             files=((
@@ -145,7 +145,7 @@ def offers() -> list[Offer]:
             id="canary",
             kind="stt",
             title="Canary",
-            detail="Oído local en español, inglés, francés y alemán. Una frase se cierra tras el silencio. El audio no sale de este PC.",
+            detail="Oído en español, inglés, francés y alemán. Una frase se cierra tras el silencio.",
             size="~200 MB",
             engine_id="canary",
             files=((
@@ -157,7 +157,7 @@ def offers() -> list[Offer]:
             id="cohere",
             kind="stt",
             title="Cohere",
-            detail="Oído local para 14 idiomas, entre ellos español, francés, alemán e inglés. Usa el idioma elegido. El audio no sale de este PC.",
+            detail="Oído para 14 idiomas, entre ellos español, francés, alemán e inglés. Usa el idioma elegido.",
             size="1.6 GB",
             engine_id="cohere",
             files=((
