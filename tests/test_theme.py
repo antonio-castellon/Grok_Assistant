@@ -64,6 +64,29 @@ def _near(left, right, tol: int = 12) -> bool:
     return all(abs(a - b) <= tol for a, b in zip(left, right))
 
 
+def test_the_status_line_names_each_setting():
+    from grok_assistant.i18n import activate
+    from grok_assistant.ui.chrome import detail_line
+
+    activate("es")
+    line = detail_line({
+        "model": "grok-4.7",
+        "effort": "bajo",
+        "voice": "4. Sharvard · España",
+        "recognizer": "Whisper small",
+        "identifier": "sin identificador",
+        "session": "compartida",
+        "volume": 70,
+    })
+    assert "modelo [grok-4.7]" in line
+    assert "esfuerzo [bajo]" in line
+    assert "voz [4. Sharvard · España]" in line
+    assert "oído [Whisper small]" in line
+    assert "identificador [sin identificador]" in line
+    assert "sesión [compartida]" in line
+    assert "volumen [70%]" in line
+
+
 def test_changing_theme_repaints_the_window(tmp_path):
     import tkinter as tk
 
@@ -75,6 +98,11 @@ def test_changing_theme_repaints_the_window(tmp_path):
     try:
         app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
         root.update_idletasks()
+        assert app.shared_label.cget("text") == "Días que se recuerdan las conversaciones"
+        assert app.detail_label.master.pack_slaves()[0] is app.detail_label
+        assert app.detail_label.master.pack_slaves()[1] is app.title_label
+        assert app.state_label.master.pack_info()["side"] == "right"
+        assert app.state_label.master.pack_info()["anchor"] == "n"
         app.pages.select(app.page_flow)
         root.update()
         assert str(app.pages.select()) == str(app.page_flow)

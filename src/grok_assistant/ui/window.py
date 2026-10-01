@@ -169,11 +169,22 @@ class WindowMixin:
                 pass
         self.root.protocol("WM_DELETE_WINDOW", self._hide)
 
-        head = ttk.Frame(self.root)
-        head.pack(fill="x", padx=18, pady=(16, 4))
-        ttk.Label(head, text="Grok Assistant", style="Status.TLabel").pack(side="left")
+        head = tk.Frame(self.root, bg=look.bg)
+        head.pack(fill="x", padx=18, pady=(8, 0))
         corner = tk.Frame(head, bg=look.bg)
-        corner.pack(side="right")
+        corner.pack(side="right", anchor="n")
+        left = tk.Frame(head, bg=look.bg)
+        left.pack(side="left", fill="both", expand=True)
+        self.detail_label = tk.Label(
+            left, textvariable=self.detail_var, bg=look.bg, fg=look.muted,
+            font=("Segoe UI", 11), anchor="nw", justify="left",
+        )
+        self.detail_label.pack(anchor="nw", fill="x")
+        self.title_label = tk.Label(
+            left, text="Grok Assistant", bg=look.bg, fg=look.amber, font=look.font_bold, anchor="w",
+        )
+        self.title_label.pack(anchor="w", pady=(2, 0))
+        left.bind("<Configure>", lambda event: self.detail_label.configure(wraplength=max(240, event.width)))
         self.state_var = tk.StringVar(value=_ui("status.banner_wait", "ESPERA"))
         self.state_label = tk.Label(
             corner, textvariable=self.state_var, bg=look.bg, fg=look.teal, font=("Segoe UI", 26, "bold"),
@@ -181,7 +192,6 @@ class WindowMixin:
         self.state_label.pack(anchor="e")
         self.usage_label = tk.Label(corner, textvariable=self.usage_var, bg=look.bg, fg=look.muted, font=("Segoe UI", 12, "bold"))
         self.usage_label.pack(anchor="e")
-        ttk.Label(self.root, textvariable=self.detail_var, style="Muted.TLabel").pack(anchor="w", padx=18)
 
         self.footer = tk.Frame(self.root, bg=look.panel, height=46)
         self.footer.pack(side="bottom", fill="x")
@@ -193,10 +203,10 @@ class WindowMixin:
         self.version_label.pack(fill="both", padx=18)
 
         self.pages = RoundNotebook(self.root)
-        self.pages.pack(fill="both", expand=True, padx=18, pady=(10, 12))
-        self.page_simple = ttk.Frame(self.pages)
-        self.page_debug = ttk.Frame(self.pages)
-        self.page_flow = ttk.Frame(self.pages)
+        self.pages.pack(fill="both", expand=True, padx=18, pady=(4, 8))
+        self.page_simple = tk.Frame(self.pages, bg=look.bg, highlightthickness=0, bd=0)
+        self.page_debug = tk.Frame(self.pages, bg=look.bg, highlightthickness=0, bd=0)
+        self.page_flow = tk.Frame(self.pages, bg=look.bg, highlightthickness=0, bd=0)
         self.pages.add(self.page_simple, text=_ui("window.tab_simple", "Simple"))
         self.pages.add(self.page_debug, text=_ui("window.tab_debug", "Depuración"))
         self.pages.add(self.page_flow, text=_ui("window.tab_flow", "Flujo"))
@@ -330,7 +340,7 @@ class WindowMixin:
             "abierta": "Di «Hola {name}» para abrir. Mientras la esquina diga {banner}, pregunta cuando quieras, sin el nombre. Se cierra con gracias, vale o adiós, y no se apaga sola.",
         }[current if current in {"seguida", "saludo", "abierta"} else "seguida"]
         self.talk_hint.configure(text=_ui(hint_key, fallback).replace("{name}", name).replace("{banner}", banner))
-        self.shared_label.configure(text=_ui("window.shared_label", "Días de la sesión compartida"))
+        self.shared_label.configure(text=_ui("window.shared_label", "Días que se recuerdan las conversaciones"))
         self.shared_unit.configure(text=_ui("window.shared_unit", "días"))
         self.days_hint.configure(text=_ui(
             "window.hint_days",

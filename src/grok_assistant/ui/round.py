@@ -186,7 +186,7 @@ class RoundNotebook(tk.Frame):
     def __init__(self, parent, **_extra) -> None:
         super().__init__(parent, bg=look.bg, highlightthickness=0, bd=0)
         self._bar = tk.Frame(self, bg=look.bg, highlightthickness=0, bd=0)
-        self._bar.pack(side="top", fill="x", pady=(2, 12))
+        self._bar.pack(side="top", fill="x", pady=(0, 4))
         self._tabs: list[tuple[tk.Misc, RoundButton]] = []
         self._current: tk.Misc | None = None
 

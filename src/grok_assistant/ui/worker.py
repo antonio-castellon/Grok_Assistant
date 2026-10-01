@@ -195,9 +195,7 @@ class WorkerMixin:
         kind = snap.get("banner_kind") or "wait"
         self.state_label.configure(fg={"talk": look.green, "hear": look.green, "pause": look.amber, "test": look.amber}.get(kind, look.teal))
         self._refresh_market_marks()
-        self.detail_var.set(
-            f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {snap['recognizer']}  ·  {snap['identifier']}  ·  {snap['session']}  ·  {snap['volume']}%"
-        )
+        self.detail_var.set(detail_line(snap))
         self._draw_flow(snap)
         if self.tray_ok and self.tray is not None:
             self.tray.set_tip(f"Grok Assistant — {_version_line()} — {snap['status']}")

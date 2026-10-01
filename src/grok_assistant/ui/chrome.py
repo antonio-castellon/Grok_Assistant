@@ -10,6 +10,20 @@ def _ui(key: str, fallback: str = "") -> str:
 
     return text(key, fallback)
 
+def detail_line(snap: dict) -> str:
+    """Each current setting as a label and a value in brackets."""
+    parts = (
+        ("window.detail_model", "modelo", snap.get("model", "")),
+        ("window.detail_effort", "esfuerzo", snap.get("effort", "")),
+        ("window.detail_voice", "voz", snap.get("voice", "")),
+        ("window.detail_ear", "oído", snap.get("recognizer", "")),
+        ("window.detail_identifier", "identificador", snap.get("identifier", "")),
+        ("window.detail_session", "sesión", snap.get("session", "")),
+        ("window.detail_volume", "volumen", f"{snap.get('volume', '')}%"),
+    )
+    return "   ".join(f"{_ui(key, label)} [{value}]" for key, label, value in parts)
+
+
 def _version_line() -> str:
     from grok_assistant import __version__
 
