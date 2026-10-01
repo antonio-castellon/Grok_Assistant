@@ -26,7 +26,7 @@ The diagram below shows what happens to a spoken phrase from the moment it is he
 
 ## Look
 
-Settings → Look lists Noche, then Aurora, Cobre, Día, Lino, Mar, and Oliva. Noche is the one in the pictures. Aurora is indigo, Cobre is wood and copper, Lino is a light linen, and Oliva is a deep green.
+Settings → Look lists Noche, then Aurora, Cobre, Día, Lino, Mar, and Oliva. Noche is the one in the pictures. Aurora is indigo, Cobre is wood and copper, Lino is a light linen, and Oliva is a deep green. Buttons and tabs are rounded.
 
 To change the look, put a file named `themes/<id>.json` in the same folder as `GrokAssistant.exe`. The menu shows the `name` inside that file. A file with the same id replaces the built-in theme. A missing color stays on Noche. Running from source reads `dist/themes/`.
 

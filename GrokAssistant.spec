@@ -74,6 +74,8 @@ a = Analysis(
         "PIL",
         "PIL.Image",
         "PIL.ImageDraw",
+        "PIL.ImageTk",
+        "grok_assistant.ui.round",
     ],
     hookspath=[],
     hooksconfig={},

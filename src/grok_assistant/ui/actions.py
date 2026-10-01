@@ -210,7 +210,7 @@ class ActionMixin:
             self._note("comandos de este idioma guardados")
             window.destroy()
 
-        ttk.Button(window, text=_ui("menu.apply", "Aplicar"), command=save).pack(anchor="e", padx=12, pady=(0, 12))
+        RoundButton(window, text=_ui("menu.apply", "Aplicar"), command=save, padx=18, pady=8).pack(anchor="e", padx=12, pady=(0, 12))
 
     def _edit_help(self) -> None:
         from grok_assistant.house.helptext import help_topics
@@ -251,7 +251,7 @@ class ActionMixin:
             self._note("ayuda de este idioma guardada")
             window.destroy()
 
-        ttk.Button(window, text=_ui("menu.apply", "Aplicar"), command=save).pack(anchor="e", padx=12, pady=(0, 12))
+        RoundButton(window, text=_ui("menu.apply", "Aplicar"), command=save, padx=18, pady=8).pack(anchor="e", padx=12, pady=(0, 12))
 
     def _banter_set(self, key: str, enabled: bool | None = None, var=None) -> None:
         from grok_assistant.speaking.banter import KINDS, THEMES, apply_choice
@@ -350,8 +350,8 @@ class ActionMixin:
         ).pack(anchor="w", padx=16, pady=(0, 8))
         buttons = ttk.Frame(window)
         buttons.pack(side="bottom", anchor="e", padx=16, pady=12)
-        ttk.Button(buttons, text=_ui("menu.restore", "Restaurar"), command=self._persona_restore).pack(side="right")
-        ttk.Button(buttons, text=_ui("menu.apply", "Aplicar"), command=self._persona_save).pack(side="right", padx=(0, 8))
+        RoundButton(buttons, text=_ui("menu.restore", "Restaurar"), command=self._persona_restore, padx=18, pady=8).pack(side="right")
+        RoundButton(buttons, text=_ui("menu.apply", "Aplicar"), command=self._persona_save, padx=18, pady=8).pack(side="right", padx=(0, 8))
         page = ttk.Frame(window)
         page.pack(fill="both", expand=True, padx=8)
         _canvas, inner = self._scroll_page(page)
@@ -515,7 +515,7 @@ class ActionMixin:
         window.configure(bg=look.bg)
         window.geometry("720x560")
         self._about_win = window
-        book = ttk.Notebook(window, style="Market.TNotebook")
+        book = RoundNotebook(window)
         book.pack(fill="both", expand=True, padx=12, pady=12)
         about = ttk.Frame(book)
         commands = ttk.Frame(book)

@@ -198,9 +198,9 @@ class PrintMixin:
             ttk.Label(win, textvariable=self._print_hint, style="Muted.TLabel").pack(anchor="w", padx=18, pady=(8, 0))
             row = ttk.Frame(win)
             row.pack(fill="x", padx=18, pady=16)
-            ttk.Button(row, text=_ui("dialog.print_retry", "Reintentar"), command=self._print_retry).pack(side="left")
-            ttk.Button(row, text=_ui("dialog.print_next", "Seguir"), command=self._print_next).pack(side="left", padx=(12, 0))
-            ttk.Button(row, text=_ui("dialog.print_leave", "Salir"), command=self._print_leave).pack(side="right")
+            RoundButton(row, text=_ui("dialog.print_retry", "Reintentar"), command=self._print_retry, padx=18, pady=8).pack(side="left")
+            RoundButton(row, text=_ui("dialog.print_next", "Seguir"), command=self._print_next, padx=18, pady=8).pack(side="left", padx=(12, 0))
+            RoundButton(row, text=_ui("dialog.print_leave", "Salir"), command=self._print_leave, padx=18, pady=8).pack(side="right")
             self._print_win = win
             self.root.deiconify()
             win.update_idletasks()

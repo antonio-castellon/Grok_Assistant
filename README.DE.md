@@ -24,7 +24,7 @@ Die folgende Grafik zeigt, was mit einem gesprochenen Satz passiert.
 
 ## Aussehen
 
-Einstellungen → Aussehen listet Noche, dann Aurora, Cobre, Día, Lino, Mar und Oliva. Noche ist das der Bilder. Aurora ist Indigo, Cobre ist Holz und Kupfer, Lino ist helles Leinen, und Oliva ist ein tiefes Grün.
+Einstellungen → Aussehen listet Noche, dann Aurora, Cobre, Día, Lino, Mar und Oliva. Noche ist das der Bilder. Aurora ist Indigo, Cobre ist Holz und Kupfer, Lino ist helles Leinen, und Oliva ist ein tiefes Grün. Schaltflächen und Reiter sind abgerundet.
 
 Zum Wechseln eine Datei `themes/<id>.json` in denselben Ordner legen wie `GrokAssistant.exe`. Das Menü zeigt das Feld `name`. Eine Datei mit derselben id ersetzt das mitgelieferte Thema. Eine fehlende Farbe bleibt bei Noche. Ein Start aus dem Quellbaum liest `dist/themes/`.
 

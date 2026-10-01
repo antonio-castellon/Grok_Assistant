@@ -50,6 +50,20 @@ def test_the_extra_themes_keep_their_own_colors(tmp_path, monkeypatch):
         assert theme_id in ids
 
 
+def _rgb(photo, x, y) -> tuple[int, int, int]:
+    pixel = photo.getpixel((x, y))
+    return tuple(pixel[:3])
+
+
+def _hex(value: str) -> tuple[int, int, int]:
+    value = value.lstrip("#")
+    return tuple(int(value[index:index + 2], 16) for index in (0, 2, 4))
+
+
+def _near(left, right, tol: int = 12) -> bool:
+    return all(abs(a - b) <= tol for a, b in zip(left, right))
+
+
 def test_changing_theme_repaints_the_window(tmp_path):
     import tkinter as tk
 
@@ -61,16 +75,37 @@ def test_changing_theme_repaints_the_window(tmp_path):
     try:
         app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
         root.update_idletasks()
+        app.pages.select(app.page_flow)
+        root.update()
+        assert str(app.pages.select()) == str(app.page_flow)
+        assert app.page_flow.winfo_manager() == "pack"
+        assert app.page_simple.winfo_manager() == ""
+        app.pages.tab(0, text="Simple")
+        app.pages.select(app.page_simple)
+        root.update()
+
+        def _plate_is_round(button, fill: str) -> None:
+            plate = button.plate
+            width, height = plate.size
+            assert _near(_rgb(plate, 0, 0), _hex(theme.look.bg))
+            assert _near(_rgb(plate, height // 4, 0), _hex(theme.look.bg))
+            assert _near(_rgb(plate, width // 2, height // 2), _hex(fill), tol=6)
+            assert not _near(_rgb(plate, 0, 0), _hex(fill), tol=6)
+
+        _plate_is_round(app.simple_pause, theme.look.pause)
+        _plate_is_round(app.pages._tabs[0][1], theme.look.button_active)
         app._apply_theme("dia")
         root.update()
         assert theme.look.id == "dia"
         assert root.cget("bg") == "#f4f1ea"
         assert app.talk_hint.cget("bg") == "#f4f1ea"
         assert len(root.winfo_children()) > 0
+        _plate_is_round(app.simple_pause, "#d5ebe4")
         app._apply_theme("noche")
         root.update()
         assert root.cget("bg") == "#14181e"
         assert app.talk_hint.cget("bg") == "#14181e"
+        _plate_is_round(app.simple_pause, "#1c3a36")
     finally:
         root.destroy()
 

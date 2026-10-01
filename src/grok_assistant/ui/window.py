@@ -192,7 +192,7 @@ class WindowMixin:
         )
         self.version_label.pack(fill="both", padx=18)
 
-        self.pages = ttk.Notebook(self.root, style="Market.TNotebook")
+        self.pages = RoundNotebook(self.root)
         self.pages.pack(fill="both", expand=True, padx=18, pady=(10, 12))
         self.page_simple = ttk.Frame(self.pages)
         self.page_debug = ttk.Frame(self.pages)
@@ -217,20 +217,13 @@ class WindowMixin:
         self.talk_mode_box.bind("<<ComboboxSelected>>", self._pick_talk_mode)
         row = tk.Frame(simple, bg=look.bg)
         row.pack()
-        big = {
-            "font": ("Segoe UI", 28, "bold"),
-            "relief": "flat",
-            "padx": 48,
-            "pady": 28,
-            "cursor": "hand2",
-            "borderwidth": 0,
-        }
-        self.simple_pause = tk.Button(
+        big = {"font": ("Segoe UI", 28, "bold"), "padx": 48, "pady": 28}
+        self.simple_pause = RoundButton(
             row, text=_ui("window.big_pause", "Pausar"), command=self._toggle_from_ui,
             bg=look.pause, fg=look.teal, activebackground=look.pause_active, activeforeground=look.teal, **big,
         )
         self.simple_pause.pack(side="left", padx=14)
-        self.simple_quit = tk.Button(
+        self.simple_quit = RoundButton(
             row, text=_ui("window.big_quit", "Salir"), command=lambda: self._quit(None, None),
             bg=look.quit, fg=look.amber, activebackground=look.quit_active, activeforeground=look.amber, **big,
         )
@@ -285,16 +278,16 @@ class WindowMixin:
         self.entry = ttk.Entry(bar)
         self.entry.pack(side="left", fill="x", expand=True, ipady=4)
         self.entry.bind("<Return>", self._send)
-        self.send_button = ttk.Button(bar, text=_ui("window.send", "Enviar"), command=self._send)
+        self.send_button = RoundButton(bar, text=_ui("window.send", "Enviar"), command=self._send, padx=18, pady=8)
         self.send_button.pack(side="left", padx=(8, 0))
 
         actions = ttk.Frame(self.page_debug)
         actions.pack(fill="x", padx=12, pady=(0, 12))
-        self.pause_button = ttk.Button(actions, text=_ui("menu.pause", "Pausar escucha"), command=self._toggle_from_ui)
+        self.pause_button = RoundButton(actions, text=_ui("menu.pause", "Pausar escucha"), command=self._toggle_from_ui, padx=18, pady=8)
         self.pause_button.pack(side="left")
-        self.clear_button = ttk.Button(actions, text=_ui("window.clear", "Limpiar registro"), command=self._clear_view)
+        self.clear_button = RoundButton(actions, text=_ui("window.clear", "Limpiar registro"), command=self._clear_view, padx=18, pady=8)
         self.clear_button.pack(side="left", padx=8)
-        self.quit_button = ttk.Button(actions, text=_ui("menu.quit", "Salir"), command=lambda: self._quit(None, None))
+        self.quit_button = RoundButton(actions, text=_ui("menu.quit", "Salir"), command=lambda: self._quit(None, None), padx=18, pady=8)
         self.quit_button.pack(side="right")
 
         self.flow = tk.Canvas(self.page_flow, bg=look.bg, highlightthickness=0)

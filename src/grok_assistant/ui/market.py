@@ -50,7 +50,7 @@ class MarketMixin:
             except tk.TclError:
                 return
 
-    def _show_market_action(self, offer: Offer, button: ttk.Button, chip: tk.Label) -> None:
+    def _show_market_action(self, offer: Offer, button: RoundButton, chip: RoundButton) -> None:
         """The active row keeps a green mark where Usar would be."""
         if offer.ready() and self._offer_used(offer):
             if button.winfo_manager():
@@ -128,7 +128,7 @@ class MarketMixin:
         status = tk.StringVar(value="")
         self._market_status = status
         ttk.Label(window, textvariable=status, style="Muted.TLabel").pack(side="bottom", anchor="w", padx=16, pady=(0, 10))
-        book = ttk.Notebook(window, style="Market.TNotebook")
+        book = RoundNotebook(window)
         book.pack(fill="both", expand=True, padx=12, pady=(0, 8))
         groups = (
             ("stt", _ui("market.stt", "Reconocimiento")),
@@ -207,13 +207,12 @@ class MarketMixin:
         side = tk.Frame(row, bg=look.bg)
         side.pack(side="right", padx=(6, 8))
         tk.Label(side, text=offer.size, bg=look.bg, fg=look.muted, font=("Segoe UI", 9), width=16, anchor="e").pack(side="left", padx=(0, 6))
-        chip = tk.Label(
-            side,
-            text=_ui("market.used", "EN USO"),
-            bg=look.green, fg=look.chip_ink, font=("Segoe UI", 10, "bold"),
-            width=12, padx=8, pady=2,
+        chip = RoundButton(
+            side, text=_ui("market.used", "EN USO"),
+            bg=look.green, fg=look.chip_ink, activebackground=look.green, activeforeground=look.chip_ink,
+            font=("Segoe UI", 10, "bold"), width=12, padx=8, pady=4, hover=False,
         )
-        button = ttk.Button(side, style="Compact.TButton", width=12)
+        button = RoundButton(side, width=12, padx=12, pady=5, font=("Segoe UI", 10))
         self._market_marks.append((offer, button, chip))
         if ready and self._offer_used(offer):
             chip.pack(side="left")
@@ -280,7 +279,7 @@ class MarketMixin:
         except tk.TclError:
             return
 
-    def _download_offer(self, offer: Offer, status: tk.StringVar, percent: tk.IntVar, label: tk.StringVar, button: ttk.Button, bar: ttk.Progressbar, state: tk.Label | None = None) -> None:
+    def _download_offer(self, offer: Offer, status: tk.StringVar, percent: tk.IntVar, label: tk.StringVar, button: RoundButton, bar: ttk.Progressbar, state: tk.Label | None = None) -> None:
         current = self._downloads.get(offer.id)
         if current and current.get("running"):
             self._paint_download(offer.id)
