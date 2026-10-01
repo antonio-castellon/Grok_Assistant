@@ -53,13 +53,13 @@ def test_lists_are_long_and_distinct():
     assert all(line.startswith("Hola,") for line in hellos)
 
 
-def test_startup_uses_the_hello_list_not_the_wait_list(world):
+def test_startup_uses_the_saved_lines(world):
+    from grok_assistant.banter import pool
+
     hub, _cli, _clock = world
-    hellos = load_lines("hellos-es.txt")
-    waits = load_lines("waits-es.txt")
+    spoken = pool("es", hub.brain.settings.line_kinds, hub.brain.settings.line_themes)
     line = hub.startup()
-    assert line == hellos[0]
-    assert line not in waits
+    assert line == spoken[0]
     assert hub.brain.settings.hello_index == 1
 
 
@@ -126,9 +126,11 @@ def test_question_sends_text_and_a_filler_not_the_room(world):
     hub, cli, _clock = world
     hub.run("hablan de fútbol en la cocina")
     hub.run("hola grok")
-    waits = load_lines("waits-es.txt")
+    from grok_assistant.banter import pool
+
+    spoken = pool("es", hub.brain.settings.line_kinds, hub.brain.settings.line_themes)
     result = hub.run("qué hora es")
-    assert result.spoken[0] == waits[0]
+    assert result.spoken[0] == spoken[0]
     assert result.spoken[1] == "Son las tres."
     assert cli.calls[0][0] == "converse"
     assert cli.calls[0][1] == "qué hora es"

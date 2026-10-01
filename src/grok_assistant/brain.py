@@ -47,18 +47,6 @@ def _blank_enroll() -> dict:
     }
 
 
-EXTRAS = (
-    "Cuánto tiempo.",
-    "Ya era hora.",
-    "El micrófono preguntaba por ti.",
-    "Se me había enfriado el silencio.",
-    "Pensé que te había perdido por el pasillo.",
-    "Menos mal.",
-    "Llegas con la casa en calma.",
-    "Ya estaba hablando solo, y se me da regular.",
-)
-
-
 @dataclass
 class Job:
     kind: str
@@ -176,12 +164,26 @@ class Brain:
             self.settings.voice_index = chosen
             self.persist()
 
-    def startup_line(self) -> str:
-        line = self.hellos[self.settings.hello_index % len(self.hellos)]
-        self.settings.hello_index += 1
+    def _banter_lines(self) -> list[str]:
+        from grok_assistant.banter import pool
+
+        found = pool(self.settings.language, self.settings.line_kinds, self.settings.line_themes)
+        return found or self.hellos or ["Hola."]
+
+    def _take_banter(self, index_name: str) -> str:
+        lines = self._banter_lines()
+        index = getattr(self.settings, index_name) % len(lines)
+        line = lines[index]
+        if line == self.last_spoken and len(lines) > 1:
+            index = (index + 1) % len(lines)
+            line = lines[index]
+        setattr(self.settings, index_name, index + 1)
         self.last_spoken = line
         self.persist()
         return line
+
+    def startup_line(self) -> str:
+        return self._take_banter("hello_index")
 
     def set_paused(self, paused: bool) -> None:
         self.paused = paused
@@ -652,10 +654,9 @@ class Brain:
             return "Dime."
         if gap is not None and gap < 5 * 3600:
             return f"Hola de nuevo, {name}."
-        extra = EXTRAS[self.settings.extra_index % len(EXTRAS)]
-        self.settings.extra_index += 1
-        self.persist()
-        return f"Hola, {name}. {extra}"
+        extra = self._take_banter("extra_index")
+        hello = say("hello", "Hola.").rstrip(".")
+        return f"{hello}, {name}. {extra}"
 
     def _goodbye(self, kind: str) -> Turn:
         self.in_conversation = False
@@ -997,10 +998,7 @@ class Brain:
         )
 
     def _next_wait(self) -> str:
-        line = self.waits[self.settings.wait_index % len(self.waits)]
-        self.settings.wait_index += 1
-        self.persist()
-        return line
+        return self._take_banter("wait_index")
 
     def _said(self, lines: list[str], effects: list[tuple] | None = None, status: str | None = None) -> Turn:
         if lines:

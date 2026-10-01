@@ -317,6 +317,7 @@ class TrayApp:
             "activebackground": "#3a4656",
             "activeforeground": INK,
             "font": ("Segoe UI", 11),
+            "selectcolor": "#d7e2ea",
         }
 
     def _build_menus(self) -> None:
@@ -331,6 +332,9 @@ class TrayApp:
         self.menu_sesion = tk.Menu(bar, postcommand=self._fill_sesion, **kw)
         self.menu_agente = tk.Menu(bar, postcommand=self._fill_agente, **kw)
         self.menu_persona = tk.Menu(bar, postcommand=self._fill_persona, **kw)
+        self.menu_banter = tk.Menu(bar, **kw)
+        self.menu_banter_kinds = tk.Menu(self.menu_banter, postcommand=self._fill_banter_kinds, **kw)
+        self.menu_banter_themes = tk.Menu(self.menu_banter, postcommand=self._fill_banter_themes, **kw)
         self.menu_musica = tk.Menu(bar, **kw)
         self.menu_admin = tk.Menu(bar, postcommand=self._fill_admin, **kw)
         self.menu_prints = tk.Menu(self.menu_admin, postcommand=self._fill_prints, **kw)
@@ -343,6 +347,9 @@ class TrayApp:
         bar.add_cascade(label=text("menu.session", "Sesión"), menu=self.menu_sesion)
         bar.add_cascade(label=text("menu.agent", "Agente"), menu=self.menu_agente)
         bar.add_cascade(label=text("menu.personality", "Personalidad"), menu=self.menu_persona)
+        bar.add_cascade(label=text("menu.banter", "Saludos"), menu=self.menu_banter)
+        self.menu_banter.add_cascade(label=text("menu.banter_kinds", "Tipo"), menu=self.menu_banter_kinds)
+        self.menu_banter.add_cascade(label=text("menu.banter_themes", "Tema"), menu=self.menu_banter_themes)
         bar.add_cascade(label=text("menu.music", "Música"), menu=self.menu_musica)
         bar.add_cascade(label=text("menu.admin", "Administrador"), menu=self.menu_admin)
         bar.add_cascade(label=text("menu.language", "Idioma"), menu=self.menu_language)
@@ -738,6 +745,10 @@ class TrayApp:
             ("sub", text("menu.session", "Sesión"), sessions),
             ("sub", text("menu.agent", "Agente"), agents),
             ("sub", text("menu.personality", "Personalidad"), self._persona_items()),
+            ("sub", text("menu.banter", "Saludos"), [
+                ("sub", text("menu.banter_kinds", "Tipo"), self._banter_kind_rows()),
+                ("sub", text("menu.banter_themes", "Tema"), self._banter_theme_rows()),
+            ]),
             ("sub", text("menu.language", "Idioma"), self._language_items()),
             ("sub", text("menu.music", "Música"), [
                 ("cmd", _ui("menu.music_pause", "Pausar"), "music-pause", False),
@@ -828,6 +839,8 @@ class TrayApp:
             self._choose_person(key.split(":", 1)[1])
         elif key == "persona-edit":
             self._open_personality()
+        elif key.startswith("banter-"):
+            self._banter_set(key)
         elif key == "market":
             self._open_market()
         elif key == "help":
@@ -1033,6 +1046,73 @@ class TrayApp:
             window.destroy()
 
         ttk.Button(window, text=_ui("menu.apply", "Aplicar"), command=save).pack(anchor="e", padx=12, pady=(0, 12))
+
+    def _banter_kind_rows(self) -> list:
+        from grok_assistant.banter import KINDS
+
+        selected = set(self.hub.brain.settings.line_kinds)
+        rows = [
+            ("cmd", _ui(f"banter.kind.{kind}", kind), f"banter-kind:{kind}", kind in selected)
+            for kind in KINDS
+        ]
+        rows.append(("sep",))
+        rows.append(("cmd", _ui("banter.kind.mix", "Mezcla de todo"), "banter-kind:mix", set(KINDS) <= selected))
+        return rows
+
+    def _banter_theme_rows(self) -> list:
+        from grok_assistant.banter import THEMES
+
+        selected = set(self.hub.brain.settings.line_themes)
+        return [
+            ("cmd", _ui(f"banter.theme.{theme}", theme), f"banter-theme:{theme}", theme in selected)
+            for theme in THEMES
+        ]
+
+    def _fill_banter_kinds(self) -> None:
+        self._fill_checks(self.menu_banter_kinds, self._banter_kind_rows())
+
+    def _fill_banter_themes(self) -> None:
+        self._fill_checks(self.menu_banter_themes, self._banter_theme_rows())
+
+    def _fill_checks(self, menu, rows: list) -> None:
+        menu.delete(0, "end")
+        held = []
+        for row in rows:
+            if row[0] == "sep":
+                menu.add_separator()
+                continue
+            _kind, label, key, on = row
+            var = tk.BooleanVar(value=on)
+            menu.add_checkbutton(
+                label=label,
+                variable=var,
+                command=lambda key=key, var=var: self._banter_set(key, bool(var.get()), var),
+            )
+            held.append(var)
+        menu._held_vars = held
+
+    def _banter_set(self, key: str, enabled: bool | None = None, var=None) -> None:
+        from grok_assistant.banter import KINDS, THEMES, apply_choice
+
+        head, item = key.split(":", 1)
+        kinds = head == "banter-kind"
+        allowed = KINDS if kinds else THEMES
+        settings = self.hub.brain.settings
+        current = list(settings.line_kinds if kinds else settings.line_themes)
+        mix = kinds and item == "mix"
+        if enabled is None:
+            enabled = (set(allowed) != set(current)) if mix else item not in current
+        chosen = apply_choice(current, allowed, item, bool(enabled), mix=mix)
+        if kinds:
+            settings.line_kinds = chosen
+        else:
+            settings.line_themes = chosen
+        if var is not None:
+            var.set(set(KINDS) <= set(chosen) if mix else item in chosen)
+        self.hub.brain.persist()
+        picked_kinds = ", ".join(_ui(f"banter.kind.{name}", name) for name in KINDS if name in settings.line_kinds)
+        picked_themes = ", ".join(_ui(f"banter.theme.{name}", name) for name in THEMES if name in settings.line_themes)
+        self._note(f"{_ui('menu.banter', 'Saludos')}: {picked_kinds}. {picked_themes}.")
 
     def _persona_items(self) -> list:
         from grok_assistant.personality import persons

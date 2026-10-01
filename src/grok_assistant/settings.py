@@ -6,6 +6,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from grok_assistant.banter import KINDS, THEMES, normalize_choice
 from grok_assistant.personality import blank_personality, normalize_personality
 
 
@@ -24,6 +25,8 @@ class Settings:
     wake_heard: list = field(default_factory=list)
     language: str = "es"
     personality: dict = field(default_factory=blank_personality)
+    line_kinds: list = field(default_factory=lambda: list(KINDS))
+    line_themes: list = field(default_factory=lambda: list(THEMES))
 
     @classmethod
     def load(cls, path: Path) -> "Settings":
@@ -45,6 +48,8 @@ class Settings:
             item.wake_heard = []
         item.personality = normalize_personality(item.personality)
         item.language = str(item.language or "es").strip().lower() or "es"
+        item.line_kinds = normalize_choice(item.line_kinds, KINDS)
+        item.line_themes = normalize_choice(item.line_themes, THEMES)
         return item
 
     def save(self, path: Path) -> None:

@@ -1,0 +1,638 @@
+{
+  "science": {
+    "joke": {
+      "es": [
+        "La gravedad no se negocia: o caes, o caes con estilo.",
+        "Si el termómetro discute, déjalo. Siempre tiene grados.",
+        "El laboratorio huele a duda. Es buena señal.",
+        "Pregunté a la luz por qué corre tanto. Me dijo que el vacío la anima."
+      ],
+      "en": [
+        "Gravity does not negotiate. You fall, or you fall with style.",
+        "If the thermometer argues, leave it. It always has degrees.",
+        "The lab smells like doubt. That is a good sign.",
+        "I asked light why it rushes. It said the vacuum encourages it."
+      ],
+      "fr": [
+        "La gravité ne négocie pas: tu tombes, ou tu tombes avec style.",
+        "Si le thermomètre discute, laisse-le. Il a toujours des degrés.",
+        "Le labo sent le doute. C'est bon signe.",
+        "J'ai demandé à la lumière pourquoi elle court. Le vide l'encourage."
+      ],
+      "de": [
+        "Die Schwerkraft verhandelt nicht. Du fällst, oder du fällst mit Stil.",
+        "Wenn das Thermometer streitet, lass es. Es hat immer Grade.",
+        "Das Labor riecht nach Zweifel. Das ist ein gutes Zeichen.",
+        "Ich fragte das Licht, warum es rennt. Die Leere mache ihm Mut."
+      ]
+    },
+    "saying": {
+      "es": [
+        "El saber no ocupa lugar.",
+        "La experiencia es la madre de la ciencia.",
+        "Más vale medir dos veces.",
+        "Quien no duda, no aprende."
+      ],
+      "en": [
+        "Knowledge is no burden.",
+        "Experience is the mother of science.",
+        "Measure twice.",
+        "Who never doubts never learns."
+      ],
+      "fr": [
+        "Savoir ne pèse rien.",
+        "L'expérience est la mère de la science.",
+        "Mieux vaut mesurer deux fois.",
+        "Qui ne doute pas n'apprend pas."
+      ],
+      "de": [
+        "Wissen nimmt keinen Platz weg.",
+        "Erfahrung ist die Mutter der Wissenschaft.",
+        "Lieber zweimal messen.",
+        "Wer nie zweifelt, lernt nicht."
+      ]
+    },
+    "anecdote": {
+      "es": [
+        "Se cuenta que una manzana hizo pensar a Newton en la gravedad. En la cabeza no le cayó: eso se añadió después.",
+        "Fleming vio moho en una placa olvidada, y de ahí salió la penicilina.",
+        "Marie Curie guardaba radio en un cajón. De noche, el cajón brillaba.",
+        "Según cuentan, Galileo soltó dos pesos para verlos caer juntos. Le importaba la ley, no el teatro."
+      ],
+      "en": [
+        "A falling apple set Newton thinking about gravity. It did not hit his head. That part was added later.",
+        "Fleming noticed mold on a forgotten dish, and penicillin came from that.",
+        "Marie Curie kept radium in a drawer. At night the drawer glowed.",
+        "Galileo, the story says, dropped two weights to see them fall together. He wanted the law, not the show."
+      ],
+      "fr": [
+        "Une pomme aurait fait penser Newton à la gravité. Elle ne lui est pas tombée sur la tête: ça, on l'a ajouté après.",
+        "Fleming a vu une moisissure sur une boîte oubliée, et la pénicilline est venue de là.",
+        "Marie Curie gardait du radium dans un tiroir. La nuit, le tiroir brillait.",
+        "On raconte que Galilée a lâché deux poids pour les voir tomber ensemble. Il voulait la loi, pas le spectacle."
+      ],
+      "de": [
+        "Ein Apfel soll Newton auf die Schwerkraft gebracht haben. Auf den Kopf fiel er nicht. Das kam später dazu.",
+        "Fleming sah Schimmel auf einer vergessenen Schale, und daraus wurde Penicillin.",
+        "Marie Curie bewahrte Radium in einer Schublade auf. Nachts leuchtete die Schublade.",
+        "Galilei soll zwei Gewichte fallen gelassen haben. Ihm ging es um das Gesetz, nicht um die Show."
+      ]
+    },
+    "fact": {
+      "es": [
+        "Infinito no es un número, así que no se divide entre él. Un número partido por cantidades cada vez mayores se acerca a cero.",
+        "Cero entre cero no da cero: esa división no tiene resultado.",
+        "La luz del Sol tarda unos ocho minutos en llegar a la Tierra.",
+        "Un día en Venus dura más que su año, y el sonido no viaja donde no hay aire."
+      ],
+      "en": [
+        "Infinity is not a number, so you do not divide by it. A number split by ever larger amounts gets closer to zero.",
+        "Zero divided by zero is not zero. That division has no result.",
+        "Sunlight takes about eight minutes to reach the Earth.",
+        "A day on Venus lasts longer than its year, and sound does not travel where there is no air."
+      ],
+      "fr": [
+        "L'infini n'est pas un nombre, donc on ne divise pas par lui. Un nombre partagé en parts toujours plus grandes se rapproche de zéro.",
+        "Zéro divisé par zéro ne fait pas zéro. Cette division n'a pas de résultat.",
+        "La lumière du Soleil met environ huit minutes pour arriver sur la Terre.",
+        "Un jour sur Vénus dure plus que son année, et le son ne voyage pas là où il n'y a pas d'air."
+      ],
+      "de": [
+        "Unendlich ist keine Zahl, also teilt man nicht durch sie. Eine Zahl, geteilt durch immer größere Mengen, nähert sich null.",
+        "Null geteilt durch null ist nicht null. Diese Rechnung hat kein Ergebnis.",
+        "Das Sonnenlicht braucht etwa acht Minuten bis zur Erde.",
+        "Ein Tag auf der Venus dauert länger als ihr Jahr, und Schall kommt ohne Luft nicht voran."
+      ]
+    }
+  },
+  "history": {
+    "joke": {
+      "es": [
+        "La historia se repite. La segunda vez pide menos páginas.",
+        "Si el pasado llama, que deje recado: estamos en el presente.",
+        "Los reyes también perdían las llaves. El castillo era grande.",
+        "Un siglo cabe en una frase, y aun así se queja."
+      ],
+      "en": [
+        "History repeats. The second time it asks for fewer pages.",
+        "If the past calls, tell it to leave a message. We are in the present.",
+        "Kings lost their keys too. The castle was large.",
+        "A century fits in one sentence, and it still complains."
+      ],
+      "fr": [
+        "L'histoire se répète. La deuxième fois, elle demande moins de pages.",
+        "Si le passé appelle, qu'il laisse un message: nous sommes au présent.",
+        "Les rois perdaient aussi leurs clés. Le château était grand.",
+        "Un siècle tient dans une phrase, et il râle quand même."
+      ],
+      "de": [
+        "Geschichte wiederholt sich. Beim zweiten Mal will sie weniger Seiten.",
+        "Wenn die Vergangenheit anruft, soll sie eine Nachricht hinterlassen. Wir sind in der Gegenwart.",
+        "Auch Könige verloren Schlüssel. Die Burg war groß.",
+        "Ein Jahrhundert passt in einen Satz und beschwert sich trotzdem."
+      ]
+    },
+    "saying": {
+      "es": [
+        "Agua pasada no mueve molino.",
+        "No hay mal que cien años dure.",
+        "A lo hecho, pecho.",
+        "Del dicho al hecho hay mucho trecho."
+      ],
+      "en": [
+        "What is past does not turn the mill.",
+        "No trouble lasts a hundred years.",
+        "What is done is done.",
+        "There is a long gap between saying and doing."
+      ],
+      "fr": [
+        "L'eau passée ne fait plus tourner le moulin.",
+        "Il n'est si grand mal qui n'ait sa fin.",
+        "Ce qui est fait est fait.",
+        "De la parole au geste, il y a du chemin."
+      ],
+      "de": [
+        "Vergangenes Wasser treibt keine Mühle.",
+        "Kein Leid dauert hundert Jahre.",
+        "Geschehen ist geschehen.",
+        "Vom Reden zum Tun ist ein weiter Weg."
+      ]
+    },
+    "anecdote": {
+      "es": [
+        "En 1969 Armstrong pisó la Luna y dejó una frase corta y una huella larga.",
+        "Cleopatra vivió más cerca del alunizaje que de la construcción de las pirámides.",
+        "En Oxford ya se enseñaba cuando el imperio azteca todavía no existía.",
+        "La biblioteca de Alejandría no ardió una sola vez. Se fue apagando en varios golpes."
+      ],
+      "en": [
+        "In 1969 Armstrong stepped onto the Moon and left a short sentence and a long footprint.",
+        "Cleopatra lived closer to the Moon landing than to the building of the pyramids.",
+        "Oxford was already teaching when the Aztec empire did not yet exist.",
+        "The library of Alexandria did not burn just once. It faded over several blows."
+      ],
+      "fr": [
+        "En 1969 Armstrong a posé le pied sur la Lune: une phrase courte, une empreinte longue.",
+        "Cléopâtre a vécu plus près de l'alunissage que de la construction des pyramides.",
+        "Oxford enseignait déjà quand l'empire aztèque n'existait pas encore.",
+        "La bibliothèque d'Alexandrie n'a pas brûlé une seule fois. Elle s'est éteinte en plusieurs coups."
+      ],
+      "de": [
+        "1969 betrat Armstrong den Mond und ließ einen kurzen Satz und einen langen Abdruck.",
+        "Kleopatra lebte näher an der Mondlandung als am Bau der Pyramiden.",
+        "In Oxford wurde schon gelehrt, als es das Aztekenreich noch nicht gab.",
+        "Die Bibliothek von Alexandria brannte nicht nur einmal. Sie erlosch in mehreren Schlägen."
+      ]
+    },
+    "fact": {
+      "es": [
+        "Las grandes pirámides de Giza se levantaron hacia el año 2560 antes de nuestra era.",
+        "El Imperio romano de Oriente cayó en 1453.",
+        "La escritura cuneiforme tiene más de cinco mil años.",
+        "Machu Picchu se construyó en el siglo quince."
+      ],
+      "en": [
+        "The great pyramids at Giza were raised around 2560 before our era.",
+        "The Eastern Roman Empire fell in 1453.",
+        "Cuneiform writing is more than five thousand years old.",
+        "Machu Picchu was built in the fifteenth century."
+      ],
+      "fr": [
+        "Les grandes pyramides de Gizeh ont été levées vers 2560 avant notre ère.",
+        "L'Empire romain d'Orient est tombé en 1453.",
+        "L'écriture cunéiforme a plus de cinq mille ans.",
+        "Le Machu Picchu a été construit au quinzième siècle."
+      ],
+      "de": [
+        "Die großen Pyramiden von Gizeh entstanden um 2560 vor unserer Zeit.",
+        "Das Oströmische Reich fiel 1453.",
+        "Die Keilschrift ist mehr als fünftausend Jahre alt.",
+        "Machu Picchu wurde im fünfzehnten Jahrhundert gebaut."
+      ]
+    }
+  },
+  "politics": {
+    "joke": {
+      "es": [
+        "Una ley corta cabe en una frase. Explicarla ya es otro pleno.",
+        "El voto es pequeño y pesa lo suyo.",
+        "En una mesa redonda todos ven la misma pizza y discuten el borde.",
+        "El acta es el único sitio donde la reunión acaba de verdad."
+      ],
+      "en": [
+        "A short law fits in one sentence. Explaining it takes another meeting.",
+        "A vote is small, and it has weight.",
+        "At a round table everyone sees the same pizza and argues about the crust.",
+        "The minutes are the only place where the meeting really ends."
+      ],
+      "fr": [
+        "Une loi courte tient dans une phrase. L'expliquer, c'est déjà une autre séance.",
+        "Le vote est petit, et il pèse.",
+        "Autour d'une table ronde, tout le monde voit la même pizza et discute du bord.",
+        "Le compte rendu est le seul endroit où la réunion finit vraiment."
+      ],
+      "de": [
+        "Ein kurzes Gesetz passt in einen Satz. Es zu erklären braucht schon die nächste Sitzung.",
+        "Eine Stimme ist klein und hat Gewicht.",
+        "Am runden Tisch sehen alle dieselbe Pizza und streiten über den Rand.",
+        "Das Protokoll ist der einzige Ort, an dem die Sitzung wirklich endet."
+      ]
+    },
+    "saying": {
+      "es": [
+        "Obras son amores, y no buenas razones.",
+        "Cosa prometida, cosa debida.",
+        "Quien manda, responde.",
+        "Más vale un acuerdo claro que una promesa larga."
+      ],
+      "en": [
+        "Deeds are love, not fine reasons.",
+        "A promise made is a debt.",
+        "Who commands must answer.",
+        "A clear agreement beats a long promise."
+      ],
+      "fr": [
+        "Les actes valent mieux que les belles raisons.",
+        "Chose promise, chose due.",
+        "Qui commande répond.",
+        "Un accord clair vaut mieux qu'une longue promesse."
+      ],
+      "de": [
+        "Taten gelten mehr als schöne Gründe.",
+        "Versprochen ist versprochen.",
+        "Wer befiehlt, muss antworten.",
+        "Eine klare Abmachung schlägt ein langes Versprechen."
+      ]
+    },
+    "anecdote": {
+      "es": [
+        "El Althing de Islandia se reunió por primera vez hacia el año 930.",
+        "La ONU nació en 1945, al terminar la guerra mundial.",
+        "Suiza no tiene un presidente fijo: siete consejeros se turnan el cargo cada año.",
+        "En 1812 las Cortes de Cádiz dejaron una constitución a la que llamaron la Pepa."
+      ],
+      "en": [
+        "Iceland's Althing first met around the year 930.",
+        "The United Nations was born in 1945, at the end of the world war.",
+        "Switzerland has no fixed president. Seven councillors take the chair, one year each.",
+        "In 1812 the Cortes of Cádiz left a constitution that people called La Pepa."
+      ],
+      "fr": [
+        "L'Althing d'Islande s'est réuni pour la première fois vers l'an 930.",
+        "L'ONU est née en 1945, à la fin de la guerre mondiale.",
+        "La Suisse n'a pas un président fixe: sept conseillers se passent le poste, un an chacun.",
+        "En 1812 les Cortes de Cadix ont laissé une constitution qu'on a appelée la Pepa."
+      ],
+      "de": [
+        "Das isländische Althing tagte zum ersten Mal um das Jahr 930.",
+        "Die UNO entstand 1945, am Ende des Weltkriegs.",
+        "Die Schweiz hat keinen festen Präsidenten. Sieben Räte wechseln sich ab, jedes Jahr einer.",
+        "1812 hinterließen die Cortes von Cádiz eine Verfassung, die man La Pepa nannte."
+      ]
+    },
+    "fact": {
+      "es": [
+        "China tiene frontera terrestre con catorce países.",
+        "La Unión Europea empezó como un acuerdo del carbón y del acero, en 1951.",
+        "Una constitución es la ley que está por encima de las demás leyes.",
+        "Votar es elegir, no el discurso que viene después."
+      ],
+      "en": [
+        "China shares a land border with fourteen countries.",
+        "The European Union began as a coal and steel agreement in 1951.",
+        "A constitution is the law that sits above the other laws.",
+        "A vote is a choice, not the speech that comes after it."
+      ],
+      "fr": [
+        "La Chine a une frontière terrestre avec quatorze pays.",
+        "L'Union européenne a commencé comme un accord sur le charbon et l'acier, en 1951.",
+        "Une constitution est la loi qui est au-dessus des autres lois.",
+        "Voter, c'est choisir, pas le discours d'après."
+      ],
+      "de": [
+        "China hat eine Landgrenze mit vierzehn Ländern.",
+        "Die Europäische Union begann 1951 als Vertrag über Kohle und Stahl.",
+        "Eine Verfassung ist das Gesetz über den anderen Gesetzen.",
+        "Wählen heißt wählen, nicht die Rede danach."
+      ]
+    }
+  },
+  "sports": {
+    "joke": {
+      "es": [
+        "El árbitro siempre corre y nunca marca. Oficio ingrato.",
+        "Noventa minutos son muchos si el balón no te quiere.",
+        "Entrené la puntería. La portería se movió, lo juro.",
+        "Quien llega el último también termina la carrera."
+      ],
+      "en": [
+        "The referee always runs and never scores. A thankless trade.",
+        "Ninety minutes is a long time if the ball does not like you.",
+        "I trained my aim. The goal moved, I swear.",
+        "Whoever finishes last still finishes the race."
+      ],
+      "fr": [
+        "L'arbitre court toujours et ne marque jamais. Métier ingrat.",
+        "Quatre-vingt-dix minutes, c'est long si le ballon ne t'aime pas.",
+        "J'ai travaillé ma visée. Le but a bougé, je le jure.",
+        "Celui qui arrive dernier finit quand même la course."
+      ],
+      "de": [
+        "Der Schiedsrichter rennt immer und trifft nie. Ein undankbarer Beruf.",
+        "Neunzig Minuten sind lang, wenn der Ball dich nicht mag.",
+        "Ich habe aufs Ziel geübt. Das Tor hat sich bewegt, ehrlich.",
+        "Wer als Letzter ankommt, beendet das Rennen trotzdem."
+      ]
+    },
+    "saying": {
+      "es": [
+        "Lo que no se entrena no aparece el domingo.",
+        "Juego limpio, o no es juego.",
+        "No se gana solo en el vestuario.",
+        "Quien no corre, no llega."
+      ],
+      "en": [
+        "What you do not train does not show up on Sunday.",
+        "Fair play, or it is not play.",
+        "You do not win only in the locker room.",
+        "Who does not run does not arrive."
+      ],
+      "fr": [
+        "Ce qui ne s'entraîne pas n'arrive pas le dimanche.",
+        "Jeu propre, ou ce n'est pas un jeu.",
+        "On ne gagne pas seulement au vestiaire.",
+        "Qui ne court pas n'arrive pas."
+      ],
+      "de": [
+        "Was du nicht trainierst, kommt am Sonntag nicht.",
+        "Faires Spiel, oder es ist kein Spiel.",
+        "Gewonnen wird nicht nur in der Kabine.",
+        "Wer nicht läuft, kommt nicht an."
+      ]
+    },
+    "anecdote": {
+      "es": [
+        "En 1896 los Juegos volvieron en Atenas, con pocos deportes y mucho polvo.",
+        "Pelé ganó tres mundiales con Brasil. El de 1970 se recuerda entero.",
+        "Jesse Owens ganó cuatro oros en Berlín, en 1936.",
+        "La maratón moderna mide el rodeo de Londres 1908: cuarenta y dos kilómetros y ciento noventa y cinco metros."
+      ],
+      "en": [
+        "In 1896 the Games returned in Athens, with few sports and a lot of dust.",
+        "Pelé won three World Cups with Brazil. The one in 1970 is remembered whole.",
+        "Jesse Owens won four golds in Berlin in 1936.",
+        "The modern marathon is the 1908 London detour: forty-two kilometers and one hundred ninety-five meters."
+      ],
+      "fr": [
+        "En 1896 les Jeux sont revenus à Athènes, avec peu de sports et beaucoup de poussière.",
+        "Pelé a gagné trois Coupes du monde avec le Brésil. Celle de 1970 se rappelle en entier.",
+        "Jesse Owens a gagné quatre ors à Berlin, en 1936.",
+        "Le marathon moderne mesure le détour de Londres 1908: quarante-deux kilomètres et cent quatre-vingt-quinze mètres."
+      ],
+      "de": [
+        "1896 kehrten die Spiele nach Athen zurück, mit wenigen Sportarten und viel Staub.",
+        "Pelé gewann mit Brasilien drei Weltmeisterschaften. Die von 1970 bleibt ganz in Erinnerung.",
+        "Jesse Owens gewann 1936 in Berlin vier Goldmedaillen.",
+        "Der moderne Marathon ist der Umweg von London 1908: zweiundvierzig Kilometer und hundertfünfundneunzig Meter."
+      ]
+    },
+    "fact": {
+      "es": [
+        "Un partido de fútbol son dos tiempos de cuarenta y cinco minutos.",
+        "Una maratón mide cuarenta y dos kilómetros y ciento noventa y cinco metros.",
+        "Los Juegos Olímpicos modernos empezaron en Atenas en 1896.",
+        "En el tenis, el cero se dice love en inglés. El punto, en cambio, hay que ganarlo."
+      ],
+      "en": [
+        "A football match is two halves of forty-five minutes.",
+        "A marathon is forty-two kilometers and one hundred ninety-five meters.",
+        "The modern Olympic Games began in Athens in 1896.",
+        "In tennis, zero is called love. The point still has to be won."
+      ],
+      "fr": [
+        "Un match de football, ce sont deux mi-temps de quarante-cinq minutes.",
+        "Un marathon mesure quarante-deux kilomètres et cent quatre-vingt-quinze mètres.",
+        "Les Jeux olympiques modernes ont commencé à Athènes en 1896.",
+        "Au tennis, zéro se dit love en anglais. Le point, lui, il faut le gagner."
+      ],
+      "de": [
+        "Ein Fußballspiel hat zwei Halbzeiten von fünfundvierzig Minuten.",
+        "Ein Marathon misst zweiundvierzig Kilometer und hundertfünfundneunzig Meter.",
+        "Die modernen Olympischen Spiele begannen 1896 in Athen.",
+        "Im Tennis heißt null auf Englisch love. Den Punkt muss man trotzdem holen."
+      ]
+    }
+  },
+  "nature": {
+    "joke": {
+      "es": [
+        "La nube no tiene prisa. El paraguas, sí.",
+        "El cactus es un optimista con espinas.",
+        "Pedí silencio al bosque y contestaron los pájaros.",
+        "El río no discute el camino: lo hace."
+      ],
+      "en": [
+        "The cloud is in no hurry. The umbrella is.",
+        "A cactus is an optimist with spines.",
+        "I asked the woods for silence, and the birds answered.",
+        "The river does not argue about the path. It makes it."
+      ],
+      "fr": [
+        "Le nuage n'est pas pressé. Le parapluie, si.",
+        "Le cactus est un optimiste avec des épines.",
+        "J'ai demandé le silence à la forêt, et les oiseaux ont répondu.",
+        "La rivière ne discute pas le chemin: elle le fait."
+      ],
+      "de": [
+        "Die Wolke hat keine Eile. Der Schirm schon.",
+        "Ein Kaktus ist ein Optimist mit Stacheln.",
+        "Ich bat den Wald um Ruhe, und die Vögel antworteten.",
+        "Der Fluss streitet nicht über den Weg. Er macht ihn."
+      ]
+    },
+    "saying": {
+      "es": [
+        "Agua que no has de beber, déjala correr.",
+        "Cuando el río suena, agua lleva.",
+        "No por mucho madrugar amanece más temprano.",
+        "Marzo ventoso y abril lluvioso sacan a mayo florido y hermoso."
+      ],
+      "en": [
+        "Do not muddy water you will not drink.",
+        "Where the river sounds, water is running.",
+        "Waking earlier does not make the sun rise sooner.",
+        "A windy March and a rainy April bring a flowering May."
+      ],
+      "fr": [
+        "L'eau que tu ne bois pas, laisse-la courir.",
+        "Quand la rivière bruit, elle porte de l'eau.",
+        "Ce n'est pas en se levant plus tôt que le soleil se lève.",
+        "Mars venteux et avril pluvieux amènent un mai fleuri."
+      ],
+      "de": [
+        "Wasser, das du nicht trinkst, lass laufen.",
+        "Wo der Fluss rauscht, fließt Wasser.",
+        "Früher aufstehen lässt die Sonne nicht früher aufgehen.",
+        "Ein windiger März und ein nasser April bringen einen blühenden Mai."
+      ]
+    },
+    "anecdote": {
+      "es": [
+        "Los flamencos nacen grises. El rosa les llega con lo que comen.",
+        "Una abeja baila para decir dónde está la flor.",
+        "El corazón de una ballena azul puede pesar más que una persona.",
+        "En 1960 bajaron a la fosa de las Marianas. Ahí cabe el Everest y aún sobra agua."
+      ],
+      "en": [
+        "Flamingos are born gray. The pink comes from what they eat.",
+        "A bee dances to say where the flower is.",
+        "A blue whale's heart can weigh more than a person.",
+        "In 1960 a crew went down to the Mariana Trench. Everest would fit, with water to spare."
+      ],
+      "fr": [
+        "Les flamants naissent gris. Le rose leur vient de ce qu'ils mangent.",
+        "Une abeille danse pour dire où est la fleur.",
+        "Le cœur d'une baleine bleue peut peser plus qu'une personne.",
+        "En 1960 on est descendu dans la fosse des Mariannes. L'Everest y tient, et il reste de l'eau."
+      ],
+      "de": [
+        "Flamingos kommen grau zur Welt. Das Rosa kommt vom Futter.",
+        "Eine Biene tanzt, um zu sagen, wo die Blume ist.",
+        "Das Herz eines Blauwals kann mehr wiegen als ein Mensch.",
+        "1960 fuhr man in den Marianengraben hinab. Der Everest hätte Platz, und es bliebe noch Wasser."
+      ]
+    },
+    "fact": {
+      "es": [
+        "Un rayo calienta el aire más que la superficie del Sol.",
+        "La miel puede durar siglos sin echarse a perder.",
+        "Muchos árboles se pasan nutrientes por las raíces y por hongos del suelo.",
+        "Hace miles de años el Sáhara fue bastante más verde."
+      ],
+      "en": [
+        "A lightning bolt heats the air more than the surface of the Sun.",
+        "Honey can last for centuries without spoiling.",
+        "Many trees pass nutrients through their roots and through fungi in the soil.",
+        "Thousands of years ago the Sahara was much greener."
+      ],
+      "fr": [
+        "Un éclair chauffe l'air plus que la surface du Soleil.",
+        "Le miel peut durer des siècles sans se gâter.",
+        "Beaucoup d'arbres se passent des nutriments par les racines et par des champignons du sol.",
+        "Il y a des milliers d'années, le Sahara était bien plus vert."
+      ],
+      "de": [
+        "Ein Blitz erhitzt die Luft stärker als die Oberfläche der Sonne.",
+        "Honig kann Jahrhunderte halten, ohne zu verderben.",
+        "Viele Bäume geben Nährstoffe über Wurzeln und Bodenpilze weiter.",
+        "Vor Tausenden von Jahren war die Sahara deutlich grüner."
+      ]
+    }
+  },
+  "culture": {
+    "joke": {
+      "es": [
+        "Una canción pegadiza es un inquilino sin contrato.",
+        "El chiste corto es el único que llega antes que la explicación.",
+        "Leí el final primero. El libro se ofendió, y tenía razón.",
+        "Afinar es discutir con una cuerda hasta que los dos cedéis."
+      ],
+      "en": [
+        "A catchy song is a tenant with no lease.",
+        "A short joke is the only one that arrives before the explanation.",
+        "I read the ending first. The book took offense, and it was right.",
+        "Tuning is an argument with a string until both of you give in."
+      ],
+      "fr": [
+        "Une chanson entêtante est un locataire sans bail.",
+        "La blague courte est la seule qui arrive avant l'explication.",
+        "J'ai lu la fin d'abord. Le livre s'est vexé, et il avait raison.",
+        "Accorder, c'est discuter avec une corde jusqu'à ce que vous cédiez tous les deux."
+      ],
+      "de": [
+        "Ein Ohrwurm ist ein Mieter ohne Vertrag.",
+        "Der kurze Witz ist der einzige, der vor der Erklärung ankommt.",
+        "Ich las zuerst das Ende. Das Buch war beleidigt, und es hatte recht.",
+        "Stimmen heißt, mit einer Saite zu streiten, bis ihr beide nachgebt."
+      ]
+    },
+    "saying": {
+      "es": [
+        "A buen entendedor, pocas palabras.",
+        "En boca cerrada no entran moscas.",
+        "No hay que empezar la casa por el tejado.",
+        "Dime con quién andas y te diré quién eres."
+      ],
+      "en": [
+        "A word to the wise is enough.",
+        "Into a closed mouth no flies enter.",
+        "Do not start the house at the roof.",
+        "Tell me who you walk with, and I will tell you who you are."
+      ],
+      "fr": [
+        "À bon entendeur, peu de paroles.",
+        "En bouche fermée n'entre aucune mouche.",
+        "Il ne faut pas commencer la maison par le toit.",
+        "Dis-moi qui tu hantes, je te dirai qui tu es."
+      ],
+      "de": [
+        "Einem guten Versteher genügen wenige Worte.",
+        "In einen geschlossenen Mund fliegt keine Fliege.",
+        "Man fängt das Haus nicht beim Dach an.",
+        "Sag mir, mit wem du gehst, und ich sage dir, wer du bist."
+      ]
+    },
+    "anecdote": {
+      "es": [
+        "El Quijote salió en dos partes, en 1605 y en 1615.",
+        "Beethoven estrenó la Novena casi sin oído.",
+        "La palabra robot viene del checo robota, un trabajo forzado.",
+        "Cervantes y Shakespeare murieron en 1616, con pocos días de diferencia y calendarios distintos."
+      ],
+      "en": [
+        "Don Quixote came out in two parts, in 1605 and in 1615.",
+        "Beethoven premiered the Ninth when he could barely hear.",
+        "The word robot comes from the Czech robota, forced labor.",
+        "Cervantes and Shakespeare died in 1616, days apart, on different calendars."
+      ],
+      "fr": [
+        "Don Quichotte est sorti en deux parties, en 1605 et en 1615.",
+        "Beethoven a créé la Neuvième presque sans ouïe.",
+        "Le mot robot vient du tchèque robota, un travail forcé.",
+        "Cervantes et Shakespeare sont morts en 1616, à quelques jours près, sur des calendriers différents."
+      ],
+      "de": [
+        "Don Quijote erschien in zwei Teilen, 1605 und 1615.",
+        "Beethoven brachte die Neunte heraus, als er fast nichts mehr hörte.",
+        "Das Wort Roboter kommt vom tschechischen robota, einer Fronarbeit.",
+        "Cervantes und Shakespeare starben 1616, wenige Tage auseinander, nach verschiedenen Kalendern."
+      ]
+    },
+    "fact": {
+      "es": [
+        "La Gioconda mide unos setenta y siete por cincuenta y tres centímetros.",
+        "El español lo hablan cientos de millones de personas.",
+        "Una octava, en la música de hoy, son doce semitonos.",
+        "El Quijote y la Novena siguen en voz alta siglos después de escritos."
+      ],
+      "en": [
+        "The Mona Lisa is about seventy-seven by fifty-three centimeters.",
+        "Spanish is spoken by hundreds of millions of people.",
+        "An octave, in music today, is twelve semitones.",
+        "Don Quixote and the Ninth are still said aloud centuries after they were written."
+      ],
+      "fr": [
+        "La Joconde mesure environ soixante-dix-sept sur cinquante-trois centimètres.",
+        "L'espagnol est parlé par des centaines de millions de personnes.",
+        "Une octave, dans la musique d'aujourd'hui, ce sont douze demi-tons.",
+        "Don Quichotte et la Neuvième se disent encore à voix haute, des siècles après."
+      ],
+      "de": [
+        "Die Mona Lisa misst etwa siebenundsiebzig mal dreiundfünfzig Zentimeter.",
+        "Spanisch sprechen Hunderte Millionen Menschen.",
+        "Eine Oktave ist in der heutigen Musik zwölf Halbtöne.",
+        "Don Quijote und die Neunte werden Jahrhunderte später immer noch laut gesagt."
+      ]
+    }
+  }
+}

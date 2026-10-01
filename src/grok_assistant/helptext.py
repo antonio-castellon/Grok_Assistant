@@ -123,6 +123,12 @@ HELP_TOPICS = (
         "comando prueba",
     ),
     (
+        "Saludos y esperas",
+        "El menú Saludos marca el tipo y el tema de tres frases: la del arranque, la del saludo cuando hace rato que no hablas, "
+        "y la espera mientras Grok busca. Ya están guardadas. Decirlas no pide internet.",
+        "comando ayuda",
+    ),
+    (
         "Ayuda hablada",
         "comando ayuda dice en voz alta la lista corta. La explicación larga, con estos ejemplos, está en este menú.",
         "comando ayuda",
