@@ -61,6 +61,7 @@
     "menu.no_agents": "Keine Agenten",
     "menu.close_agent": "Agent schließen",
     "menu.new_agent": "Agent anlegen…",
+    "menu.agent_account": "Konto",
     "menu.admin_mode": "Administrator-Modus",
     "menu.password": "Passwort…",
     "menu.prints": "Stimmabdrücke",

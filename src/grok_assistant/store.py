@@ -494,19 +494,28 @@ def _cosine(a: list[float], b: list[float]) -> float:
     return dot / (na * nb)
 
 
+def _agent_filename(name: str) -> str:
+    cleaned = "".join(ch if ch.isalnum() or ch in "._-" else "-" for ch in name.strip())
+    cleaned = cleaned.strip(".-") or "agente"
+    return f"{cleaned[:80]}.md"
+
+
 @dataclass
 class AgentRecord:
     name: str
     path: Path
     grok_id: str | None = None
+    origin: str = "local"
 
 
 class AgentBook:
-    """Definitions live in the Grok account folder. Local sessions do not."""
+    """Local files plus the agents the signed-in account publishes. Sessions stay local."""
 
-    def __init__(self, definitions: Path, state_path: Path):
+    def __init__(self, definitions: Path, state_path: Path, account_dir: Path | None = None, account_cache: Path | None = None):
         self.definitions = definitions
         self.state_path = state_path
+        self.account_dir = account_dir
+        self.account_cache = account_cache
         self.active: str | None = None
         self._ids: dict[str, str] = {}
         self._load_state()
@@ -531,16 +540,55 @@ class AgentBook:
         return path.stem
 
     def list(self) -> list[AgentRecord]:
-        if not self.definitions.exists():
+        """Local files win when the same name also exists on the account."""
+        found: dict[str, AgentRecord] = {}
+        for origin, folder in (
+            ("account", self.account_dir),
+            ("account", self.account_cache),
+            ("local", self.definitions),
+        ):
+            for record in self._read_dir(folder, origin):
+                found[record.name.casefold()] = record
+        return sorted(found.values(), key=lambda record: record.name.casefold())
+
+    def _read_dir(self, folder: Path | None, origin: str) -> list[AgentRecord]:
+        if folder is None or not folder.exists():
             return []
         found = []
-        for path in sorted(self.definitions.glob("*.md")):
+        for path in sorted(folder.glob("*.md")):
             try:
                 name = self._title(path)
             except OSError:
                 continue
-            found.append(AgentRecord(name, path, self._ids.get(name)))
+            found.append(AgentRecord(name, path, self._ids.get(name), origin))
         return found
+
+    def refresh_account(self) -> None:
+        """Copy the account's agents into the cache. A failed read leaves the previous copy."""
+        if self.account_cache is None:
+            return
+        from grok_assistant.account_agents import fetch_account_agents
+
+        found = fetch_account_agents()
+        if not found:
+            return
+        self.account_cache.mkdir(parents=True, exist_ok=True)
+        keep = set()
+        for name, body in found.items():
+            path = self.account_cache / _agent_filename(name)
+            keep.add(path.name)
+            if path.exists():
+                try:
+                    if path.read_text(encoding="utf-8") == body:
+                        continue
+                except OSError:
+                    pass
+            temporary = path.with_suffix(".md.tmp")
+            temporary.write_text(body, encoding="utf-8")
+            temporary.replace(path)
+        for path in self.account_cache.glob("*.md"):
+            if path.name not in keep:
+                path.unlink(missing_ok=True)
 
     def resolve(self, name: str) -> AgentRecord | None:
         key = " ".join(name.split()).casefold()

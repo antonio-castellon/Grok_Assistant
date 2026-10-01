@@ -61,6 +61,7 @@
     "menu.no_agents": "Aucun agent",
     "menu.close_agent": "Fermer l'agent",
     "menu.new_agent": "Créer un agent…",
+    "menu.agent_account": "compte",
     "menu.admin_mode": "Mode administrateur",
     "menu.password": "Mot de passe…",
     "menu.prints": "Empreintes",

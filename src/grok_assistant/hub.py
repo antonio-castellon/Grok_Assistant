@@ -9,7 +9,7 @@ from grok_assistant.auth import AdminAuth
 from grok_assistant.brain import Brain, Turn
 from grok_assistant.grok_cli import GrokCLI, GrokError
 from grok_assistant.local_llm import LocalMind
-from grok_assistant.paths import default_agents_dir, default_data_dir, load_lines, speakers_file
+from grok_assistant.paths import default_account_agents_dir, default_agents_dir, default_data_dir, load_lines, speakers_file
 from grok_assistant.settings import Settings
 from grok_assistant.store import AgentBook, SessionStore, SpeakerBook
 
@@ -234,7 +234,7 @@ class Hub:
         return self.brain.sessions.reset_grok_id()
 
 
-def build(data_dir: Path | None = None, agents_dir: Path | None = None, cli: GrokCLI | None = None, clock=None, wall=None) -> Hub:
+def build(data_dir: Path | None = None, agents_dir: Path | None = None, cli: GrokCLI | None = None, clock=None, wall=None, account_dir: Path | None = None) -> Hub:
     data = data_dir or default_data_dir()
     data.mkdir(parents=True, exist_ok=True)
     rules = data / "AGENTS.md"
@@ -253,7 +253,12 @@ def build(data_dir: Path | None = None, agents_dir: Path | None = None, cli: Gro
         settings,
         SessionStore(data / "sessions.json"),
         SpeakerBook(speakers_file() if data_dir is None else data / "speakers.json"),
-        AgentBook(agents_dir or default_agents_dir(), data / "agents_state.json"),
+        AgentBook(
+            agents_dir or default_agents_dir(),
+            data / "agents_state.json",
+            default_account_agents_dir() if account_dir is None else account_dir,
+            data / "account-agents",
+        ),
         AdminAuth(data / "admin.json"),
         load_lines("hellos-es.txt"),
         load_lines("waits-es.txt"),

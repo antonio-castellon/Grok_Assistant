@@ -53,3 +53,8 @@ def speakers_file() -> Path:
 
 def default_agents_dir() -> Path:
     return Path.home() / ".grok" / "agents"
+
+
+def default_account_agents_dir() -> Path:
+    """Agents the signed-in Grok client already stored for this account."""
+    return Path.home() / ".grok" / "bundled" / "agents"

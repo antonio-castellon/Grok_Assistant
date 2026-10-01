@@ -13,7 +13,7 @@ Die Grafik oben fasst das gesamte Produkt zusammen. Diese Komponenten setzen es 
 | Mund | `speech.py`, `scripts/speak.ps1` | Mit einer lokalen Stimme sprechen. Spanische Stimmen kommen zuerst. |
 | Musik | `music.py` | Audio über `yt-dlp` und `mpv` spielen, wenn beide da sind. Während ein Lied läuft, bleibt das Mikrofon offen und folgt nur einem gespeicherten Abdruck. |
 | Wolkentür | `hub.py`, `grok_cli.py` | Den lokalen Befehl `grok` mit einer fertigen Textzeile rufen. Es gibt kein Audio-Argument. |
-| Agenten | `~/.grok/agents` | Definitionen auf diesem Konto. Einen zu öffnen ist eine Wahl. Ihr Gedächtnis ist nicht das lokale Heft. |
+| Agenten | `~/.grok/agents` und das Konto | Die auf diesem PC und die, die das angemeldete Konto veröffentlicht. Einen zu öffnen ist eine Wahl. Ihr Gedächtnis ist nicht das lokale Heft. |
 | Hülle | `tray.py` | Symbol in der Leiste, Informationsfenster, Debug-Protokoll. Ein Fenster zu schließen lässt das Programm laufen. |
 
 Ein Satz endet, wenn die Person aufgehört hat. Der STT-Motor und das Windows-Ohr schließen ihn in unter zwei Sekunden. Ein Gruß allein bleibt zwei Sekunden offen, falls die Frage im selben Atem folgt. Während der Assistent spricht, ist dieses Ohr pausiert, damit die Antwort nicht als neuer Auftrag gilt. Während ein Lied läuft, bleibt das Mikrofon offen und folgt nur einem gespeicherten Abdruck. Siehe [Stimmabdrücke und Ohren](abdruecke.md). In einem Gespräch geht das Gehörte geradewegs an Grok, bis zum Abschied.

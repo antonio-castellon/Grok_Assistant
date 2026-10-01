@@ -13,7 +13,7 @@ The diagram above captures the whole product at a glance. Underneath it are the 
 | Mouth | `speech.py`, `scripts/speak.ps1` | Speak with a local voice. Spanish voices are offered first. |
 | Music | `music.py` | Play audio through `yt-dlp` and `mpv` when both exist. While a song plays, the microphone stays open and only follows a saved print. |
 | Cloud door | `hub.py`, `grok_cli.py` | Call the local `grok` command with a finished line of text. There is no audio argument. |
-| Agents | `~/.grok/agents` | Definitions on this account. Opening one is a choice. Their memory is not the local notebook. |
+| Agents | `~/.grok/agents` and the account | Files on this PC and the ones the signed-in account publishes. Opening one is a choice. Their memory is not the local notebook. |
 | Shell | `tray.py` | Tray icon, information window, debug transcript. Closing a window leaves the program running. |
 
 A phrase is considered finished once the speaker stops. The STT engine and Windows speech recognition usually close it in under two seconds. The microphone pauses while the assistant is speaking, so its own voice is not mistaken for a new command. While a song plays it stays open and only follows a saved print. See [Voice prints and listeners](prints.md). Once a conversation has started, recognized speech goes directly to Grok until the user says goodbye.

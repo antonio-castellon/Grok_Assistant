@@ -91,9 +91,10 @@ HELP_TOPICS = (
     ),
     (
         "Agentes",
-        "Un agente es un Grok de tu cuenta, no el cuaderno local. Puede recordar fechas, sitios y listas, y buscar. "
+        "Un agente es un Grok de tu cuenta, no el cuaderno local. La lista junta los que guardas en este PC y los que esa cuenta ya publica. "
+        "Puede recordar fechas, sitios y listas, y buscar. "
         "Abrir uno dice su nombre y las preguntas siguientes van a él. Cerrar agente vuelve al asistente normal y no borra al agente. "
-        "Crear uno pide la contraseña de administrador.",
+        "Crear uno guarda un archivo en este PC y pide la contraseña de administrador.",
         "comando abrir agente compras",
     ),
     (

@@ -39,7 +39,7 @@ class FakeCLI:
 def world(tmp_path):
     clock = Clock()
     cli = FakeCLI()
-    hub = build(tmp_path / "data", tmp_path / "agents", cli, clock=clock, wall=clock.wall)
+    hub = build(tmp_path / "data", tmp_path / "agents", cli, clock=clock, wall=clock.wall, account_dir=tmp_path / "account")
     return hub, cli, clock
 
 
@@ -323,6 +323,47 @@ def test_agent_create_needs_the_password_and_listing_does_not(world, tmp_path):
     listed = hub.run("comando listar agentes")
     assert "compras" in listed.spoken[0]
     assert cli.calls == []
+
+
+def test_the_agent_menu_lists_account_agents_and_a_local_file_wins(tmp_path, monkeypatch):
+    from grok_assistant.account_agents import agents_from_bundle, agents_from_customizations
+    from grok_assistant.store import AgentBook
+
+    account = tmp_path / "bundled"
+    account.mkdir()
+    (account / "explore.md").write_text("---\nname: explore\n---\n\nLee.\n", encoding="utf-8")
+    (account / "plan.md").write_text("---\nname: plan\n---\n\nPlan.\n", encoding="utf-8")
+    local = tmp_path / "local"
+    local.mkdir()
+    (local / "compras.md").write_text("---\nname: compras\n---\n\nListas.\n", encoding="utf-8")
+    (local / "explore.md").write_text("---\nname: explore\n---\n\nMio.\n", encoding="utf-8")
+    book = AgentBook(local, tmp_path / "state.json", account, tmp_path / "cache")
+    rows = {record.name: record.origin for record in book.list()}
+    assert rows == {"compras": "local", "explore": "local", "plan": "account"}
+    opened = book.open("plan")
+    assert opened is not None
+    assert opened.origin == "account"
+    assert opened.path.name == "plan.md"
+
+    bundle = agents_from_bundle({"agents": {"vega": "---\nname: vega\n---\n\nHola.", "vacio": "  "}})
+    assert bundle["vega"].startswith("---\nname: vega")
+    assert "vacio" not in bundle
+    custom = agents_from_customizations({
+        "agentCustomizations": [{"name": "Casa", "instructions": "Fechas y listas."}, {"id": ""}],
+    })
+    assert "Casa" in custom
+    assert "Fechas y listas." in custom["Casa"]
+
+    monkeypatch.setattr(
+        "grok_assistant.account_agents.fetch_account_agents",
+        lambda auth_path=None: {"vega": "---\nname: vega\n---\n\nHola.\n"},
+    )
+    book.refresh_account()
+    saved = book.resolve("vega")
+    assert saved is not None and saved.origin == "account"
+    assert (tmp_path / "cache" / "vega.md").read_text(encoding="utf-8").startswith("---")
+    still = book.resolve("explore")
+    assert still is not None and still.origin == "local"
 
 
 def test_password_file_has_no_password(world, tmp_path):

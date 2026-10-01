@@ -13,7 +13,7 @@ El diagrama anterior resume el producto completo. Estas son las piezas que hacen
 | Boca | `speech.py`, `scripts/speak.ps1` | Hablar con una voz local. Las voces en español se ofrecen primero. |
 | Música | `music.py` | Reproducir audio con `yt-dlp` y `mpv` cuando los dos existen. Mientras suena una canción, el micrófono sigue abierto y solo sigue una huella guardada. |
 | Puerta a la nube | `hub.py`, `grok_cli.py` | Llamar al comando local `grok` con una línea de texto ya terminada. No hay argumento de audio. |
-| Agentes | `~/.grok/agents` | Definiciones de esta cuenta. Abrir uno es una elección. Su memoria no es el cuaderno local. |
+| Agentes | `~/.grok/agents` y la cuenta | Los de este PC y los que publica la cuenta iniciada. Abrir uno es una elección. Su memoria no es el cuaderno local. |
 | Carcasa | `tray.py` | Icono de bandeja, ventana de información, transcripción de depuración. Cerrar una ventana deja el programa en marcha. |
 
 Una frase se considera terminada cuando la persona deja de hablar. El motor de STT y el reconocimiento de Windows suelen cerrarla en menos de dos segundos. Mientras el asistente responde, el micrófono se pausa para no tomar su propia voz por una orden nueva. Mientras suena una canción sigue abierto y solo atiende una huella guardada. Véase [Huellas y oídos](huellas.md). Una vez iniciada una conversación, el texto reconocido pasa directamente a Grok hasta que se dice adiós.

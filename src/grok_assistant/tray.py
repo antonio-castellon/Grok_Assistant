@@ -63,6 +63,12 @@ def _used(active: bool) -> str:
     return "✓  "
 
 
+def _agent_label(record) -> str:
+    if getattr(record, "origin", "local") != "account":
+        return record.name
+    return f"{record.name} · {_ui('menu.agent_account', 'cuenta')}"
+
+
 def run() -> None:
     if os.name == "nt":
         try:
@@ -148,6 +154,7 @@ class TrayApp:
 
     def start(self) -> None:
         threading.Thread(target=self._worker, daemon=True).start()
+        threading.Thread(target=self.hub.brain.agents.refresh_account, daemon=True).start()
         self.jobs.put(("startup", ""))
         self._start_tray()
         self._sync_ear()
@@ -694,7 +701,10 @@ class TrayApp:
         if not found:
             menu.add_command(label=_ui("menu.no_agents", "No hay agentes"), state="disabled")
         for record in found:
-            menu.add_command(label=_used(record.name == active) + record.name, command=lambda picked=record.name: self._command(f"abrir agente {picked}"))
+            menu.add_command(
+                label=_used(record.name == active) + _agent_label(record),
+                command=lambda picked=record.name: self._command(f"abrir agente {picked}"),
+            )
         menu.add_separator()
         menu.add_command(label=_ui("menu.close_agent", "Cerrar agente"), command=lambda: self._command("cerrar agente"))
         menu.add_command(label=_ui("menu.new_agent", "Crear agente…"), command=self._new_agent)
@@ -731,7 +741,7 @@ class TrayApp:
         ]
         active_agent = brain.agents.active or ""
         agents = [
-            ("cmd", record.name, f"agent:{record.name}", record.name == active_agent)
+            ("cmd", _agent_label(record), f"agent:{record.name}", record.name == active_agent)
             for record in brain.agents.list()
         ]
         if not agents:

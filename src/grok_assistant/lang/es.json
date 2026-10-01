@@ -61,6 +61,7 @@
     "menu.no_agents": "No hay agentes",
     "menu.close_agent": "Cerrar agente",
     "menu.new_agent": "Crear agente…",
+    "menu.agent_account": "cuenta",
     "menu.admin_mode": "Modo administrador",
     "menu.password": "Contraseña…",
     "menu.prints": "Huellas",
