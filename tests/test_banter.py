@@ -52,7 +52,16 @@ def test_the_greeting_menu_uses_checkboxes(tmp_path):
         root.update()
         bar = app.root.nametowidget(app.root["menu"])
         labels = [bar.entrycget(index, "label") for index in range(bar.index("end") + 1)]
-        assert "Saludos" in labels
+        assert labels == ["Escucha", "Voz", "Charla", "Música", "Personas", "Ajustes", "Acerca de"]
+        app._fill_voz()
+        voice = []
+        for index in range(app.menu_voz.index("end") + 1):
+            try:
+                voice.append(app.menu_voz.entrycget(index, "label"))
+            except tk.TclError:
+                continue
+        assert "Saludos" in voice
+        assert "Personalidad" in voice
         app._fill_banter_kinds()
         kinds = app.menu_banter_kinds
         boxes = []
@@ -68,7 +77,8 @@ def test_the_greeting_menu_uses_checkboxes(tmp_path):
         assert "sports" not in app.hub.brain.settings.line_themes
         assert app.hub.brain.settings.line_themes
         tray = app._tray_items()
-        banter = next(item for item in tray if item[0] == "sub" and item[1] == "Saludos")
+        voice_tray = next(item for item in tray if item[0] == "sub" and item[1] == "Voz")
+        banter = next(item for item in voice_tray[2] if item[0] == "sub" and item[1] == "Saludos")
         kind_menu = banter[2][0][2]
         assert kind_menu[-1][2] == "banter-kind:mix"
         assert kind_menu[-1][3] is True

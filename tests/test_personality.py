@@ -86,11 +86,17 @@ def test_personality_window_saves_a_free_behavior(tmp_path):
         assert "Habla despacio y con un ejemplo." in compose(saved)
         bar = app.root.nametowidget(app.root["menu"])
         labels = [bar.entrycget(index, "label") for index in range(bar.index("end") + 1)]
-        assert "Voice market" in labels
-        assert "Acerca de" in labels
-        assert "Personalidad" in labels
+        assert labels[-1] == "Acerca de"
         assert "Mercado" not in labels
         assert "Acerca de + Ayuda" not in labels
+        app._fill_settings()
+        settings = []
+        for index in range(app.menu_settings.index("end") + 1):
+            try:
+                settings.append(app.menu_settings.entrycget(index, "label"))
+            except tk.TclError:
+                continue
+        assert "Voice market" in settings
     finally:
         root.destroy()
 
@@ -111,10 +117,18 @@ def test_windows_follow_the_selected_language(tmp_path):
         root.update()
         bar = app.root.nametowidget(app.root["menu"])
         labels = [bar.entrycget(index, "label") for index in range(bar.index("end") + 1)]
-        assert "Personality" in labels
-        assert "Session" in labels
-        assert "Agent" in labels
-        assert "About" in labels
+        assert labels == ["Listen", "Voice", "Chat", "Music", "People", "Settings", "About"]
+        app._fill_voz()
+        voice = []
+        for index in range(app.menu_voz.index("end") + 1):
+            try:
+                voice.append(app.menu_voz.entrycget(index, "label"))
+            except tk.TclError:
+                continue
+        assert "Personality" in voice
+        assert "Greetings" in voice
+        talk = [app.menu_talk.entrycget(index, "label") for index in range(app.menu_talk.index("end") + 1)]
+        assert talk == ["Model", "Session", "Agent"]
         assert app.pause_button.cget("text") == "Pause listening"
         assert app.send_button.cget("text") == "Send"
         app._build_personality()

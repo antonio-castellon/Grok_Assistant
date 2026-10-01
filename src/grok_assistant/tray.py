@@ -337,44 +337,51 @@ class TrayApp:
         self.menu_banter = tk.Menu(bar, **kw)
         self.menu_banter_kinds = tk.Menu(self.menu_banter, postcommand=self._fill_banter_kinds, **kw)
         self.menu_banter_themes = tk.Menu(self.menu_banter, postcommand=self._fill_banter_themes, **kw)
+        self.menu_talk = tk.Menu(bar, **kw)
         self.menu_musica = tk.Menu(bar, **kw)
-        self.menu_admin = tk.Menu(bar, postcommand=self._fill_admin, **kw)
-        self.menu_prints = tk.Menu(self.menu_admin, postcommand=self._fill_prints, **kw)
-        self.menu_language = tk.Menu(bar, postcommand=self._fill_language, **kw)
+        self.menu_people = tk.Menu(bar, postcommand=self._fill_people, **kw)
+        self.menu_prints = tk.Menu(self.menu_people, postcommand=self._fill_prints, **kw)
+        self.menu_settings = tk.Menu(bar, postcommand=self._fill_settings, **kw)
+        self.menu_language = tk.Menu(self.menu_settings, postcommand=self._fill_language, **kw)
         from grok_assistant.i18n import text
 
         bar.add_cascade(label=text("menu.listen", "Escucha"), menu=self.menu_escucha)
         bar.add_cascade(label=text("menu.voice", "Voz"), menu=self.menu_voz)
-        bar.add_cascade(label=text("menu.model", "Modelo"), menu=self.menu_modelo)
-        bar.add_cascade(label=text("menu.session", "Sesión"), menu=self.menu_sesion)
-        bar.add_cascade(label=text("menu.agent", "Agente"), menu=self.menu_agente)
-        bar.add_cascade(label=text("menu.personality", "Personalidad"), menu=self.menu_persona)
-        bar.add_cascade(label=text("menu.banter", "Saludos"), menu=self.menu_banter)
+        bar.add_cascade(label=text("menu.talk", "Charla"), menu=self.menu_talk)
+        bar.add_cascade(label=text("menu.music", "Música"), menu=self.menu_musica)
+        bar.add_cascade(label=text("menu.people", "Personas"), menu=self.menu_people)
+        bar.add_cascade(label=text("menu.settings", "Ajustes"), menu=self.menu_settings)
+        bar.add_command(label=text("menu.about", "Acerca de"), command=self._open_about)
+        self.menu_talk.add_cascade(label=text("menu.model", "Modelo"), menu=self.menu_modelo)
+        self.menu_talk.add_cascade(label=text("menu.session", "Sesión"), menu=self.menu_sesion)
+        self.menu_talk.add_cascade(label=text("menu.agent", "Agente"), menu=self.menu_agente)
         self.menu_banter.add_cascade(label=text("menu.banter_kinds", "Tipo"), menu=self.menu_banter_kinds)
         self.menu_banter.add_cascade(label=text("menu.banter_themes", "Tema"), menu=self.menu_banter_themes)
-        bar.add_cascade(label=text("menu.music", "Música"), menu=self.menu_musica)
-        bar.add_cascade(label=text("menu.admin", "Administrador"), menu=self.menu_admin)
-        bar.add_cascade(label=text("menu.language", "Idioma"), menu=self.menu_language)
-        bar.add_command(label=text("menu.market", "Voice market"), command=self._open_market)
-        bar.add_command(label=text("menu.about", "Acerca de"), command=self._open_about)
         self.menu_musica.add_command(label=_ui("menu.music_pause", "Pausar"), command=lambda: self._command("pausa musica"))
         self.menu_musica.add_command(label=_ui("menu.music_resume", "Seguir"), command=lambda: self._command("seguir musica"))
         self.menu_musica.add_command(label=_ui("menu.music_stop", "Parar"), command=lambda: self._command("para la musica"))
 
-    def _fill_admin(self) -> None:
+    def _fill_people(self) -> None:
+        menu = self.menu_people
+        menu.delete(0, "end")
+        menu.add_command(label=_ui("menu.identify", "Identificar mi voz"), command=lambda: self._command("identifica mi voz"))
+        menu.add_cascade(label=_ui("menu.prints", "Huellas"), menu=self.menu_prints)
+
+    def _fill_settings(self) -> None:
         from grok_assistant.startup import enabled
 
-        menu = self.menu_admin
+        menu = self.menu_settings
         menu.delete(0, "end")
-        menu.add_command(label=_ui("menu.admin_mode", "Modo administrador"), command=lambda: self._command("modo administrador"))
-        menu.add_command(label=_ui("menu.password", "Contraseña…"), command=self._password_dialog)
-        menu.add_separator()
-        menu.add_cascade(label=_ui("menu.prints", "Huellas"), menu=self.menu_prints)
+        menu.add_cascade(label=_ui("menu.language", "Idioma"), menu=self.menu_language)
+        menu.add_command(label=_ui("menu.market", "Voice market"), command=self._open_market)
         menu.add_separator()
         if enabled():
             menu.add_command(label=_used(True) + _ui("menu.startup_off", "Desactivar arranque con Windows"), command=self._toggle_startup)
         else:
             menu.add_command(label=_ui("menu.startup_on", "Activar arranque con Windows"), command=self._toggle_startup)
+        menu.add_separator()
+        menu.add_command(label=_ui("menu.admin_mode", "Modo administrador"), command=lambda: self._command("modo administrador"))
+        menu.add_command(label=_ui("menu.password", "Contraseña…"), command=self._password_dialog)
 
     def _choose_best_ear(self, sync: bool) -> None:
         """Pick the listener with the best hit rate across every print."""
@@ -575,7 +582,6 @@ class TrayApp:
             menu.add_command(label=_used(True) + _ui("menu.test_off", "Desactivar prueba"), command=self._toggle_test)
         else:
             menu.add_command(label=_ui("menu.test_on", "Activar prueba"), command=self._toggle_test)
-        menu.add_command(label=_ui("menu.identify", "Identificar mi voz"), command=lambda: self._command("identifica mi voz"))
         menu.add_command(label=_ui("menu.rename", "Cambiar nombre…"), command=lambda: self._command("cambiar nombre"))
 
     def _fill_identifiers(self) -> None:
@@ -653,6 +659,9 @@ class TrayApp:
         menu.add_separator()
         menu.add_command(label=_ui("menu.volume_up", "Subir volumen"), command=lambda: self._command("subir volumen"))
         menu.add_command(label=_ui("menu.volume_down", "Bajar volumen"), command=lambda: self._command("bajar volumen"))
+        menu.add_separator()
+        menu.add_cascade(label=_ui("menu.personality", "Personalidad"), menu=self.menu_persona)
+        menu.add_cascade(label=_ui("menu.banter", "Saludos"), menu=self.menu_banter)
 
     def _fill_modelo(self) -> None:
         menu = self.menu_modelo
@@ -736,32 +745,47 @@ class TrayApp:
         return [
             ("cmd", text("menu.show", "Mostrar"), "show", False),
             ("cmd", text("menu.resume", "Seguir escuchando") if self.user_paused else text("menu.pause", "Pausar escucha"), "pause", self.user_paused),
-            ("sub", text("menu.recognizer", "Reconocedor"), ears),
-            ("sub", text("menu.identifier", "Identificador texto"), self._identifier_items()),
+            ("sub", text("menu.listen", "Escucha"), [
+                ("sub", text("menu.recognizer", "Reconocedor"), ears),
+                ("sub", text("menu.identifier", "Identificador texto"), self._identifier_items()),
+                ("sep",),
+                ("cmd", _ui("menu.test_off", "Desactivar prueba") if brain.test_mode else _ui("menu.test_on", "Activar prueba"), "test-toggle", brain.test_mode),
+                ("cmd", _ui("menu.rename", "Cambiar nombre…"), "rename", False),
+            ]),
             ("sub", text("menu.voice", "Voz"), voices + [
                 ("sep",),
                 ("cmd", _ui("menu.volume_up", "Subir volumen"), "vol-up", False),
                 ("cmd", _ui("menu.volume_down", "Bajar volumen"), "vol-down", False),
+                ("sep",),
+                ("sub", text("menu.personality", "Personalidad"), self._persona_items()),
+                ("sub", text("menu.banter", "Saludos"), [
+                    ("sub", text("menu.banter_kinds", "Tipo"), self._banter_kind_rows()),
+                    ("sub", text("menu.banter_themes", "Tema"), self._banter_theme_rows()),
+                ]),
             ]),
-            ("sub", text("menu.model", "Modelo"), models),
-            ("sub", text("menu.session", "Sesión"), sessions),
-            ("sub", text("menu.agent", "Agente"), agents),
-            ("sub", text("menu.personality", "Personalidad"), self._persona_items()),
-            ("sub", text("menu.banter", "Saludos"), [
-                ("sub", text("menu.banter_kinds", "Tipo"), self._banter_kind_rows()),
-                ("sub", text("menu.banter_themes", "Tema"), self._banter_theme_rows()),
+            ("sub", text("menu.talk", "Charla"), [
+                ("sub", text("menu.model", "Modelo"), models),
+                ("sub", text("menu.session", "Sesión"), sessions),
+                ("sub", text("menu.agent", "Agente"), agents),
             ]),
-            ("sub", text("menu.language", "Idioma"), self._language_items()),
             ("sub", text("menu.music", "Música"), [
                 ("cmd", _ui("menu.music_pause", "Pausar"), "music-pause", False),
                 ("cmd", _ui("menu.music_resume", "Seguir"), "music-resume", False),
                 ("cmd", _ui("menu.music_stop", "Parar"), "music-stop", False),
             ]),
-            ("cmd", _ui("menu.test_off", "Desactivar prueba") if brain.test_mode else _ui("menu.test_on", "Activar prueba"), "test-toggle", brain.test_mode),
-            ("sub", text("menu.prints", "Huellas"), self._print_items()),
-            ("cmd", _ui("menu.rename", "Cambiar nombre…"), "rename", False),
-            ("cmd", _ui("menu.startup_off", "Desactivar arranque con Windows") if self._startup_on() else _ui("menu.startup_on", "Activar arranque con Windows"), "startup", self._startup_on()),
-            ("cmd", text("menu.market", "Voice market"), "market", False),
+            ("sub", text("menu.people", "Personas"), [
+                ("cmd", _ui("menu.identify", "Identificar mi voz"), "identify", False),
+                ("sub", text("menu.prints", "Huellas"), self._print_items()),
+            ]),
+            ("sub", text("menu.settings", "Ajustes"), [
+                ("sub", text("menu.language", "Idioma"), self._language_items()),
+                ("cmd", text("menu.market", "Voice market"), "market", False),
+                ("sep",),
+                ("cmd", _ui("menu.startup_off", "Desactivar arranque con Windows") if self._startup_on() else _ui("menu.startup_on", "Activar arranque con Windows"), "startup", self._startup_on()),
+                ("sep",),
+                ("cmd", _ui("menu.admin_mode", "Modo administrador"), "admin", False),
+                ("cmd", _ui("menu.password", "Contraseña…"), "password", False),
+            ]),
             ("cmd", text("menu.about", "Acerca de"), "about", False),
             ("sep",),
             ("cmd", text("menu.quit", "Salir"), "quit", False),
@@ -782,6 +806,12 @@ class TrayApp:
             self._toggle_test()
         elif key == "rename":
             self._command("cambiar nombre")
+        elif key == "identify":
+            self._command("identifica mi voz")
+        elif key == "admin":
+            self._command("modo administrador")
+        elif key == "password":
+            self._password_dialog()
         elif key == "print-new":
             self._new_print()
         elif key.startswith("print-rename:"):

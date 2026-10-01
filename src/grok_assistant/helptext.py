@@ -98,7 +98,7 @@ HELP_TOPICS = (
     ),
     (
         "Administrador",
-        "La contraseña se elige en el menú y en el disco solo queda un hash. No hay clave de fábrica. "
+        "La contraseña y el modo están en Ajustes. En el disco solo queda un hash. No hay clave de fábrica. "
         "El modo dura cinco minutos. Hace falta para crear un agente, listar las personas identificadas y borrar una. "
         "Apagar el equipo no pide esa clave: pide sí o no, y luego el apagado normal del sistema.",
         "comando modo administrador",
@@ -110,7 +110,7 @@ HELP_TOPICS = (
         "Cada motor se valora con esas frases, porque ya se sabe lo que había que decir. "
         "Al lado del motor sale el acierto de esa persona, por ejemplo (92%). Es información. "
         "El motor se elige sumando todas las huellas, al arrancar, y se escribe en Depuración. "
-        "Cambiarlo está en Escucha. "
+        "Cambiarlo está en Escucha. Las huellas y la identificación están en Personas. "
         "Si las tomas no son una sola voz, no se guarda a otra persona. "
         "Sin el modelo de huella de voz te apunta, pero no cierra la puerta: sigue oyendo a todo el mundo. "
         "Con el modelo, solo esa persona pasa. Listar y borrar personas pide administrador.",
@@ -124,7 +124,7 @@ HELP_TOPICS = (
     ),
     (
         "Saludos y esperas",
-        "El menú Saludos marca el tipo y el tema de tres frases: la del arranque, la del saludo cuando hace rato que no hablas, "
+        "En Voz, Saludos marca el tipo y el tema de tres frases: la del arranque, la del saludo cuando hace rato que no hablas, "
         "y la espera mientras Grok busca. Ya están guardadas. Decirlas no pide internet.",
         "comando ayuda",
     ),

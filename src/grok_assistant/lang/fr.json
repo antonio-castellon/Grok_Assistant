@@ -9,6 +9,9 @@
     "menu.model": "Modèle",
     "menu.session": "Session",
     "menu.agent": "Agent",
+    "menu.talk": "Discussion",
+    "menu.people": "Personnes",
+    "menu.settings": "Réglages",
     "menu.personality": "Personnalité",
     "menu.banter": "Salutations",
     "menu.banter_kinds": "Type",
@@ -280,7 +283,7 @@
     {"title": "Chanson", "body": "Demande une chanson par le titre. La première fois, le lecteur se télécharge. Sans compte.", "example": "mets la chanson luna"},
     {"title": "Musique", "body": "Met en pause, reprend ou arrête la chanson en cours.", "example": "commande pause la musique"},
     {"title": "Personnalité", "body": "Personnalité charge une personne. Les curseurs changent les nombres. Le comportement est un texte libre. Rétablir rend les valeurs d'origine.", "example": "bonjour grok"},
-    {"title": "Salutations", "body": "Salutations coche le type et le thème de la phrase du démarrage, du bonjour après une longue pause, et de l'attente pendant que Grok cherche. Les phrases sont déjà enregistrées. Les dire ne demande pas internet.", "example": "bonjour grok"},
+    {"title": "Salutations", "body": "Dans Voix, Salutations coche le type et le thème de la phrase du démarrage, du bonjour après une longue pause, et de l'attente pendant que Grok cherche. Les phrases sont déjà enregistrées. Les dire ne demande pas internet.", "example": "bonjour grok"},
     {"title": "Langue", "body": "Langue change les commandes, l'aide et les personnalités. Une langue nouvelle est un fichier json dans le dossier lang.", "example": "commande aide"},
     {"title": "Essai", "body": "Le mode essai écrit ce que l'oreille a entendu et n'exécute rien.", "example": "commande essai"},
     {"title": "Empreinte", "body": "Un seul enregistrement garde seize phrases. Ce son fait une empreinte pour chaque moteur, et chaque moteur est noté parce que les phrases sont connues. Le menu des empreintes montre le taux de cette personne à côté du moteur, par exemple (92%). C'est une information. Au démarrage le programme additionne toutes les empreintes, garde le moteur le plus haut et l'écrit dans Débogage. Le moteur se change dans Écoute. La même personne ne devient pas deux empreintes. Un moteur nouveau est noté plus tard avec le son gardé.", "example": "identifie ma voix"}
