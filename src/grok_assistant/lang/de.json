@@ -157,7 +157,7 @@
     "about.commands": "Befehle",
     "about.lead": "Jeder Auftrag unten kann gesagt werden. Fast alle beginnen mit befehl. Das Beispiel ist ein ganzer Satz.",
     "about.example": "Beispiel",
-    "about.body": "Grok Assistant hört zu Hause. Das Audio bleibt hier. Grok bekommt nur den Text einer Frage oder eines Auftrags, und nur wenn die Regeln es erlauben. Der Rest bleibt im Heft auf diesem Computer.\n\nDieses Fenster ist das Protokoll: was gehört wurde, und was danach geschah. Schließen versteckt das Programm. Das Grok-Zeichen in der Leiste öffnet es wieder. Beenden schließt es.",
+    "about.body": "Was zu Hause gesprochen wird, bleibt zu Hause.\n\nDeine Stimme wird hier verarbeitet und das Audio verlässt den Computer nie. Grok erhält den Text nur, wenn du etwas fragen oder einen Auftrag geben musst. Der Rest geht nicht hinaus und wird nicht geteilt.",
     "market.hint": "Nichts lädt von allein. Wählbar wird es, wenn der Download 100 % erreicht.",
     "market.stt": "Hörmotor (STT)",
     "market.voices": "Stimmen",

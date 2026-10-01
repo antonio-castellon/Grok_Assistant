@@ -157,7 +157,7 @@
     "about.commands": "Comandos",
     "about.lead": "Cada orden de abajo se puede decir. Casi todas empiezan por comando. El ejemplo es una frase completa.",
     "about.example": "Ejemplo",
-    "about.body": "Grok Assistant escucha en casa. El audio no sale. A Grok solo se le manda el texto de una pregunta o de una orden, y solo cuando las reglas lo permiten. Lo demás se queda en el cuaderno de este equipo.\n\nEsta ventana es el registro: lo que se oyó y lo que se hizo después. Cerrarla esconde el programa. El icono de Grok en la bandeja lo vuelve a abrir. Salir lo cierra.",
+    "about.body": "Lo que se habla en casa, se queda en casa.\n\nTu voz se procesa aquí y el audio nunca sale del equipo. Grok solo recibe el texto cuando necesitas preguntarle algo o darle una orden. El resto, ni sale ni se comparte.",
     "market.hint": "Nada baja solo. En el menú entra cuando la descarga llega al 100 %.",
     "market.stt": "Motor escucha (STT)",
     "market.voices": "Voces",
