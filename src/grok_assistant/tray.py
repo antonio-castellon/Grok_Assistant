@@ -1236,6 +1236,8 @@ class TrayApp:
         else:
             self._note(f"persona {person.name}. La próxima respuesta usa estos rasgos.")
         self._paint()
+        if not restored:
+            self._drop_window("_persona_win")
 
     def _alive(self, attr: str) -> bool:
         window = getattr(self, attr, None)

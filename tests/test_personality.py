@@ -78,6 +78,7 @@ def test_personality_window_saves_a_free_behavior(tmp_path):
         app._persona_behavior.delete("1.0", "end")
         app._persona_behavior.insert("1.0", "Habla despacio y con un ejemplo.")
         app._persona_save()
+        assert app._persona_win is None
         saved = app.hub.brain.settings.personality
         assert saved["profile"] == "ines"
         assert saved["humor"] == 11
