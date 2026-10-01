@@ -30,14 +30,15 @@ def score_person(book, name: str, ear: str, transcribe=None) -> tuple[int, int]:
 
 def _transcribe(ear: str, samples) -> str:
     try:
-        if ear == "kroko":
-            from grok_assistant.kroko_ear import transcribe_clip
+        from grok_assistant.kroko_ear import STREAMING_KINDS
+        from grok_assistant.kroko_ear import transcribe_clip as stream_clip
+        from grok_assistant.offline_ear import OFFLINE_KINDS
+        from grok_assistant.offline_ear import transcribe_clip as offline_clip
 
-            return transcribe_clip(samples)
-        if ear in {"whisper", "base", "canary"}:
-            from grok_assistant.offline_ear import transcribe_clip
-
-            return transcribe_clip(ear, samples)
+        if ear in STREAMING_KINDS:
+            return stream_clip(samples, ear)
+        if ear in OFFLINE_KINDS:
+            return offline_clip(ear, samples)
     except (OSError, RuntimeError, ValueError, ImportError):
         return ""
     return ""

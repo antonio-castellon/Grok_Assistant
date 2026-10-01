@@ -17,18 +17,34 @@ def dictation_script() -> Path:
 
 ENGINE_DIRS = {
     "kroko": "sherpa-onnx-streaming-zipformer-es-kroko-2025-08-06",
+    "zipfr": "sherpa-onnx-streaming-zipformer-fr-2023-04-14",
+    "zipen": "sherpa-onnx-streaming-zipformer-en-20M-2023-02-17",
     "whisper": "sherpa-onnx-whisper-tiny",
     "base": "sherpa-onnx-whisper-base",
+    "small": "sherpa-onnx-whisper-small",
     "canary": "sherpa-onnx-nemo-canary-180m-flash-en-es-de-fr-int8",
+    "cohere": "sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01",
 }
 
 RECOGNIZER_LABELS = {
     "teclado": "Teclado",
     "windows": "Windows español",
     "kroko": "Kroko",
+    "zipfr": "Zipformer francés",
+    "zipen": "Zipformer inglés",
     "whisper": "Whisper pequeño",
     "base": "Whisper base",
+    "small": "Whisper small",
     "canary": "Canary",
+    "cohere": "Cohere",
+}
+
+# A score may auto-pick these only while the interface language matches.
+EAR_LANG = {
+    "windows": "es",
+    "kroko": "es",
+    "zipfr": "fr",
+    "zipen": "en",
 }
 
 
@@ -47,10 +63,15 @@ def with_accuracy(title: str, percent: int | None) -> str:
 
 
 def eligible_ears(recognizers: list[str], language: str) -> list[str]:
-    """Ears that can be chosen from a score. Kroko and Windows stay on Spanish."""
-    ears = [ear for ear in recognizers if ear != "teclado"]
-    if language != "es":
-        ears = [ear for ear in ears if ear not in {"kroko", "windows"}]
+    """Ears a score may select. A single-language ear stays on that language."""
+    ears = []
+    for ear in recognizers:
+        if ear == "teclado":
+            continue
+        locked = EAR_LANG.get(ear)
+        if locked and locked != language:
+            continue
+        ears.append(ear)
     return ears
 
 

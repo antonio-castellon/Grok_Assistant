@@ -89,6 +89,30 @@ def offers() -> list[Offer]:
             ),),
         ),
         Offer(
+            id="zipfr",
+            kind="stt",
+            title="Zipformer francés",
+            detail="Oído en streaming, solo francés. El audio no sale de este PC.",
+            size="380 MB",
+            engine_id="zipfr",
+            files=((
+                f"{SHERPA}/sherpa-onnx-streaming-zipformer-fr-2023-04-14.tar.bz2",
+                "models/sherpa-onnx-streaming-zipformer-fr-2023-04-14.tar.bz2",
+            ),),
+        ),
+        Offer(
+            id="zipen",
+            kind="stt",
+            title="Zipformer inglés",
+            detail="Oído en streaming, solo inglés, modelo pequeño. El audio no sale de este PC.",
+            size="122 MB",
+            engine_id="zipen",
+            files=((
+                f"{SHERPA}/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17.tar.bz2",
+                "models/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17.tar.bz2",
+            ),),
+        ),
+        Offer(
             id="whisper",
             kind="stt",
             title="Whisper pequeño",
@@ -107,6 +131,15 @@ def offers() -> list[Offer]:
             files=((f"{SHERPA}/sherpa-onnx-whisper-base.tar.bz2", "models/sherpa-onnx-whisper-base.tar.bz2"),),
         ),
         Offer(
+            id="small",
+            kind="stt",
+            title="Whisper small",
+            detail="El mismo motor, modelo small. Más fino y más pesado que el pequeño.",
+            size="610 MB",
+            engine_id="small",
+            files=((f"{SHERPA}/sherpa-onnx-whisper-small.tar.bz2", "models/sherpa-onnx-whisper-small.tar.bz2"),),
+        ),
+        Offer(
             id="canary",
             kind="stt",
             title="Canary",
@@ -116,6 +149,18 @@ def offers() -> list[Offer]:
             files=((
                 f"{SHERPA}/sherpa-onnx-nemo-canary-180m-flash-en-es-de-fr-int8.tar.bz2",
                 "models/sherpa-onnx-nemo-canary-180m-flash-en-es-de-fr-int8.tar.bz2",
+            ),),
+        ),
+        Offer(
+            id="cohere",
+            kind="stt",
+            title="Cohere",
+            detail="Oído local para 14 idiomas, entre ellos español, francés, alemán e inglés. Usa el idioma elegido. El audio no sale de este PC.",
+            size="1.6 GB",
+            engine_id="cohere",
+            files=((
+                f"{SHERPA}/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01.tar.bz2",
+                "models/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01.tar.bz2",
             ),),
         ),
     ]

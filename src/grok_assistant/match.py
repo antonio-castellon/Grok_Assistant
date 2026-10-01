@@ -439,7 +439,7 @@ def _match_fixed(blob: str) -> Hit | None:
     return None
 
 
-_EARS = ("teclado", "windows", "kroko", "whisper", "base", "canary")
+_EARS = ("teclado", "windows", "kroko", "zipfr", "zipen", "whisper", "base", "small", "canary", "cohere")
 
 
 def _ear_name(norms: list[str]) -> str | None:

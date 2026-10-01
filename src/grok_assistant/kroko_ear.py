@@ -1,21 +1,29 @@
-"""Spanish Kroko ear. Audio stays in this process. A finished phrase is text."""
+"""Streaming Zipformer ears. Kroko is the Spanish one. Audio stays in this process."""
 
 from __future__ import annotations
 
 import threading
 from pathlib import Path
 
-from grok_assistant.listen import ENGINE_DIRS
+from grok_assistant.listen import ENGINE_DIRS, RECOGNIZER_LABELS
 from grok_assistant.paths import bundle_root, default_data_dir
 
+STREAMING_KINDS = ("kroko", "zipfr", "zipen")
 
-def kroko_dir() -> Path | None:
-    name = ENGINE_DIRS["kroko"]
+
+def streaming_dir(kind: str) -> Path | None:
+    name = ENGINE_DIRS.get(kind)
+    if not name:
+        return None
     for root in (default_data_dir() / "models", bundle_root() / "models"):
         folder = root / name
         if folder.is_dir() and (folder / "tokens.txt").exists():
             return folder
     return None
+
+
+def kroko_dir() -> Path | None:
+    return streaming_dir("kroko")
 
 
 def _model(folder: Path, prefix: str) -> Path | None:
@@ -26,29 +34,33 @@ def _model(folder: Path, prefix: str) -> Path | None:
     return sorted(int8 or files)[0]
 
 
-_clip_recognizer = None
+_clip_recognizers: dict = {}
 
 
-def transcribe_clip(samples) -> str:
-    """Read one saved phrase with Kroko. The live microphone is not involved."""
-    global _clip_recognizer
+def _label(kind: str) -> str:
+    return RECOGNIZER_LABELS.get(kind, kind)
+
+
+def transcribe_clip(samples, kind: str = "kroko") -> str:
+    """Read one saved phrase. The live microphone is not involved."""
     try:
         import numpy as np
         import sherpa_onnx
     except ImportError:
         return ""
-    folder = kroko_dir()
+    folder = streaming_dir(kind)
     if folder is None or samples is None:
         return ""
     try:
-        if _clip_recognizer is None:
+        recognizer = _clip_recognizers.get(kind)
+        if recognizer is None:
             encoder = _model(folder, "encoder")
             decoder = _model(folder, "decoder")
             joiner = _model(folder, "joiner")
             tokens = folder / "tokens.txt"
             if not all([encoder, decoder, joiner, tokens.exists()]):
                 return ""
-            _clip_recognizer = sherpa_onnx.OnlineRecognizer.from_transducer(
+            recognizer = sherpa_onnx.OnlineRecognizer.from_transducer(
                 tokens=str(tokens),
                 encoder=str(encoder),
                 decoder=str(decoder),
@@ -59,16 +71,17 @@ def transcribe_clip(samples) -> str:
                 decoding_method="greedy_search",
                 enable_endpoint_detection=False,
             )
+            _clip_recognizers[kind] = recognizer
         audio = np.ascontiguousarray(samples, dtype=np.float32).reshape(-1)
         if audio.size < 1600:
             return ""
-        stream = _clip_recognizer.create_stream()
+        stream = recognizer.create_stream()
         stream.accept_waveform(16000, audio)
         stream.accept_waveform(16000, np.zeros(int(16000 * 0.8), dtype=np.float32))
         stream.input_finished()
-        while _clip_recognizer.is_ready(stream):
-            _clip_recognizer.decode_stream(stream)
-        result = _clip_recognizer.get_result(stream)
+        while recognizer.is_ready(stream):
+            recognizer.decode_stream(stream)
+        result = recognizer.get_result(stream)
         text = result if isinstance(result, str) else getattr(result, "text", "")
         return str(text or "").strip()
     except (OSError, RuntimeError, ValueError, TypeError):
@@ -76,7 +89,8 @@ def transcribe_clip(samples) -> str:
 
 
 class KrokoEar:
-    def __init__(self, on_line, on_status=None, wake_name=None):
+    def __init__(self, on_line, on_status=None, wake_name=None, kind: str = "kroko"):
+        self.kind = kind if kind in STREAMING_KINDS else "kroko"
         self.on_line = on_line
         self.on_status = on_status or (lambda _text: None)
         self._wake_name = wake_name or (lambda: "grok")
@@ -86,9 +100,9 @@ class KrokoEar:
         self._thread: threading.Thread | None = None
 
     def start(self) -> bool:
-        folder = kroko_dir()
+        folder = streaming_dir(self.kind)
         if folder is None:
-            self.error = "el modelo Kroko no está en el disco"
+            self.error = f"el modelo {_label(self.kind)} no está en el disco"
             return False
         try:
             import sherpa_onnx  # noqa: F401
@@ -146,7 +160,7 @@ class KrokoEar:
             joiner = _model(folder, "joiner")
             tokens = folder / "tokens.txt"
             if not all([encoder, decoder, joiner, tokens.exists()]):
-                self.error = "al modelo Kroko le faltan archivos"
+                self.error = f"al modelo {_label(self.kind)} le faltan archivos"
                 self._report(self.error)
                 return
             recognizer = sherpa_onnx.OnlineRecognizer.from_transducer(
@@ -169,10 +183,10 @@ class KrokoEar:
             block = int(0.1 * rate)
             source = sd.InputStream(channels=1, dtype="float32", samplerate=rate)
         except Exception as exc:
-            self.error = f"Kroko no arrancó: {exc}"
+            self.error = f"{_label(self.kind)} no arrancó: {exc}"
             self._report(self.error)
             return
-        self._report("Kroko está escuchando el micrófono")
+        self._report(f"{_label(self.kind)} está escuchando el micrófono")
         try:
             with source:
                 quiet = 0.0
@@ -205,5 +219,5 @@ class KrokoEar:
                         quiet = 0.0
                         heard_audio.clear()
         except Exception as exc:
-            self.error = f"Kroko se detuvo: {exc}"
+            self.error = f"{_label(self.kind)} se detuvo: {exc}"
             self._report(self.error)

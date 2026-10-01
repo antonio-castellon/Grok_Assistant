@@ -11,12 +11,13 @@ from tkinter import messagebox, simpledialog, ttk
 
 from grok_assistant.helptext import help_topics
 from grok_assistant.hub import Hub, build
-from grok_assistant.kroko_ear import KrokoEar
+from grok_assistant.kroko_ear import STREAMING_KINDS, KrokoEar
 from grok_assistant.offline_ear import OFFLINE_KINDS, OfflineEar
 from grok_assistant.listen import (
     RECOGNIZER_LABELS,
     Dictation,
     discover_recognizers,
+    EAR_LANG,
     eligible_ears,
     highest_accuracy,
     install_windows_speech,
@@ -76,6 +77,28 @@ def run() -> None:
     app = TrayApp(root, build())
     app.start()
     root.mainloop()
+
+
+_HEARS = {"es": "español", "fr": "francés", "en": "inglés", "de": "alemán"}
+
+
+def _outside_clause(blocked: list[str], title, rated: dict[str, int]) -> str:
+    """Why a higher score stayed off: that ear only hears one language."""
+    groups: list[tuple[str, list[str]]] = []
+    index: dict[str, int] = {}
+    for ear in blocked:
+        locked = EAR_LANG.get(ear, "")
+        if locked not in index:
+            index[locked] = len(groups)
+            groups.append((locked, []))
+        groups[index[locked]][1].append(ear)
+    parts = []
+    for locked, members in groups:
+        names = ", ".join(with_accuracy(title(ear), rated[ear]) for ear in members)
+        verb = "queda" if len(members) == 1 else "quedan"
+        heard = _HEARS.get(locked, locked or "otro idioma")
+        parts.append(f"{names} {verb} fuera: solo oye {heard}.")
+    return " ".join(parts)
 
 
 class TrayApp:
@@ -380,9 +403,7 @@ class TrayApp:
         blocked = [ear for ear in visible if ear not in eligible and rated[ear] > chosen_percent]
         line = f"motor escucha: {current_label}. huellas combinadas: {joined}."
         if blocked:
-            names = ", ".join(with_accuracy(title(ear), rated[ear]) for ear in blocked)
-            verb = "queda" if len(blocked) == 1 else "quedan"
-            line += f" {names} {verb} fuera: el idioma no es español."
+            line += " " + _outside_clause(blocked, title, rated)
         self._note(line)
 
     def _apply_best_ear(self) -> None:
@@ -904,8 +925,9 @@ class TrayApp:
         self.hub.brain.settings.language = code
         installed = set(self.hub.brain.recognizers)
         ear = self.hub.brain.settings.recognizer
-        if code != "es" and ear in {"kroko", "windows"}:
-            for candidate in ("base", "whisper", "canary"):
+        locked = EAR_LANG.get(ear)
+        if locked and locked != code:
+            for candidate in ("base", "whisper", "canary", "small", "cohere"):
                 if candidate in installed:
                     self.hub.brain.settings.recognizer = candidate
                     break
@@ -1929,8 +1951,9 @@ class TrayApp:
     def _sync_ear(self) -> None:
         if self._ears_suspended:
             return
-        want_windows = self.hub.brain.settings.recognizer == "windows" and not self.user_paused
-        want_kroko = self.hub.brain.settings.recognizer == "kroko" and not self.user_paused
+        kind = self.hub.brain.settings.recognizer
+        want_windows = kind == "windows" and not self.user_paused
+        want_stream = kind in STREAMING_KINDS and not self.user_paused
         if want_windows and self.dictation is None:
             ear = Dictation(self._heard, self.pause_file)
             if ear.start():
@@ -1939,17 +1962,27 @@ class TrayApp:
         if not want_windows and self.dictation is not None:
             self.dictation.stop()
             self.dictation = None
-        if want_kroko and self.kroko is None:
-            ear = KrokoEar(self._heard, self._kroko_status, wake_name=lambda: self.hub.brain.settings.wake_name)
+        if want_stream and (self.kroko is None or self.kroko.kind != kind):
+            if self.kroko is not None:
+                self.kroko.stop()
+                self.kroko = None
+            ear = KrokoEar(
+                self._heard,
+                self._kroko_status,
+                wake_name=lambda: self.hub.brain.settings.wake_name,
+                kind=kind,
+            )
             if ear.start():
                 self.kroko = ear
-                self._note("cargo Kroko, el modelo tarda unos segundos")
+                if kind == "kroko":
+                    self._note("cargo Kroko, el modelo tarda unos segundos")
+                else:
+                    self._note(f"cargo {RECOGNIZER_LABELS.get(kind, kind)}")
             else:
-                self._note(ear.error or "Kroko no pudo escuchar")
-        if not want_kroko and self.kroko is not None:
+                self._note(ear.error or "ese oído no pudo escuchar")
+        if not want_stream and self.kroko is not None:
             self.kroko.stop()
             self.kroko = None
-        kind = self.hub.brain.settings.recognizer
         want_offline = kind in OFFLINE_KINDS and not self.user_paused
         if want_offline and (self.offline is None or self.offline.kind != kind):
             if self.offline is not None:

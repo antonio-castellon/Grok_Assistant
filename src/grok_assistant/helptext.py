@@ -66,7 +66,7 @@ HELP_TOPICS = (
         "El motor de STT en streaming para español deja el audio en este PC y cierra la frase en menos de dos segundos después de callarte. "
         "Dentro de una conversación, lo que se oye pasa directo a Grok hasta un adiós. "
         "Si el teclado era el único oído y ese motor ya está en el disco, al arrancar se elige él. "
-        "Whisper pequeño, Whisper base y Canary están en Mercado, al principio de la lista. Descargar los deja listos y entonces el menú permite elegirlos.",
+        "Whisper pequeño, Whisper base, Whisper small, Canary y Cohere están en Mercado. Zipformer francés y Zipformer inglés también. Descargar los deja listos y entonces el menú permite elegirlos. Un Zipformer de otro idioma no se elige solo.",
         "comando reconocedor teclado",
     ),
     (

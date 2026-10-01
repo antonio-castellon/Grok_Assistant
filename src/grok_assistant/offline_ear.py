@@ -1,4 +1,4 @@
-"""Offline ears for Whisper and Canary. Audio stays here. A finished phrase is text."""
+"""Offline ears for Whisper, Canary, and Cohere. Audio stays here. A finished phrase is text."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 from grok_assistant.listen import ENGINE_DIRS
 from grok_assistant.paths import bundle_root, default_data_dir
 
-OFFLINE_KINDS = ("whisper", "base", "canary")
+OFFLINE_KINDS = ("whisper", "base", "small", "canary", "cohere")
 
 
 def model_dir(kind: str) -> Path | None:
@@ -126,6 +126,14 @@ class OfflineEar:
                 tokens=str(tokens),
                 src_lang=lang,
                 tgt_lang=lang,
+                num_threads=2,
+            )
+        if self.kind == "cohere":
+            return sherpa_onnx.OfflineRecognizer.from_cohere_transcribe(
+                encoder=str(encoder),
+                decoder=str(decoder),
+                tokens=str(tokens),
+                language=lang,
                 num_threads=2,
             )
         return sherpa_onnx.OfflineRecognizer.from_whisper(

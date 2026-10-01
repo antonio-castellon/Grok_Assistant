@@ -152,8 +152,95 @@ def test_catalog_covers_voices_ears_and_the_local_model():
 
 def test_menu_ears_are_in_the_market():
     engines = {item.engine_id for item in offers() if item.kind == "stt"}
-    assert engines == {"windows", "kroko", "whisper", "base", "canary"}
+    assert engines == {"windows", "kroko", "zipfr", "zipen", "whisper", "base", "small", "canary", "cohere"}
     assert offers()[0].kind == "stt"
+
+
+def test_new_ears_are_downloads_and_stay_in_their_language(tmp_path):
+    import sys
+    import types
+
+    from grok_assistant.i18n import stt_language
+    from grok_assistant.kroko_ear import transcribe_clip
+    from grok_assistant.listen import EAR_LANG, ENGINE_DIRS, eligible_ears
+    from grok_assistant.offline_ear import OFFLINE_KINDS, OfflineEar
+    from grok_assistant import kroko_ear
+
+    wanted = {
+        "small": "sherpa-onnx-whisper-small.tar.bz2",
+        "zipfr": "sherpa-onnx-streaming-zipformer-fr-2023-04-14.tar.bz2",
+        "zipen": "sherpa-onnx-streaming-zipformer-en-20M-2023-02-17.tar.bz2",
+        "cohere": "sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01.tar.bz2",
+    }
+    rows = {item.engine_id: item for item in offers() if item.kind == "stt"}
+    for engine, archive in wanted.items():
+        item = rows[engine]
+        assert item.files[0][0].endswith("/" + archive)
+        assert item.files[0][1] == "models/" + archive
+        assert ENGINE_DIRS[engine] == archive.removesuffix(".tar.bz2")
+        assert item.ready(tmp_path) is False
+    assert "small" in OFFLINE_KINDS and "cohere" in OFFLINE_KINDS
+    assert kroko_ear.STREAMING_KINDS == ("kroko", "zipfr", "zipen")
+    pool = ["teclado", "windows", "kroko", "whisper", "small", "cohere", "zipfr", "zipen"]
+    assert eligible_ears(pool, "es") == ["windows", "kroko", "whisper", "small", "cohere"]
+    assert eligible_ears(pool, "fr") == ["whisper", "small", "cohere", "zipfr"]
+    assert eligible_ears(pool, "en") == ["whisper", "small", "cohere", "zipen"]
+    assert eligible_ears(pool, "de") == ["whisper", "small", "cohere"]
+    assert EAR_LANG["zipfr"] == "fr" and EAR_LANG["zipen"] == "en"
+
+    seen = {}
+
+    def missing(kind):
+        seen["kind"] = kind
+        return None
+
+    original = kroko_ear.streaming_dir
+    kroko_ear.streaming_dir = missing
+    try:
+        assert transcribe_clip(None, "zipen") == ""
+    finally:
+        kroko_ear.streaming_dir = original
+    assert seen["kind"] == "zipen"
+
+    folder = tmp_path / "model"
+    folder.mkdir()
+    (folder / "encoder.int8.onnx").write_bytes(b"e")
+    (folder / "decoder.int8.onnx").write_bytes(b"d")
+    (folder / "tokens.txt").write_text("a 1\n", encoding="utf-8")
+    calls = {}
+
+    class Rec:
+        @staticmethod
+        def from_whisper(**kwargs):
+            calls["whisper"] = kwargs
+            return "whisper"
+
+        @staticmethod
+        def from_cohere_transcribe(**kwargs):
+            calls["cohere"] = kwargs
+            return "cohere"
+
+        @staticmethod
+        def from_nemo_canary(**kwargs):
+            calls["canary"] = kwargs
+            return "canary"
+
+    previous = sys.modules.get("sherpa_onnx")
+    sys.modules["sherpa_onnx"] = types.SimpleNamespace(OfflineRecognizer=Rec)
+    try:
+        lang = stt_language()
+        assert OfflineEar("small", lambda *_args: None)._recognizer(folder) == "whisper"
+        assert calls["whisper"]["language"] == lang
+        assert calls["whisper"]["task"] == "transcribe"
+        assert OfflineEar("cohere", lambda *_args: None)._recognizer(folder) == "cohere"
+        assert calls["cohere"]["language"] == lang
+        assert calls["cohere"]["encoder"].endswith("encoder.int8.onnx")
+        assert "canary" not in calls
+    finally:
+        if previous is None:
+            sys.modules.pop("sherpa_onnx", None)
+        else:
+            sys.modules["sherpa_onnx"] = previous
 
 
 def test_progress_percent_moves_as_soon_as_bytes_arrive():
