@@ -12,7 +12,7 @@ irm https://x.ai/cli/install.ps1 | iex
 
 **Iniciar sesión** abre `grok login`, que usa el navegador. **Comprobar** pregunta a `grok models` si la cuenta está lista. **Continuar** arranca el asistente de todos modos, para que las órdenes locales sigan funcionando mientras la nube no está. No hay una clave de API que pegar.
 
-La primera vez que arranca, si no hay un `LICENSE.md` al lado del ejecutable, lo copia ahí. Si el archivo ya está, lo deja como está.
+Los límites de uso están en Acerca de, en la pestaña Licencia. El programa no copia ese texto al lado del ejecutable.
 
 Para volver a construir ese ejecutable desde esta carpeta:
 

@@ -12,7 +12,7 @@ irm https://x.ai/cli/install.ps1 | iex
 
 **Iniciar sesión** öffnet `grok login`, das den Browser benutzt. **Comprobar** fragt `grok models`, ob das Konto bereit ist. **Continuar** startet den Assistenten trotzdem, damit lokale Aufträge weiter gehen, während die Wolke fehlt. Es gibt keinen API-Schlüssel zum Einfügen.
 
-Beim ersten Start, wenn neben der Programmdatei keine `LICENSE.md` liegt, kopiert es eine dorthin. Liegt die Datei schon da, bleibt sie, wie sie ist.
+Die Nutzungsgrenzen stehen unter Über, im Reiter Lizenz. Das Programm kopiert diesen Text nicht neben die Programmdatei.
 
 Um diese Programmdatei aus diesem Ordner neu zu bauen:
 

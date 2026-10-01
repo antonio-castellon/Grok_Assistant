@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from grok_assistant.ui.deps import *  # noqa: F401,F403
 
 
@@ -156,6 +158,27 @@ class WindowMixin:
         self._build_window(place=False)
         self._paint()
 
+    def _paint_detail(self, *_args) -> None:
+        widget = getattr(self, "detail_label", None)
+        if widget is None:
+            return
+        try:
+            if not int(widget.winfo_exists()):
+                return
+        except tk.TclError:
+            return
+        raw = self.detail_var.get()
+        widget.delete("1.0", "end")
+        cursor = 0
+        for match in re.finditer(r"\[([^\]]*)\]", raw):
+            widget.insert("end", raw[cursor:match.start()])
+            widget.insert("end", "[")
+            widget.insert("end", match.group(1), "value")
+            widget.insert("end", "]")
+            cursor = match.end()
+        if cursor < len(raw):
+            widget.insert("end", raw[cursor:])
+
     def _build_window(self, place: bool = True) -> None:
         self.root.title("Grok Assistant")
         if place:
@@ -177,16 +200,18 @@ class WindowMixin:
         corner.pack(side="right", anchor="n")
         left = tk.Frame(head, bg=look.panel)
         left.pack(side="left", fill="both", expand=True)
-        self.detail_label = tk.Label(
-            left, textvariable=self.detail_var, bg=look.panel, fg=look.muted,
-            font=("Segoe UI", 11), anchor="nw", justify="left",
+        self.detail_label = tk.Text(
+            left, height=3, width=1, wrap="word", bg=look.panel, fg=look.muted,
+            font=("Segoe UI", 11), relief="flat", borderwidth=0, highlightthickness=0,
+            padx=0, pady=0, cursor="arrow", takefocus=0, insertwidth=0,
         )
         self.detail_label.pack(anchor="nw", fill="x")
-        self.title_label = tk.Label(
-            left, text="Grok Assistant", bg=look.panel, fg=look.amber, font=look.font_bold, anchor="w",
-        )
-        self.title_label.pack(anchor="w", pady=(2, 0))
-        left.bind("<Configure>", lambda event: self.detail_label.configure(wraplength=max(240, event.width)))
+        self.detail_label.tag_configure("value", font=("Segoe UI", 11, "bold"), foreground=look.ink)
+        self.detail_label.bind("<Key>", lambda _event: "break")
+        if not getattr(self, "_detail_traced", False):
+            self.detail_var.trace_add("write", self._paint_detail)
+            self._detail_traced = True
+        self._paint_detail()
         self.state_var = tk.StringVar(value=_ui("status.banner_wait", "ESPERA"))
         self.state_label = tk.Label(
             corner, textvariable=self.state_var, bg=look.panel, fg=look.teal, font=("Segoe UI", 26, "bold"),

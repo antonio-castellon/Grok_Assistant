@@ -99,8 +99,13 @@ def test_changing_theme_repaints_the_window(tmp_path):
         app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
         root.update_idletasks()
         assert app.shared_label.cget("text") == "Días que se recuerdan las conversaciones"
-        assert app.detail_label.master.pack_slaves()[0] is app.detail_label
-        assert app.detail_label.master.pack_slaves()[1] is app.title_label
+        assert app.detail_label.master.pack_slaves() == [app.detail_label]
+        app.detail_var.set("modelo [grok-4.7]   esfuerzo [bajo]")
+        ranges = app.detail_label.tag_ranges("value")
+        assert app.detail_label.get(ranges[0], ranges[1]) == "grok-4.7"
+        assert app.detail_label.get(ranges[2], ranges[3]) == "bajo"
+        assert app.detail_label.get("1.0", "1.8") == "modelo ["
+        assert "bold" in str(app.detail_label.tag_cget("value", "font")).lower()
         assert app.state_label.master.pack_info()["side"] == "right"
         assert app.state_label.master.pack_info()["anchor"] == "n"
         assert app.chrome.cget("bg") == theme.look.panel
@@ -155,6 +160,20 @@ def _flow_text(app) -> str:
     )
 
 
+def _box_fill(app, title: str) -> str:
+    for item in app.flow.find_all():
+        if app.flow.type(item) != "text" or app.flow.itemcget(item, "text") != title:
+            continue
+        x, y = app.flow.coords(item)[:2]
+        for other in app.flow.find_all():
+            if app.flow.type(other) != "rectangle":
+                continue
+            x1, y1, x2, y2 = app.flow.coords(other)
+            if x1 <= x <= x2 and y1 <= y <= y2:
+                return app.flow.itemcget(other, "fill")
+    return ""
+
+
 def test_open_chat_shows_a_direct_path_to_grok(tmp_path):
     import tkinter as tk
 
@@ -183,15 +202,24 @@ def test_open_chat_shows_a_direct_path_to_grok(tmp_path):
         app.hub.brain.settings.talk_mode = "abierta"
         app.hub.brain.in_conversation = False
         app._draw_flow(snap)
-        closed = _flow_text(app)
-        assert "Charla abierta: el texto va directo a Grok" in closed
-        assert "Aún cerrada" in closed
+        chosen = _flow_text(app)
+        assert "filtro de Grok" in chosen
+        assert "Aún cerrada" not in chosen
+        assert "¿Conversación abierta?" not in chosen
+        assert _box_fill(app, "Modelo local") == theme.look.field
+        assert _box_fill(app, "Grok") == theme.look.flow_on
         snap["banner_kind"] = "talk"
         app.hub.brain.in_conversation = True
         app._draw_flow(snap)
         opened = _flow_text(app)
-        assert "Directo a Grok, el modelo local no decide" in opened
-        assert "no decide" in opened
+        assert "filtro de Grok" in opened
+        assert _box_fill(app, "Modelo local") == theme.look.field
+        app.hub.brain.settings.talk_mode = "seguida"
+        snap["banner_kind"] = "wait"
+        app._draw_flow(snap)
+        other = _flow_text(app)
+        assert "¿Conversación abierta?" in other
+        assert "filtro de Grok" not in other
     finally:
         root.destroy()
 

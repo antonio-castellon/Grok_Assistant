@@ -519,8 +519,10 @@ class ActionMixin:
         book.pack(fill="both", expand=True, padx=12, pady=12)
         about = ttk.Frame(book)
         commands = ttk.Frame(book)
+        license_page = ttk.Frame(book)
         book.add(about, text=_ui("about.title", "Acerca de"))
         book.add(commands, text=_ui("about.commands", "Comandos"))
+        book.add(license_page, text=_ui("about.license_tab", "Licencia"))
         body = tk.Text(
             about, wrap="word", bg=look.field, fg=look.ink, font=("Segoe UI", 12),
             relief="flat", padx=18, pady=16, insertbackground=look.ink,
@@ -539,10 +541,21 @@ class ActionMixin:
         body.insert("end", "www.castellon.ch", "site")
         body.insert("end", "\n\n" + _ui("about.body", ""))
         body.insert("end", "\n\n" + _ui("about.experimental", "Esta aplicación es experimental."))
-        body.insert("end", "\n" + _ui("about.license_note", "El archivo LICENSE.md, junto al programa, dice los límites."))
         body.bind("<Key>", lambda _event: "break")
         self._fill_commands(commands)
+        self._fill_license(license_page)
         window.protocol("WM_DELETE_WINDOW", window.destroy)
+
+    def _fill_license(self, parent: ttk.Frame) -> None:
+        from grok_assistant.paths import license_text
+
+        box = tk.Text(
+            parent, wrap="word", bg=look.field, fg=look.ink, font=("Segoe UI", 12),
+            relief="flat", padx=18, pady=16, insertbackground=look.ink,
+        )
+        box.pack(fill="both", expand=True)
+        box.insert("end", license_text())
+        box.bind("<Key>", lambda _event: "break")
 
     def _fill_commands(self, parent: ttk.Frame) -> None:
         box = tk.Text(

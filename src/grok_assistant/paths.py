@@ -40,21 +40,13 @@ def exe_dir() -> Path:
     return Path(__file__).resolve().parents[2] / "dist"
 
 
-def ensure_license(folder: Path | None = None, source: Path | None = None) -> Path | None:
-    """Copy LICENSE.md beside the program when that copy is not there yet."""
-    folder = exe_dir() if folder is None else folder
-    source = bundle_root() / "LICENSE.md" if source is None else source
-    target = folder / "LICENSE.md"
-    if target.exists():
-        return target
-    if not source.is_file():
-        return None
+def license_text() -> str:
+    """The shipped license, read from the program itself. Nothing is written beside the executable."""
+    path = bundle_root() / "LICENSE.md"
     try:
-        folder.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(source.read_bytes())
+        return path.read_text(encoding="utf-8")
     except OSError:
-        return None
-    return target
+        return ""
 
 
 def speakers_file() -> Path:

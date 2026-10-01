@@ -73,14 +73,16 @@ class FlowMixin:
         elif open_chat:
             caption = _ui(
                 "flow.abierta_caption",
-                "Charla abierta: el texto va directo a Grok. El modelo local no decide.",
+                "Charla abierta. Toda la conversación pasa por el filtro de Grok: "
+                "decide si es una orden para este equipo o una pregunta a internet.",
             )
+        notice = open_chat and not paused and not testing
         canvas.create_text(
             pad, 8, anchor="nw", text=caption,
-            fill=look.amber if paused or testing else look.muted,
+            fill=look.amber if paused or testing else (look.ink if notice else look.muted),
             font=("Segoe UI", 11), width=max(240, width - pad * 2),
         )
-        top = 56 if open_chat and not paused and not testing else 34
+        top = 78 if notice else 34
         avail = max(height - top - 8, 240)
         gap = 8
         box_h = max(46, min(64, int((avail - gap * 7) / 6.4)))
@@ -113,17 +115,36 @@ class FlowMixin:
         down(width / 2, y, y + gap + 2, alive)
         y += gap
         heard = clip(snap.get("last_heard") or "—")
-        box(pad, y, inner, max(40, box_h - 8), _ui("flow.text", "Texto"), heard, alive)
-        y += max(40, box_h - 8)
+        text_h = max(40, box_h - 8)
+        box(pad, y, inner, text_h, _ui("flow.text", "Texto"), heard, alive)
+        y += text_h
+        # Charla abierta is the direct path as soon as it is chosen. The local box stays dark.
+        if open_chat and not paused and not testing:
+            y += gap
+            col = (inner - 12) / 2
+            grok_x = pad + col + 12
+            grok_on = alive
+            box(pad, y, col, box_h, _ui("flow.local", "Modelo local"), _ui("flow.skip", "no entra"), False)
+            box(
+                grok_x, y, col, box_h, _ui("flow.grok", "Grok"),
+                clip(f"{snap.get('model') or 'grok'} · {_ui('flow.grok_note', 'solo texto')}"),
+                grok_on,
+            )
+            canvas.create_line(
+                width / 2, y - gap, grok_x + col / 2, y,
+                fill=look.amber if grok_on else look.button_active,
+                width=2, arrow="last", arrowshape=(10, 12, 4),
+            )
+            voice_top = y + box_h + gap
+            down(grok_x + col / 2, y + box_h, voice_top, grok_on)
+            box(
+                grok_x, voice_top, col, max(58, box_h),
+                _ui("flow.voice", "Voz"), clip(f"{voice_name} · {voice_lib}"), grok_on,
+            )
+            return
         down(width / 2, y, y + gap + 2, alive and not testing)
         y += gap
-        direct = open_chat and talking and not testing
-        if direct:
-            ask_detail = _ui("flow.abierta_yes", "Sí. Directo a Grok, el modelo local no decide.")
-        elif open_chat and not testing:
-            ask_detail = _ui("flow.abierta_no", "Aún cerrada. Al abrirse, el texto va directo a Grok.")
-        else:
-            ask_detail = _ui("flow.yes", "") if talking else _ui("flow.no", "")
+        ask_detail = _ui("flow.yes", "") if talking else _ui("flow.no", "")
         box(pad, y, inner, box_h, _ui("flow.ask", "¿Conversación abierta?"), ask_detail, alive and not testing)
         ask_bottom = y + box_h
         y = ask_bottom + gap
@@ -131,10 +152,8 @@ class FlowMixin:
         local_on = alive and not testing and not talking
         grok_on = alive and talking
         has_local = local_name != _ui("status.no_identifier", "sin identificador")
-        annotating = alive and not testing and talking and has_local and not direct
-        if direct:
-            local_box = _ui("flow.local_nodecide", "no decide")
-        elif annotating:
+        annotating = alive and not testing and talking and has_local
+        if annotating:
             local_box = _ui("flow.note", "anota")
         elif talking:
             local_box = _ui("flow.skip", "no entra")
