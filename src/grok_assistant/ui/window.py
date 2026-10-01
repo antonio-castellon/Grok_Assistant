@@ -75,7 +75,8 @@ class WindowMixin:
         self.root.configure(bg=look.bg)
         style = ttk.Style(self.root)
         try:
-            style.theme_use("clam")
+            if style.theme_use() != "clam":
+                style.theme_use("clam")
         except tk.TclError:
             pass
         style.configure(".", background=look.bg, foreground=look.ink, font=look.font)
@@ -140,16 +141,15 @@ class WindowMixin:
             self._drop_window(attr)
         self._debug_cache = []
         self.debug_text = None
-        for child in list(self.root.winfo_children()):
-            child.destroy()
+        self.flow = None
+        # The menu bar is one of the children. Detach it, then destroy once.
         try:
-            current = str(self.root["menu"] or "")
+            self.root.configure(menu="")
         except tk.TclError:
-            current = ""
-        self.root.configure(menu="")
-        if current:
+            pass
+        for child in list(self.root.winfo_children()):
             try:
-                self.root.nametowidget(current).destroy()
+                child.destroy()
             except tk.TclError:
                 pass
         self._style()

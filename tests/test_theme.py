@@ -32,6 +32,31 @@ def test_a_file_beside_the_exe_overrides_and_fills_missing_keys(tmp_path, monkey
     assert theme.theme_by_id("no-such").id == "noche"
 
 
+def test_changing_theme_repaints_the_window(tmp_path):
+    import tkinter as tk
+
+    from grok_assistant.rules.hub import build
+    from grok_assistant.ui.app import TrayApp
+
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
+        root.update_idletasks()
+        app._apply_theme("dia")
+        root.update()
+        assert theme.look.id == "dia"
+        assert root.cget("bg") == "#f4f1ea"
+        assert app.talk_hint.cget("bg") == "#f4f1ea"
+        assert len(root.winfo_children()) > 0
+        app._apply_theme("noche")
+        root.update()
+        assert root.cget("bg") == "#14181e"
+        assert app.talk_hint.cget("bg") == "#14181e"
+    finally:
+        root.destroy()
+
+
 def test_a_written_false_does_not_turn_file_edits_on(tmp_path):
     path = tmp_path / "config.json"
     path.write_text(json.dumps({"grok_files": "false", "theme": "mar"}), encoding="utf-8")
