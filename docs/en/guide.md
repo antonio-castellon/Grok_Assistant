@@ -19,7 +19,7 @@ Do this once, in this order.
 1. **Language.** Pick Español, Français, Deutsch, or English. Menus and answers switch to that language.
 2. **Listening engine (STT).** This is the program that turns speech into text. Pick one in the menu. If it is missing, open **Voice market**, tab **Listening engine (STT)**, and download it. It can be chosen when the download reaches 100%.
 3. **Voice.** Pick a voice in the same language. **Voice market**, tab **Voices**, has more. Only voices for the active language are listed.
-4. **Print.** **Admin → Prints → New print…**. Say the sixteen phrases once. The program saves the sound, builds one print for every engine from it, and writes down what each engine gets right, as `(92%)`. It selects the highest percent. Changing the engine does not mean recording again.
+4. **Print.** **Admin → Prints → New print…**. Say the sixteen phrases once. The program saves the sound, builds one print for every engine from it, and writes down what each engine gets right, as `(92%)`. That list is information. At startup it adds every print, keeps the highest engine, and writes the choice on Debug. Change the engine under **Listen**.
 5. **Password.** Only if you will create agents. **Admin → Password…**. Type it twice. The program stores a hash, not the password itself.
 6. **Start with Windows** stays off until you turn it on under **Admin**.
 

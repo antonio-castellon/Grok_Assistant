@@ -19,7 +19,7 @@ Einmal, in dieser Reihenfolge.
 1. **Sprache.** Wähle Español, Français, Deutsch oder English. Menüs und Antworten wechseln in diese Sprache.
 2. **Hörmotor (STT).** Das ist das Programm, das Sprache in Text verwandelt. Wähle einen im Menü. Fehlt er, öffne **Voice market**, Reiter **Hörmotor (STT)**, und lade ihn. Wählbar wird er bei 100 %.
 3. **Stimme.** Wähle eine Stimme derselben Sprache. **Voice market**, Reiter **Stimmen**, hat mehr. Es erscheinen nur Stimmen der aktiven Sprache.
-4. **Abdruck.** **Admin → Stimmabdrücke → Neuer Abdruck…**. Sprich die sechzehn Sätze einmal. Das Programm speichert den Ton, macht daraus einen Abdruck für alle Motoren und notiert, was jeder trifft, etwa `(92%)`. Es wählt den höchsten Prozentwert. Den Motor zu wechseln heißt nicht, noch einmal aufzunehmen.
+4. **Abdruck.** **Admin → Stimmabdrücke → Neuer Abdruck…**. Sprich die sechzehn Sätze einmal. Das Programm speichert den Ton, macht daraus einen Abdruck für alle Motoren und notiert, was jeder trifft, etwa `(92%)`. Die Liste ist nur Auskunft. Beim Start zählt es alle Abdrücke zusammen, behält den höchsten Motor und schreibt das ins Debug-Fenster. Den Motor wechselst du unter **Hören**.
 5. **Passwort.** Nur zum Anlegen von Agenten. **Admin → Passwort…**. Schreib es zweimal. Das Programm speichert eine Prüfsumme, nicht das Passwort im Klartext.
 6. **Mit Windows starten** bleibt aus, bis du es unter **Admin** einschaltest.
 

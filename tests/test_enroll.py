@@ -116,6 +116,18 @@ def test_a_score_is_a_whole_percent_beside_the_library(tmp_path):
     }
     assert book.accuracies("Ana") == {"whisper": 94, "kroko": 33}
     assert book.accuracies("Nadie") == {}
+    book.people["Luis"] = {
+        "prints": {},
+        "scores": {
+            "whisper": {"hits": 4, "total": 16},
+            "kroko": {"hits": 16, "total": 16},
+        },
+    }
+    book.people["Ana"]["scores"]["kroko"] = {"hits": 14, "total": 16}
+    assert book.accuracies("Ana")["whisper"] > book.accuracies("Ana")["kroko"]
+    assert book.combined_accuracies() == {"whisper": 59, "kroko": 94}
+    assert highest_accuracy(book.combined_accuracies(), ["kroko", "whisper"], "whisper") == "kroko"
+    assert SpeakerBook(tmp_path / "empty.json").combined_accuracies() == {}
     assert with_accuracy("Whisper pequeño", 94) == "Whisper pequeño (94%)"
     assert with_accuracy("Kroko", None) == "Kroko"
     available = ["teclado", "windows", "kroko", "whisper"]

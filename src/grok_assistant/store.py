@@ -342,6 +342,29 @@ class SpeakerBook:
             rated[str(ear)] = round(100 * int(row["hits"]) / total)
         return rated
 
+    def combined_accuracies(self) -> dict[str, int]:
+        """Hit rate of each listener, pooling every saved print."""
+        hits: dict[str, int] = {}
+        total: dict[str, int] = {}
+        for person in self.people.values():
+            scores = person.get("scores") or {}
+            if not isinstance(scores, dict):
+                continue
+            for ear, row in scores.items():
+                if not isinstance(row, dict) or "hits" not in row or "total" not in row:
+                    continue
+                count = int(row["total"])
+                if count <= 0:
+                    continue
+                key = str(ear)
+                hits[key] = hits.get(key, 0) + int(row["hits"])
+                total[key] = total.get(key, 0) + count
+        return {
+            ear: round(100 * hits[ear] / total[ear])
+            for ear in hits
+            if total[ear] > 0
+        }
+
     def set_score(self, name: str, ear: str, hits: int, total: int) -> None:
         found = self.resolve(name)
         if not found:

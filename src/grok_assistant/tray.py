@@ -130,6 +130,7 @@ class TrayApp:
         threading.Thread(target=self._score_pending, daemon=True).start()
         threading.Thread(target=self._warm_piper, daemon=True).start()
         self._note("ventana lista")
+        self._announce_combined()
         self.root.after(200, self._pulse)
 
     def _style(self) -> None:
@@ -341,32 +342,12 @@ class TrayApp:
         else:
             menu.add_command(label=_ui("menu.startup_on", "Activar arranque con Windows"), command=self._toggle_startup)
 
-    def _scored_person(self) -> str | None:
-        """Whose hit rates choose the ear: the locked person, or the only scored one."""
-        book = self.hub.brain.speakers
-        locked = book.locked
-        if locked and book.accuracies(locked):
-            return locked
-        scored = [name for name in book.names() if book.accuracies(name)]
-        if len(scored) == 1:
-            return scored[0]
-        return None
-
-    def _ear_percent(self, ear: str) -> int | None:
-        if ear == "teclado":
-            return None
-        person = self._scored_person()
-        if not person:
-            return None
-        return self.hub.brain.speakers.accuracies(person).get(ear)
-
     def _choose_best_ear(self, sync: bool) -> None:
-        person = self._scored_person()
-        if not person:
-            return
+        """Pick the listener with the best hit rate across every print."""
+        rated = self.hub.brain.speakers.combined_accuracies()
         current = self.hub.brain.settings.recognizer
         chosen = highest_accuracy(
-            self.hub.brain.speakers.accuracies(person),
+            rated,
             eligible_ears(self.hub.brain.recognizers, self.hub.brain.settings.language),
             current,
         )
@@ -376,12 +357,37 @@ class TrayApp:
         self.hub.brain.persist()
         if sync:
             self._sync_ear()
-        percent = self.hub.brain.speakers.accuracies(person).get(chosen)
-        label = with_accuracy(_ui(f"ear.{chosen}", chosen), percent)
-        self._note(f"motor escucha: {label}")
+
+    def _announce_combined(self) -> None:
+        rated = self.hub.brain.speakers.combined_accuracies()
+        recognizers = self.hub.brain.recognizers
+        eligible = set(eligible_ears(recognizers, self.hub.brain.settings.language))
+        visible = [ear for ear in recognizers if ear != "teclado" and ear in rated]
+        visible.sort(key=lambda ear: (-rated[ear], recognizers.index(ear)))
+        current = self.hub.brain.settings.recognizer
+
+        def title(ear: str) -> str:
+            return _ui(f"ear.{ear}", RECOGNIZER_LABELS.get(ear, ear))
+
+        current_label = title(current)
+        if current in rated:
+            current_label = with_accuracy(current_label, rated[current])
+        if not visible:
+            self._note(f"motor escucha: {current_label}. huellas combinadas: aún no hay porcentajes.")
+            return
+        joined = ", ".join(with_accuracy(title(ear), rated[ear]) for ear in visible)
+        chosen_percent = rated.get(current, -1)
+        blocked = [ear for ear in visible if ear not in eligible and rated[ear] > chosen_percent]
+        line = f"motor escucha: {current_label}. huellas combinadas: {joined}."
+        if blocked:
+            names = ", ".join(with_accuracy(title(ear), rated[ear]) for ear in blocked)
+            verb = "queda" if len(blocked) == 1 else "quedan"
+            line += f" {names} {verb} fuera: el idioma no es español."
+        self._note(line)
 
     def _apply_best_ear(self) -> None:
         self._choose_best_ear(True)
+        self._announce_combined()
         self._paint()
 
     def _listener_rows(self) -> list[tuple[str, str, bool]]:
@@ -417,16 +423,9 @@ class TrayApp:
             menu.add_command(label=_ui("menu.no_prints", "No hay huellas"), state="disabled")
         for name in names:
             child = tk.Menu(menu, **self._menu_kw())
-            active = self.hub.brain.settings.recognizer
             for ear, title, installed in self._listener_rows():
-                label = _used(installed and ear == active) + self._listener_label(name, ear, title, installed)
-                if installed and book.raw_clips(name):
-                    child.add_command(
-                        label=label,
-                        command=lambda picked=name, heard=ear: self._rescore_print(picked, heard),
-                    )
-                else:
-                    child.add_command(label=label, state="disabled")
+                label = self._listener_label(name, ear, title, installed)
+                child.add_command(label=label, state="disabled")
             child.add_separator()
             child.add_command(label=_ui("menu.print_recapture", "Volver a grabar"), command=lambda picked=name: self._recapture_print(picked))
             child.add_command(label=_ui("menu.print_rename", "Renombrar…"), command=lambda picked=name: self._rename_print(picked))
@@ -449,14 +448,9 @@ class TrayApp:
             rows.append(("cmd", _ui("menu.no_prints", "No hay huellas"), "noop", False))
         for name in names:
             children = []
-            active = self.hub.brain.settings.recognizer
             for ear, title, installed in self._listener_rows():
                 label = self._listener_label(name, ear, title, installed)
-                picked = installed and ear == active
-                if installed and book.raw_clips(name):
-                    children.append(("cmd", label, f"print-score:{name}:{ear}", picked))
-                else:
-                    children.append(("cmd", label, "noop", picked))
+                children.append(("cmd", label, "noop", False))
             children.append(("sep",))
             children.append(("cmd", _ui("menu.print_recapture", "Volver a grabar"), f"print-again:{name}", False))
             children.append(("cmd", _ui("menu.print_rename", "Renombrar…"), f"print-rename:{name}", False))
@@ -532,7 +526,7 @@ class TrayApp:
         current = self.hub.brain.settings.recognizer
         present = set(self.hub.brain.recognizers)
         for name, label in RECOGNIZER_LABELS.items():
-            shown_name = with_accuracy(_ui(f"ear.{name}", label), self._ear_percent(name) if name in present else None)
+            shown_name = _ui(f"ear.{name}", label)
             if name in present:
                 self.menu_ear.add_command(
                     label=_used(name == current) + shown_name,
@@ -670,7 +664,7 @@ class TrayApp:
         ears = []
         present = set(brain.recognizers)
         for name, label in RECOGNIZER_LABELS.items():
-            shown = with_accuracy(_ui(f"ear.{name}", label), self._ear_percent(name) if name in present else None)
+            shown = _ui(f"ear.{name}", label)
             if name in present:
                 ears.append(("cmd", shown, f"ear:{name}", name == brain.settings.recognizer))
             elif name == "windows":
@@ -926,6 +920,7 @@ class TrayApp:
         self._sync_ear()
         name = dict(languages()).get(code, code)
         self._note(f"idioma {name}")
+        self._announce_combined()
         self._paint()
         if reopen_persona:
             self._build_personality()
@@ -2144,8 +2139,7 @@ class TrayApp:
         stt_on = alive and not keyboard and not testing
         stt_detail = library_for_ear()
         if ear != "teclado":
-            engine = with_accuracy(str(snap.get("recognizer") or ear), self._ear_percent(ear))
-            stt_detail = clip(f"{engine} · {stt_detail}")
+            stt_detail = clip(f"{snap.get('recognizer') or ear} · {stt_detail}")
         box(pad, y, inner, box_h, _ui("flow.stt", "Motor escucha (STT)"), stt_detail, stt_on or (testing and not keyboard))
         y += box_h
         down(width / 2, y, y + gap + 2, alive)
@@ -2199,9 +2193,8 @@ class TrayApp:
         kind = snap.get("banner_kind") or "wait"
         self.state_label.configure(fg={"talk": GREEN, "pause": AMBER, "test": AMBER}.get(kind, TEAL))
         self._refresh_market_marks()
-        ear_name = with_accuracy(snap["recognizer"], self._ear_percent(self.hub.brain.settings.recognizer))
         self.detail_var.set(
-            f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {ear_name}  ·  {snap['identifier']}  ·  {snap['session']}  ·  {snap['volume']}%"
+            f"{snap['model']}  ·  {snap['effort']}  ·  {snap['voice']}  ·  {snap['recognizer']}  ·  {snap['identifier']}  ·  {snap['session']}  ·  {snap['volume']}%"
         )
         self._draw_flow(snap)
         if self.tray_ok and self.tray is not None:
