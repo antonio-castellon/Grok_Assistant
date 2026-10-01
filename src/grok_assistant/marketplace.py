@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import tarfile
+import time
+import urllib.error
 import urllib.request
 import zipfile
 from dataclasses import dataclass
@@ -364,14 +366,8 @@ def download(offer: Offer, on_status, on_progress=None, root: Path | None = None
         if rel not in seen:
             seen[rel] = size
             known = sum(seen.values())
-        if dest.name.endswith(".tar.bz2"):
-            on_status(f"abro {dest.name}")
-            with tarfile.open(dest, "r:bz2") as packed:
-                packed.extractall(base / "models")
-        elif dest.suffix == ".zip":
-            on_status(f"abro {dest.name}")
-            with zipfile.ZipFile(dest) as packed:
-                packed.extractall(dest.parent)
+        if dest.name.endswith(".tar.bz2") or dest.suffix == ".zip":
+            _extract(dest, base / "models" if dest.name.endswith(".tar.bz2") else dest.parent, on_status, on_progress)
     if offer.kind == "llm":
         on_status("bajo llama.cpp")
         _ensure_llama(base / "llm", on_status, lambda got, total: account(got, total, "llama.cpp"))
@@ -384,27 +380,114 @@ def _report(on_progress, value: int, caption: str = "") -> None:
 
 
 def _fetch(url: str, dest: Path, on_bytes=None) -> None:
-    """Write to a side file. The real name appears only when the file is complete."""
-    request = urllib.request.Request(url, headers={"User-Agent": "GrokAssistant"})
+    """Write to a side file and keep it if the line drops, so the next try continues."""
     part = dest.with_name(dest.name + ".part")
+    last = None
+    for delay in (0, 2, 4, 8):
+        if delay:
+            time.sleep(delay)
+        try:
+            _fetch_once(url, part, on_bytes)
+            part.replace(dest)
+            return
+        except urllib.error.HTTPError as exc:
+            if exc.code == 416 and _partial_is_complete(part, exc.headers):
+                part.replace(dest)
+                return
+            last = exc
+            if exc.code in {400, 401, 403, 404}:
+                raise
+        except (urllib.error.URLError, TimeoutError, OSError, ConnectionError) as exc:
+            last = exc
+    raise last or OSError("la descarga se cortó")
+
+
+def _fetch_once(url: str, part: Path, on_bytes=None) -> None:
+    have = part.stat().st_size if part.exists() else 0
+    headers = {"User-Agent": "GrokAssistant"}
+    if have:
+        headers["Range"] = f"bytes={have}-"
+    request = urllib.request.Request(url, headers=headers)
+    restart = None
     try:
-        with urllib.request.urlopen(request, timeout=120) as response, part.open("wb") as handle:
-            total = int(response.headers.get("Content-Length") or 0)
-            got = 0
-            if on_bytes is not None:
-                on_bytes(0, total)
-            while True:
-                chunk = response.read(1024 * 256)
-                if not chunk:
-                    break
-                handle.write(chunk)
-                got += len(chunk)
+        with urllib.request.urlopen(request, timeout=30) as response:
+            code = int(getattr(response, "status", 0) or response.getcode() or 0)
+            length = int(response.headers.get("Content-Length") or 0)
+            if have and code == 206:
+                start = have
+                total = _content_range_total(response.headers.get("Content-Range")) or (start + length if length else 0)
+                target = part
+                mode = "ab"
+            else:
+                start = 0
+                total = length
+                if have:
+                    restart = part.with_name(part.name + ".again")
+                    target = restart
+                else:
+                    target = part
+                mode = "wb"
+            with target.open(mode) as handle:
+                got = start
                 if on_bytes is not None:
                     on_bytes(got, total)
+                while True:
+                    chunk = response.read(1024 * 256)
+                    if not chunk:
+                        break
+                    handle.write(chunk)
+                    handle.flush()
+                    got += len(chunk)
+                    if on_bytes is not None:
+                        on_bytes(got, total)
+            if total and got < total:
+                raise OSError(f"se cortó en {got} de {total}")
+            if restart is not None:
+                restart.replace(part)
     except Exception:
-        part.unlink(missing_ok=True)
+        if restart is not None:
+            restart.unlink(missing_ok=True)
         raise
-    part.replace(dest)
+
+
+def _partial_is_complete(part: Path, headers) -> bool:
+    if not part.exists():
+        return False
+    total = _content_range_total(headers.get("Content-Range") if headers else None)
+    size = part.stat().st_size
+    return size > 0 and (total == 0 or size == total)
+
+
+def _content_range_total(value: str | None) -> int:
+    if not value or "/" not in value:
+        return 0
+    tail = value.rsplit("/", 1)[-1].strip()
+    if not tail.isdigit():
+        return 0
+    return int(tail)
+
+
+def _extract(dest: Path, folder: Path, on_status, on_progress=None) -> None:
+    """Unpack a finished archive and say so, so a long open does not look frozen."""
+    on_status(f"abro {dest.name}")
+    _report(on_progress, 99, "abriendo el archivo")
+    folder.mkdir(parents=True, exist_ok=True)
+    if dest.name.endswith(".tar.bz2"):
+        with tarfile.open(dest, "r:bz2") as packed:
+            members = packed.getmembers()
+            count = len(members) or 1
+            for index, member in enumerate(members, start=1):
+                packed.extract(member, folder, filter="data")
+                if index == 1 or index == count or index % 10 == 0:
+                    _report(on_progress, 99, f"abriendo {index}/{count}")
+        return
+    with zipfile.ZipFile(dest) as packed:
+        names = packed.namelist()
+        count = len(names) or 1
+        for index, name in enumerate(names, start=1):
+            packed.extract(name, folder)
+            if index == 1 or index == count or index % 10 == 0:
+                _report(on_progress, 99, f"abriendo {index}/{count}")
 
 
 def _bytes_caption(done: int, total: int) -> str:

@@ -128,6 +128,8 @@ class TrayApp:
         self.offline: OfflineEar | None = None
         self._ears_suspended = False
         self._score_lock = threading.Lock()
+        self._downloads: dict[str, dict] = {}
+        self._download_rows: dict[str, dict] = {}
         self.pause_file = hub.data_dir / "mic.pause"
         self._closing = False
         voices = self.speaker.list_voices() or ["Predeterminada"]
@@ -1409,7 +1411,8 @@ class TrayApp:
         self._market_win = window
         self._market_marks = []
         self._market_shown = set()
-        self._market_busy = False
+        self._download_rows = {}
+        self._market_busy = any(job.get("running") for job in self._downloads.values())
         ttk.Label(window, text="Voice market", style="Status.TLabel").pack(anchor="w", padx=16, pady=(14, 2))
         ttk.Label(
             window,
@@ -1516,7 +1519,16 @@ class TrayApp:
         tk.Label(body, text=self._short_line(self._offer_detail(offer)), bg=BG, fg=MUTED, font=("Segoe UI", 9), anchor="w").pack(fill="x")
         bar = ttk.Progressbar(body, maximum=100, variable=percent, style="Market.Horizontal.TProgressbar")
         state = tk.Label(body, textvariable=label, bg=BG, fg=MUTED, font=("Segoe UI", 9), anchor="w")
-        if ready:
+        self._download_rows[offer.id] = {
+            "percent": percent,
+            "label": label,
+            "button": button,
+            "bar": bar,
+            "state": state,
+            "offer": offer,
+        }
+        running = bool(self._downloads.get(offer.id, {}).get("running"))
+        if ready and not running:
             button.configure(text=_ui("market.use", "Usar"), command=lambda item=offer: self._use_offer(item))
         else:
             state.pack(fill="x")
@@ -1525,13 +1537,71 @@ class TrayApp:
                 text=_ui("market.download", "Descargar"),
                 command=lambda item=offer: self._download_offer(item, status, percent, label, button, bar, state),
             )
+            if offer.id in self._downloads:
+                self._paint_download(offer.id)
+
+    def _paint_download(self, offer_id: str) -> None:
+        job = self._downloads.get(offer_id)
+        row = self._download_rows.get(offer_id)
+        if not job or not row:
+            return
+        try:
+            if not row["button"].winfo_exists():
+                return
+            row["percent"].set(int(job.get("percent") or 0))
+            row["label"].set(str(job.get("caption") or ""))
+            if job.get("running"):
+                if not row["state"].winfo_manager():
+                    row["state"].pack(fill="x")
+                if not row["bar"].winfo_manager():
+                    row["bar"].pack(fill="x", pady=(2, 0))
+                row["button"].configure(state="disabled", text=_ui("market.downloading", "Descargando"))
+                return
+            if row["bar"].winfo_manager():
+                row["bar"].pack_forget()
+            if job.get("error"):
+                row["button"].configure(state="normal", text=_ui("market.download", "Descargar"))
+                row["label"].set(str(job["error"]))
+                return
+            if job.get("done"):
+                offer = row["offer"]
+                row["label"].set("100 %")
+                row["button"].configure(
+                    state="normal",
+                    text=_ui("market.use", "Usar"),
+                    command=lambda item=offer: self._use_offer(item),
+                )
+        except tk.TclError:
+            return
 
     def _download_offer(self, offer: Offer, status: tk.StringVar, percent: tk.IntVar, label: tk.StringVar, button: ttk.Button, bar: ttk.Progressbar, state: tk.Label | None = None) -> None:
+        current = self._downloads.get(offer.id)
+        if current and current.get("running"):
+            self._paint_download(offer.id)
+            return
+        job = {"percent": 0, "caption": "0 %", "status": "", "running": True, "done": False, "error": ""}
+        self._downloads[offer.id] = job
+        self._download_rows[offer.id] = {
+            "percent": percent,
+            "label": label,
+            "button": button,
+            "bar": bar,
+            "state": state,
+            "offer": offer,
+        }
+
         def show(value: int, caption: str = "") -> None:
+            job["percent"] = value
+            job["caption"] = caption or f"{value} %"
+            self.ui.put(lambda offer_id=offer.id: self._paint_download(offer_id))
+
+        def note(message: str) -> None:
+            job["status"] = message
+
             def apply() -> None:
                 try:
-                    percent.set(value)
-                    label.set(caption or f"{value} %")
+                    if self._alive("_market_win"):
+                        self._market_status.set(message)
                 except tk.TclError:
                     return
 
@@ -1539,51 +1609,49 @@ class TrayApp:
 
         def work() -> None:
             try:
-                download(
-                    offer,
-                    lambda message: self.ui.put(lambda message=message: status.set(message)),
-                    show,
-                )
+                download(offer, note, show)
+                job["running"] = False
+                job["done"] = True
+                job["percent"] = 100
+                job["caption"] = "100 %"
+                job["error"] = ""
 
                 def done() -> None:
-                    self._market_busy = False
+                    self._market_busy = any(item.get("running") for item in self._downloads.values())
+                    self._paint_download(offer.id)
                     try:
-                        bar.pack_forget()
-                        label.set("100 %")
-                        button.configure(text=_ui("market.use", "Usar"), state="normal", command=lambda item=offer: self._use_offer(item))
+                        if self._alive("_market_win"):
+                            self._market_status.set(f"{offer.title} listo")
                     except tk.TclError:
                         pass
-                    status.set(f"{offer.title} listo")
                     self._refresh_devices()
 
                 self.ui.put(done)
             except Exception as exc:
+                job["running"] = False
+                job["done"] = False
+                job["error"] = str(exc)[:180]
+
                 def fail() -> None:
-                    self._market_busy = False
-                    message = str(exc)[:180]
+                    self._market_busy = any(item.get("running") for item in self._downloads.values())
+                    self._paint_download(offer.id)
                     try:
-                        bar.pack_forget()
-                        button.configure(state="normal", text=_ui("market.download", "Descargar"))
-                        label.set(message)
+                        if self._alive("_market_win"):
+                            self._market_status.set(job["error"])
                     except tk.TclError:
                         pass
-                    status.set(message)
 
                 self.ui.put(fail)
 
         try:
             self._market_busy = True
-            button.configure(state="disabled", text=_ui("market.downloading", "Descargando"))
-            label.set("0 %")
-            percent.set(0)
-            if state is not None:
-                state.pack(fill="x")
-            bar.pack(fill="x", pady=(2, 0))
+            self._paint_download(offer.id)
         except tk.TclError:
+            job["running"] = False
             self._market_busy = False
             return
-        status.set(f"descargando {offer.title}…")
-        threading.Thread(target=work, daemon=True).start()
+        note(f"descargando {offer.title}…")
+        threading.Thread(target=work, daemon=True, name=f"download-{offer.id}").start()
 
     def _install_windows(self) -> None:
         def work() -> None:
@@ -2088,7 +2156,12 @@ class TrayApp:
                 job = self.ui.get_nowait()
             except queue.Empty:
                 break
-            job()
+            try:
+                job()
+            except tk.TclError:
+                continue
+            except Exception as exc:
+                self._write_crash(exc)
         self.jobs.put(("tick", ""))
         self._paint()
         self.root.after(400, self._pulse)

@@ -250,6 +250,136 @@ def test_progress_percent_moves_as_soon_as_bytes_arrive():
     assert progress_percent(200, 200) == 100
 
 
+class _Body:
+    def __init__(self, data: bytes, status: int, headers: dict):
+        self._data = data
+        self.status = status
+        self.headers = headers
+        self._pos = 0
+
+    def read(self, _size: int) -> bytes:
+        chunk = self._data[self._pos:self._pos + _size]
+        self._pos += len(chunk)
+        return chunk
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args) -> bool:
+        return False
+
+    def getcode(self) -> int:
+        return self.status
+
+
+def test_a_cut_download_keeps_the_partial_and_resumes(tmp_path, monkeypatch):
+    from grok_assistant import marketplace
+
+    dest = tmp_path / "models" / "piece.bin"
+    dest.parent.mkdir(parents=True)
+    part = dest.with_name(dest.name + ".part")
+    part.write_bytes(b"abcd")
+    ranges = []
+    calls = {"n": 0}
+
+    def fake_urlopen(request, timeout=0):
+        assert timeout == 30
+        asked = request.get_header("Range")
+        ranges.append(asked)
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return _Body(b"ef", 206, {"Content-Length": "2", "Content-Range": "bytes 4-9/10"})
+        return _Body(b"ghij", 206, {"Content-Length": "4", "Content-Range": "bytes 6-9/10"})
+
+    monkeypatch.setattr(marketplace.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(marketplace.time, "sleep", lambda _delay: None)
+    seen = []
+    marketplace._fetch("https://example/piece.bin", dest, lambda got, total: seen.append((got, total)))
+    assert dest.read_bytes() == b"abcdefghij"
+    assert not part.exists()
+    assert ranges == ["bytes=4-", "bytes=6-"]
+    assert seen[0] == (4, 10)
+    assert seen[-1] == (10, 10)
+
+
+def test_a_failed_download_does_not_delete_what_already_arrived(tmp_path, monkeypatch):
+    import urllib.error
+
+    from grok_assistant import marketplace
+
+    dest = tmp_path / "piece.bin"
+    part = dest.with_name(dest.name + ".part")
+    part.write_bytes(b"12345")
+
+    def fake_urlopen(_request, timeout=0):
+        raise urllib.error.URLError("timed out")
+
+    monkeypatch.setattr(marketplace.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(marketplace.time, "sleep", lambda _delay: None)
+    try:
+        marketplace._fetch("https://example/piece.bin", dest)
+    except urllib.error.URLError:
+        pass
+    else:
+        raise AssertionError("expected the download to fail")
+    assert part.read_bytes() == b"12345"
+    assert not dest.exists()
+
+
+def test_opening_an_archive_says_it_is_opening(tmp_path):
+    import tarfile
+
+    from grok_assistant.marketplace import _extract
+
+    source = tmp_path / "tokens.txt"
+    source.write_text("hola", encoding="utf-8")
+    dest = tmp_path / "demo.tar.bz2"
+    with tarfile.open(dest, "w:bz2") as packed:
+        packed.add(source, arcname="demo/tokens.txt")
+    notes = []
+    _extract(dest, tmp_path / "out", notes.append, lambda value, caption="": notes.append(f"{value}:{caption}"))
+    assert (tmp_path / "out" / "demo" / "tokens.txt").read_text(encoding="utf-8") == "hola"
+    assert "abriendo el archivo" in " ".join(notes)
+
+
+def test_a_closed_market_still_shows_the_download(tmp_path):
+    import tkinter as tk
+
+    from grok_assistant.hub import build
+    from grok_assistant.tray import TrayApp
+
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
+        app._downloads["small"] = {
+            "percent": 75,
+            "caption": "450 MB / 610 MB",
+            "status": "descargando Whisper small…",
+            "running": True,
+            "done": False,
+            "error": "",
+        }
+        app._build_market()
+        root.update()
+        app._market_win.destroy()
+        app._build_market()
+        root.update()
+        row = app._download_rows["small"]
+        assert row["percent"].get() == 75
+        assert row["label"].get() == "450 MB / 610 MB"
+        assert str(row["button"].cget("state")) == "disabled"
+        assert row["bar"].winfo_manager()
+        seen = []
+        app.ui.put(lambda: (_ for _ in ()).throw(tk.TclError("ventana cerrada")))
+        app.ui.put(lambda: seen.append("sigue"))
+        app._pulse()
+        assert seen == ["sigue"]
+        app._closing = True
+    finally:
+        root.destroy()
+
+
 def test_cpu_zip_is_not_taken_from_an_empty_latest_release():
     latest = [{"name": "nightly-tag.txt"}]
     builds = [
