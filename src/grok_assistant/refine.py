@@ -9,6 +9,13 @@ _ORDER = ("base", "whisper")
 _LABELS = {"base": "Whisper base", "whisper": "Whisper pequeño"}
 
 
+def pick_transcript(primary: str, second: str, testing: bool) -> str:
+    """Test mode keeps the selected ear. Outside it, a second reading may replace it."""
+    if testing:
+        return (primary or "").strip()
+    return choose_transcript(primary, second)
+
+
 def choose_transcript(first: str, second: str) -> str:
     from grok_assistant.match import noise_phrase, thin_phrase
 

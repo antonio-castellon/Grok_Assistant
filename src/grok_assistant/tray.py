@@ -26,7 +26,7 @@ from grok_assistant.listen import (
 )
 from grok_assistant.marketplace import Offer, download, offers, offers_for
 from grok_assistant.music import Music
-from grok_assistant.refine import Refiner, choose_transcript
+from grok_assistant.refine import Refiner, pick_transcript
 from grok_assistant.voiceprint import VoicePrint
 from grok_assistant.paths import bundle_root
 from grok_assistant.speech import Speaker
@@ -127,6 +127,8 @@ class TrayApp:
         self.kroko: KrokoEar | None = None
         self.offline: OfflineEar | None = None
         self._ears_suspended = False
+        self._take_box: queue.Queue = queue.Queue()
+        self._take_open = False
         self._score_lock = threading.Lock()
         self._downloads: dict[str, dict] = {}
         self._download_rows: dict[str, dict] = {}
@@ -1999,27 +2001,77 @@ class TrayApp:
                 self._sync_ear()
 
     def _capture_phrase(self) -> None:
-        from grok_assistant.enroll_audio import record_phrase
-
-        self._suspend_ears()
-        audio = record_phrase()
+        """The next phrase comes from the ear already on the microphone."""
+        if not self._arm_take_mic():
+            self.hub.brain.enroll = None
+            self.say("No oigo el micrófono. Lo dejo.")
+            self._hold_mic(False)
+            self._refresh()
+            return
+        text, audio = self._wait_take()
+        self._hold_mic(True)
         vector = None
         if audio is not None:
             if not self.voiceprint.ready():
                 self.hub.brain.enroll = None
                 self.say("Falta el modelo de la huella.")
-                self._resume_ears()
+                self._hold_mic(False)
+                self._refresh()
                 return
             try:
                 vector = self.voiceprint.embed(audio)
             except Exception as exc:
                 self._write_crash(exc)
-        turn = self.hub.brain.accept_take(audio, vector)
+        turn = self.hub.brain.accept_take(audio, vector, text)
+        self._refresh()
         for line in turn.speak:
             self.say(line)
         self._apply(turn)
         if self.hub.brain.enroll is None:
+            self._hold_mic(False)
+
+    def _arm_take_mic(self) -> bool:
+        if self._ears_suspended:
             self._resume_ears()
+        if self.dictation is None and self.kroko is None and self.offline is None:
+            self._sync_ear()
+        if self.dictation is None and self.kroko is None and self.offline is None:
+            self.hub.brain.note("huella: el micrófono no está abierto")
+            return False
+        self._hold_mic(True)
+        import time
+
+        time.sleep(0.3)
+        self._drop_queued_phrases()
+        while True:
+            try:
+                self._take_box.get_nowait()
+            except queue.Empty:
+                break
+        self._take_open = True
+        self._hold_mic(False)
+        return True
+
+    def _wait_take(self) -> tuple[str, object]:
+        try:
+            text, audio = self._take_box.get(timeout=12)
+        except queue.Empty:
+            return "", None
+        finally:
+            self._take_open = False
+        return str(text or ""), audio
+
+    def _drop_queued_phrases(self) -> None:
+        kept = []
+        while True:
+            try:
+                item = self.jobs.get_nowait()
+            except queue.Empty:
+                break
+            if item[0] != "phrase":
+                kept.append(item)
+        for item in kept:
+            self.jobs.put(item)
 
     def _suspend_ears(self) -> None:
         self._ears_suspended = True
@@ -2154,6 +2206,11 @@ class TrayApp:
     def _heard(self, text: str, audio=None) -> None:
         if self.user_paused:
             return
+        enroll = self.hub.brain.enroll
+        if isinstance(enroll, dict) and enroll.get("stage") == "takes":
+            if self._take_open:
+                self._take_box.put((text or "", audio))
+            return
         from grok_assistant.match import is_presence, words_norm
 
         norms = words_norm(text)
@@ -2166,16 +2223,17 @@ class TrayApp:
         allowed, who = self._mic_voice(embedding)
         if not allowed:
             return
-        # A "can you hear me" stays local. Do not load a second speech model on top of Kroko for it.
+        testing = self.hub.brain.test_mode
+        # A "can you hear me" stays local. Test mode keeps the selected ear, so Whisper does not cover it.
         second = ""
-        if audio is not None and not is_presence(norms, self.hub.brain.settings.wake_name):
+        if not testing and audio is not None and not is_presence(norms, self.hub.brain.settings.wake_name):
             try:
                 second = self.refiner.transcribe(audio)
             except Exception as exc:
                 self._write_crash(exc)
                 second = ""
-        chosen = choose_transcript(text, second)
-        if second and second.casefold() != text.casefold():
+        chosen = pick_transcript(text, second, testing)
+        if not testing and second and second.casefold() != (text or "").casefold():
             self.jobs.put(("note", f"{self.refiner.label()} relee: {second}"))
         self.jobs.put(("phrase", chosen, embedding, who))
 
@@ -2207,7 +2265,7 @@ class TrayApp:
 
     def _arm_refiner(self) -> None:
         if self.refiner.load():
-            self.ui.put(lambda: self._note(f"releo cada frase con {self.refiner.label()} para guardar los nombres en inglés"))
+            self.ui.put(lambda: self._note(f"fuera de la prueba, releo cada frase con {self.refiner.label()} para guardar los nombres en inglés"))
 
     def _arm_voiceprint(self) -> None:
         if self.voiceprint.ensure():

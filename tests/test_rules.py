@@ -201,6 +201,21 @@ def test_the_second_reading_keeps_an_english_name():
     assert choose_transcript("Hola, Grok, ¿me escuches?", "[MUSIC]") == "Hola, Grok, ¿me escuches?"
 
 
+def test_test_mode_keeps_the_selected_ear(world):
+    from grok_assistant.refine import pick_transcript
+
+    assert pick_transcript("hola desde kroko", "hola desde whisper", True) == "hola desde kroko"
+    assert pick_transcript("pon la cancion de de bi tles", "pon la canción de The Beatles", False).endswith("Beatles")
+    hub, _cli, _clock = world
+    hub.brain.settings.recognizer = "kroko"
+    hub.run("prueba")
+    hub.run("qué hora es")
+    text = "\n".join(hub.brain.logs)
+    assert "qué hora es" in text
+    assert "Kroko" in text
+    assert "Whisper" not in text
+
+
 def test_debug_log_keeps_the_last_500_lines(world):
     hub, _cli, _clock = world
     for number in range(600):
@@ -520,6 +535,23 @@ def test_a_split_recording_does_not_create_a_second_person(world):
     assert hub.brain.speakers.raw_clips("Ana") == []
     assert hub.brain.speakers.closest([1.0, 0.0], "canary") == "Ana"
     assert hub.brain.speakers.locked == "Ana"
+
+
+def test_a_take_writes_what_the_ear_heard(world):
+    hub, _cli, _clock = world
+    hub.brain.settings.recognizer = "kroko"
+    hub.brain.start_capture("Ana")
+    samples = [0.01] * 1600
+    hub.brain.accept_take(samples, [0.2, 0.98], "hola grok")
+    text = "\n".join(hub.brain.logs)
+    assert "hola grok" in text
+    assert "Kroko" in text
+    missed = hub.brain.accept_take(None, None, "estás ahí")
+    assert "estás ahí" in missed.speak[0]
+    assert "micrófono" not in missed.speak[0]
+    assert any("estás ahí" in line for line in hub.brain.logs)
+    hub.brain.accept_take(None, None)
+    assert any("silencio" in line and "Kroko" in line for line in hub.brain.logs)
 
 
 def test_three_empty_takes_stop_the_recording(world):

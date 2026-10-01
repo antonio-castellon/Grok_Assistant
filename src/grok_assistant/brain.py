@@ -35,6 +35,12 @@ _ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 _COMANDO = re.compile(r"^\s*COMANDO:\s*(.+?)\s*$", re.IGNORECASE)
 
 
+def _ear_label(kind: str) -> str:
+    from grok_assistant.listen import RECOGNIZER_LABELS
+
+    return RECOGNIZER_LABELS.get(kind, kind)
+
+
 def _blank_enroll() -> dict:
     return {
         "stage": "name",
@@ -905,6 +911,7 @@ class Brain:
         if bare == ["salir"] or bare == ["salir", "de", "la", "prueba"]:
             return self._leave_test(heard)
         self._record(heard, "ignorar", False, "prueba")
+        self._step(_ear_label(self.settings.recognizer))
         self.last_heard = heard
         return Turn(status="Prueba")
 
@@ -943,16 +950,31 @@ class Brain:
         self.enroll = None
         return self._said(["Vale."])
 
-    def accept_take(self, samples, vector) -> Turn:
+    def accept_take(self, samples, vector, heard: str = "") -> Turn:
         """One phrase of the shared recording. The microphone audio is kept raw."""
         if not self.enroll or self.enroll.get("stage") != "takes":
             return Turn()
+        heard = " ".join((heard or "").split())
+        label = _ear_label(self.settings.recognizer)
+        if heard:
+            self._flow_heard = ""
+            self._flow(heard)
+            self._step(label)
+        else:
+            self.note(f"huella: silencio · {label}")
         phrase = PHRASES[self.enroll["take"]]
         if samples is None or not vector:
             self.enroll["misses"] = int(self.enroll.get("misses") or 0) + 1
             if self.enroll["misses"] >= 3:
                 self.enroll = None
+                if heard:
+                    return self._said([f"He oído: {heard}. No he cogido la huella. Lo dejo."])
                 return self._said(["No oigo el micrófono. Lo dejo."])
+            if heard:
+                return self._said(
+                    [f"He oído: {heard}. No he cogido la huella. Repite."],
+                    effects=[("record_take", phrase)],
+                )
             return self._said(["No he cogido la huella. Repite."], effects=[("record_take", phrase)])
         self.enroll["misses"] = 0
         self.enroll["clips"].append({"phrase": phrase, "samples": samples})
