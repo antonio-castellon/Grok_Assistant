@@ -656,6 +656,18 @@ def test_words_show_while_they_are_still_being_said(world):
     assert hub.brain.banner_label() == "ESPERA"
 
 
+def test_the_print_prompt_uses_the_renamed_assistant(world):
+    hub, _cli, _clock = world
+    hub.brain.settings.wake_name = "Miguel"
+    started = hub.brain.start_capture("Ana")
+    assert "hola Miguel" in started.speak[0]
+    assert "hola grok" not in started.speak[0]
+    samples = [0.01] * 1600
+    hub.brain.accept_take(samples, [0.2, 0.98], "hola miguel")
+    assert hub.brain.enroll["clips"][0]["phrase"] == "hola Miguel"
+    assert "estás ahí" in hub.brain._prompt_take().speak[0]
+
+
 def test_three_empty_takes_stop_the_recording(world):
     hub, _cli, _clock = world
     started = hub.brain.start_capture("Ana")

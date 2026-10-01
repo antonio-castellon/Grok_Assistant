@@ -27,6 +27,18 @@ PHRASES = (
     "dime la hora",
 )
 
+
+def enroll_phrases(name: str | None = None) -> tuple[str, ...]:
+    """The greeting uses the current wake name. The other fifteen stay as written."""
+    called = " ".join((name or "").split())
+    if not called or called.casefold() == "grok":
+        return PHRASES
+    adapted = []
+    for phrase in PHRASES:
+        adapted.append(" ".join(called if word.casefold() == "grok" else word for word in phrase.split()))
+    return tuple(adapted)
+
+
 # A print locks only when this many takes sit in one voice.
 MIN_KEEP = 12
 # Same floor the door uses. A take under this is not stored as another person.

@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass, field
 
 from grok_assistant.auth import AdminAuth
-from grok_assistant.enroll_audio import PHRASES, one_voice
+from grok_assistant.enroll_audio import PHRASES, enroll_phrases, one_voice
 from grok_assistant.helptext import SCREEN_HELP, spoken_help
 from grok_assistant.i18n import say, text
 from grok_assistant.match import (
@@ -993,7 +993,7 @@ class Brain:
             return Turn()
         heard = " ".join((heard or "").split())
         label = _ear_label(self.settings.recognizer)
-        phrase = PHRASES[self.enroll["take"]]
+        phrase = self._phrases()[self.enroll["take"]]
         if heard:
             self._flow_heard = ""
             self._flow(heard)
@@ -1025,9 +1025,12 @@ class Brain:
             return self._finish_enroll()
         return self._prompt_take()
 
+    def _phrases(self) -> tuple[str, ...]:
+        return enroll_phrases(self.settings.wake_name)
+
     def _prompt_take(self) -> Turn:
         index = self.enroll["take"]
-        phrase = PHRASES[index]
+        phrase = self._phrases()[index]
         total = len(PHRASES)
         if index == 0:
             said = (

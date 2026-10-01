@@ -50,6 +50,16 @@ def test_sixteen_different_phrases():
     assert MIN_KEEP == 12
 
 
+def test_the_greeting_phrase_uses_the_wake_name():
+    from grok_assistant.enroll_audio import enroll_phrases
+
+    assert enroll_phrases("Miguel")[0] == "hola Miguel"
+    assert enroll_phrases("Miguel")[1:] == PHRASES[1:]
+    assert enroll_phrases("grok") == PHRASES
+    assert enroll_phrases("  ") == PHRASES
+    assert len(set(enroll_phrases("Miguel"))) == 16
+
+
 def test_a_known_phrase_is_a_hit_only_when_the_words_arrive():
     assert phrase_hit("hola grok", "Ola grok")
     assert phrase_hit("qué hora es", "que hora es")
