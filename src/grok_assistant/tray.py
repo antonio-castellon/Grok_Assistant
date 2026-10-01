@@ -2040,6 +2040,7 @@ class TrayApp:
             return
         text, audio = self._wait_take()
         self._hold_mic(True)
+        self._end_take()
         vector = None
         if audio is not None:
             if not self.voiceprint.ready():
@@ -2078,13 +2079,37 @@ class TrayApp:
                 self._take_box.get_nowait()
             except queue.Empty:
                 break
-        self._take_open = True
+        self._begin_take()
         self._hold_mic(False)
         return True
 
+    def _begin_take(self) -> None:
+        """Open the long window, then beep while the microphone is still paused."""
+        import time
+
+        from grok_assistant.enroll_audio import play_tone
+
+        self._take_open = True
+        self._set_capture(True)
+        play_tone(True)
+        time.sleep(0.25)
+
+    def _end_take(self) -> None:
+        """Close the long window and beep while the microphone is paused."""
+        from grok_assistant.enroll_audio import play_tone
+
+        self._set_capture(False)
+        play_tone(False)
+
+    def _set_capture(self, capture: bool) -> None:
+        for ear in (self.kroko, self.offline):
+            if ear is not None:
+                ear.set_capture(capture)
+
     def _wait_take(self) -> tuple[str, object]:
         try:
-            text, audio = self._take_box.get(timeout=12)
+            # Reaction, then up to eight seconds of speech, then two of silence.
+            text, audio = self._take_box.get(timeout=16)
         except queue.Empty:
             return "", None
         finally:

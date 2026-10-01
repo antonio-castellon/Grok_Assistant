@@ -5,6 +5,7 @@ from __future__ import annotations
 import threading
 from pathlib import Path
 
+from grok_assistant.enroll_audio import TAKE_MAX_VOICE, TAKE_MIN_VOICE, TAKE_QUIET
 from grok_assistant.listen import ENGINE_DIRS
 from grok_assistant.paths import bundle_root, default_data_dir
 
@@ -73,6 +74,7 @@ class OfflineEar:
         self.error = ""
         self._stop = threading.Event()
         self._paused = threading.Event()
+        self._capture = threading.Event()
         self._thread: threading.Thread | None = None
 
     def start(self) -> bool:
@@ -94,6 +96,12 @@ class OfflineEar:
             self._paused.set()
         else:
             self._paused.clear()
+
+    def set_capture(self, capture: bool) -> None:
+        if capture:
+            self._capture.set()
+        else:
+            self._capture.clear()
 
     def stop(self) -> None:
         self._stop.set()
@@ -177,7 +185,8 @@ class OfflineEar:
                         silent = 0.0
                         continue
                     chunk = np.ascontiguousarray(samples, dtype=np.float32).reshape(-1)
-                    loud = float(np.sqrt(np.mean(chunk * chunk))) > 0.008
+                    capturing = self._capture.is_set()
+                    loud = float(np.sqrt(np.mean(chunk * chunk))) > (0.004 if capturing else 0.008)
                     if loud:
                         speech.append(chunk)
                         voiced += 0.1
@@ -185,7 +194,10 @@ class OfflineEar:
                     elif speech:
                         speech.append(chunk)
                         silent += 0.1
-                    ended = speech and ((silent >= 0.7 and voiced >= 0.4) or voiced >= 30.0)
+                    if capturing:
+                        ended = speech and ((silent >= TAKE_QUIET and voiced >= TAKE_MIN_VOICE) or voiced >= TAKE_MAX_VOICE)
+                    else:
+                        ended = speech and ((silent >= 0.7 and voiced >= 0.4) or voiced >= 30.0)
                     if not ended:
                         continue
                     audio = np.concatenate(speech)

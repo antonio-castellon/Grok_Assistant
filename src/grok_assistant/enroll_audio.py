@@ -127,6 +127,29 @@ def read_wav(path: Path):
     return np.interp(positions, np.arange(audio.size), audio).astype(np.float32)
 
 
+# A take stays open through a short breath. Two seconds of quiet means the phrase ended.
+TAKE_QUIET = 2.0
+TAKE_MIN_VOICE = 0.8
+TAKE_MAX_VOICE = 8.0
+
+
+def tone(start: bool) -> tuple[int, int]:
+    """A high short beep opens the microphone. A lower one closes it."""
+    if start:
+        return 880, 140
+    return 494, 220
+
+
+def play_tone(start: bool) -> None:
+    frequency, duration = tone(start)
+    try:
+        import winsound
+
+        winsound.Beep(frequency, duration)
+    except (ImportError, RuntimeError, OSError):
+        return
+
+
 def record_phrase(read=None, seconds: float = 8.0):
     """Record one phrase from the microphone. None when the mic stays quiet."""
     import numpy as np

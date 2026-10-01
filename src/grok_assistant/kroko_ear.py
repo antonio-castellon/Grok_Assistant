@@ -97,6 +97,7 @@ class KrokoEar:
         self.error = ""
         self._stop = threading.Event()
         self._paused = threading.Event()
+        self._capture = threading.Event()
         self._thread: threading.Thread | None = None
 
     def start(self) -> bool:
@@ -120,6 +121,13 @@ class KrokoEar:
         else:
             self._paused.clear()
 
+    def set_capture(self, capture: bool) -> None:
+        """A voice-print take waits longer than a normal phrase."""
+        if capture:
+            self._capture.set()
+        else:
+            self._capture.clear()
+
     def stop(self) -> None:
         self._stop.set()
 
@@ -138,6 +146,13 @@ class KrokoEar:
         if quiet >= limit - 0.051:
             return True
         return bool(endpoint) and limit <= 0.7
+
+    def _capture_ready(self, text: str, quiet: float, voiced: float) -> bool:
+        from grok_assistant.enroll_audio import TAKE_MAX_VOICE, TAKE_MIN_VOICE, TAKE_QUIET
+
+        if voiced >= TAKE_MAX_VOICE:
+            return True
+        return bool(text) and voiced >= TAKE_MIN_VOICE and quiet >= TAKE_QUIET
 
     def _report(self, text: str) -> None:
         self.on_status(text)
@@ -190,13 +205,17 @@ class KrokoEar:
         try:
             with source:
                 quiet = 0.0
+                voiced = 0.0
                 heard_audio: list = []
+                parts: list[str] = []
                 while not self._stop.is_set():
                     samples, _overflow = source.read(block)
                     if self._paused.is_set():
                         recognizer.reset(stream)
                         quiet = 0.0
+                        voiced = 0.0
                         heard_audio.clear()
+                        parts.clear()
                         continue
                     chunk = np.ascontiguousarray(samples, dtype=np.float32).reshape(-1)
                     heard_audio.append(chunk)
@@ -204,20 +223,41 @@ class KrokoEar:
                     while recognizer.is_ready(stream):
                         recognizer.decode_stream(stream)
                     result = recognizer.get_result(stream)
-                    text = result if isinstance(result, str) else getattr(result, "text", "")
-                    text = str(text).strip()
-                    loud = float(np.sqrt(np.mean(np.square(chunk)))) > 0.01
+                    segment = result if isinstance(result, str) else getattr(result, "text", "")
+                    segment = str(segment).strip()
+                    capturing = self._capture.is_set()
+                    loud = float(np.sqrt(np.mean(np.square(chunk)))) > (0.004 if capturing else 0.01)
                     quiet = 0.0 if loud else quiet + 0.1
-                    if self._ready(text, quiet, recognizer.is_endpoint(stream)):
+                    if loud:
+                        voiced += 0.1
+                    # The model marks a pause at about 0.6 s. During a take that pause
+                    # is only a breath: keep the audio and join the next words.
+                    if capturing and recognizer.is_endpoint(stream):
+                        if segment:
+                            parts.append(segment)
+                        recognizer.reset(stream)
+                        segment = ""
+                    heard = " ".join(part for part in [*parts, segment] if part) if capturing else segment
+                    ready = (
+                        self._capture_ready(heard, quiet, voiced)
+                        if capturing
+                        else self._ready(segment, quiet, recognizer.is_endpoint(stream))
+                    )
+                    if ready:
                         recognizer.reset(stream)
                         quiet = 0.0
+                        voiced = 0.0
                         audio = np.concatenate(heard_audio) if heard_audio else None
                         heard_audio.clear()
-                        self.on_line(text, audio)
-                    elif recognizer.is_endpoint(stream) and not text:
+                        parts.clear()
+                        if heard or capturing:
+                            self.on_line(heard, audio)
+                    elif not capturing and recognizer.is_endpoint(stream) and not segment:
                         recognizer.reset(stream)
                         quiet = 0.0
+                        voiced = 0.0
                         heard_audio.clear()
+                        parts.clear()
         except Exception as exc:
             self.error = f"{_label(self.kind)} se detuvo: {exc}"
             self._report(self.error)

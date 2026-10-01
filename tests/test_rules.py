@@ -558,6 +558,7 @@ def test_three_empty_takes_stop_the_recording(world):
     hub, _cli, _clock = world
     started = hub.brain.start_capture("Ana")
     assert "16" in started.speak[0]
+    assert "pitido" in started.speak[0]
     assert any(item[0] == "record_take" for item in started.effects)
     first = hub.brain.accept_take(None, None)
     assert hub.brain.enroll["take"] == 0

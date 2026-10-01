@@ -993,6 +993,7 @@ class Brain:
         if index == 0:
             said = (
                 f"Grabaré {total} frases una sola vez. El sonido vale para todos los motores. "
+                f"Habla después del pitido, y espera el segundo pitido. "
                 f"1 de {total}. {phrase}"
             )
         else:

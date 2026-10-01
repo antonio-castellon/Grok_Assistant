@@ -5,6 +5,22 @@ from grok_assistant.enroll_audio import PHRASES, MIN_KEEP, phrase_hit, one_voice
 from grok_assistant.store import SpeakerBook
 
 
+def test_a_print_take_stays_open_through_a_short_pause():
+    from grok_assistant.enroll_audio import TAKE_MAX_VOICE, TAKE_MIN_VOICE, TAKE_QUIET, tone
+    from grok_assistant.kroko_ear import KrokoEar
+
+    ear = KrokoEar(lambda *_: None)
+    assert ear._ready("qué hora es", 0.7, True) is True
+    assert ear._ready("hola grok", 0.7, True) is False
+    assert ear._capture_ready("qué hora es", 0.5, 2.0) is False
+    assert ear._capture_ready("qué hora es", TAKE_QUIET, 2.0) is True
+    assert ear._capture_ready("qué", TAKE_QUIET, TAKE_MIN_VOICE - 0.1) is False
+    assert ear._capture_ready("", TAKE_QUIET, 2.0) is False
+    assert ear._capture_ready("frase larga", 0.2, TAKE_MAX_VOICE) is True
+    assert tone(True) == (880, 140)
+    assert tone(False) == (494, 220)
+
+
 def test_sixteen_different_phrases():
     assert len(PHRASES) == 16
     assert len(set(PHRASES)) == 16
