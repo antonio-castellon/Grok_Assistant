@@ -700,6 +700,19 @@ def test_the_print_prompt_uses_the_renamed_assistant(world):
     assert "estás ahí" in hub.brain._prompt_take().speak[0]
 
 
+def test_leaving_the_print_discards_the_audio(world):
+    hub, _cli, _clock = world
+    hub.brain.start_capture("Ana")
+    samples = [0.01] * 1600
+    hub.brain.accept_take(samples, [0.2, 0.98], "hola")
+    assert hub.brain.enroll["take"] == 1
+    turn = hub.brain.discard_capture()
+    assert hub.brain.enroll is None
+    assert hub.brain.speakers.raw_clips("Ana") == []
+    assert "no guardo" in turn.speak[0].lower()
+    assert any("no guardo los audios" in line for line in hub.brain.logs)
+
+
 def test_three_empty_takes_stop_the_recording(world):
     hub, _cli, _clock = world
     started = hub.brain.start_capture("Ana")

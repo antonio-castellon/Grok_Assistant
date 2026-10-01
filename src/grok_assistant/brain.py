@@ -1034,9 +1034,9 @@ class Brain:
         total = len(PHRASES)
         if index == 0:
             said = (
-                f"Grabaré {total} frases una sola vez. Guardo el sonido en crudo, sin comprobar las palabras. "
-                f"El sonido vale para todos los motores. "
-                f"Habla después del pitido, y espera el segundo pitido. "
+                f"Grabaré {total} frases una sola vez. La frase sale en la ventana. "
+                f"Seguir pasa a la siguiente. Salir tira lo grabado. "
+                f"Habla después del pitido. "
                 f"1 de {total}. {phrase}"
             )
         else:
@@ -1093,6 +1093,15 @@ class Brain:
             self._flow(heard)
         if decision == "comando" and detail:
             self._step(f"orden: {detail}")
+
+    def discard_capture(self) -> Turn:
+        """Leave the recording. Nothing from this session is written."""
+        if not self.enroll:
+            return Turn()
+        self.enroll = None
+        self.hearing = False
+        self.note("huella: salgo, no guardo los audios")
+        return self._said(["Salgo. No guardo los audios de esta huella."])
 
     def start_capture(self, name: str, ear: str | None = None) -> Turn:
         """Record the phrases once. Every listener is built from that sound."""

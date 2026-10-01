@@ -76,6 +76,7 @@ class OfflineEar:
         self._paused = threading.Event()
         self._capture = threading.Event()
         self._flush = threading.Event()
+        self._hold = False
         self._thread: threading.Thread | None = None
 
     def start(self) -> bool:
@@ -103,6 +104,10 @@ class OfflineEar:
             self._capture.set()
         else:
             self._capture.clear()
+
+    def set_hold(self, hold: bool) -> None:
+        """While the print window is open, only Seguir ends the phrase."""
+        self._hold = bool(hold)
 
     def request_flush(self) -> None:
         """Hand back the open take when the wait runs out."""
@@ -205,9 +210,13 @@ class OfflineEar:
                         self._flush.clear()
                     if capturing:
                         ended = bool(speech) and (
-                            (silent >= TAKE_QUIET and voiced >= TAKE_MIN_VOICE)
-                            or voiced >= TAKE_MAX_VOICE
+                            voiced >= TAKE_MAX_VOICE
                             or (flushing and voiced > 0)
+                            or (
+                                not self._hold
+                                and silent >= TAKE_QUIET
+                                and voiced >= TAKE_MIN_VOICE
+                            )
                         )
                     else:
                         ended = speech and ((silent >= 0.7 and voiced >= 0.4) or voiced >= 30.0)

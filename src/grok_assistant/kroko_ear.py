@@ -119,6 +119,7 @@ class KrokoEar:
         self._last_partial = ""
         self._capture_mark = ""
         self._flush = threading.Event()
+        self._hold = False
 
     def start(self) -> bool:
         folder = streaming_dir(self.kind)
@@ -147,6 +148,10 @@ class KrokoEar:
             self._capture.set()
         else:
             self._capture.clear()
+
+    def set_hold(self, hold: bool) -> None:
+        """While the print window is open, only Seguir ends the phrase."""
+        self._hold = bool(hold)
 
     def request_flush(self) -> None:
         """Hand back the open take when the wait runs out, words included."""
@@ -177,6 +182,8 @@ class KrokoEar:
 
         if voiced >= TAKE_MAX_VOICE:
             return True
+        if self._hold:
+            return False
         if quiet < TAKE_QUIET:
             return False
         if voiced >= TAKE_MIN_VOICE:

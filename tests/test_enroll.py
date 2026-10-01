@@ -5,6 +5,17 @@ from grok_assistant.enroll_audio import PHRASES, MIN_KEEP, phrase_hit, one_voice
 from grok_assistant.store import SpeakerBook
 
 
+def test_a_held_take_stays_open_until_seguir():
+    from grok_assistant.enroll_audio import TAKE_QUIET
+    from grok_assistant.kroko_ear import KrokoEar
+
+    ear = KrokoEar(lambda *_: None)
+    ear.set_hold(True)
+    assert ear._capture_ready("hola", TAKE_QUIET, 2.0) is False
+    ear.set_hold(False)
+    assert ear._capture_ready("hola", TAKE_QUIET, 2.0) is True
+
+
 def test_a_print_take_stays_open_through_a_short_pause():
     from grok_assistant.enroll_audio import TAKE_MAX_VOICE, TAKE_MIN_VOICE, TAKE_QUIET, tone
     from grok_assistant.kroko_ear import KrokoEar
