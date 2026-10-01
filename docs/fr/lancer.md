@@ -12,6 +12,8 @@ irm https://x.ai/cli/install.ps1 | iex
 
 **Iniciar sesión** ouvre `grok login`, qui passe par le navigateur. **Comprobar** demande à `grok models` si le compte est prêt. **Continuar** démarre l'assistant quand même, pour que les ordres locaux marchent encore pendant que le nuage est absent. Il n'y a pas de clé d'API à coller.
 
+Au premier démarrage, s'il n'y a pas de `LICENSE.md` à côté de l'exécutable, il en copie un là. Si le fichier est déjà là, il le laisse tel quel.
+
 Pour reconstruire cet exécutable depuis ce dossier :
 
 ```powershell

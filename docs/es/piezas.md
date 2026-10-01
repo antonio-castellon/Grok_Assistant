@@ -27,6 +27,6 @@ Grok se utiliza de dos formas distintas, cada una con un propósito concreto.
 
 Si hay un agente abierto, la pregunta usa el archivo de ese agente y la sesión de ese agente. `cerrar agente` vuelve al asistente normal. El cuaderno local se queda donde estaba.
 
-Las frases habladas, las palabras de las órdenes, la ayuda y las personalidades están en `src/grok_assistant/lang/`. `hellos-es.txt` y `waits-es.txt` son las frases en español que la voz va rotando. Los colores son archivos JSON en `ui/themes/`. El camino del micrófono sigue siendo una llamada directa; las carpetas solo agrupan el código.
+Las frases habladas, las palabras de las órdenes, la ayuda y las personalidades están en `src/grok_assistant/lang/`. `hellos-es.txt` y `waits-es.txt` son las frases en español que la voz va rotando. Los colores son archivos JSON en `ui/themes/`. Cómo cambiarlos está en [Aspecto](aspecto.md). El camino del micrófono sigue siendo una llamada directa; las carpetas solo agrupan el código.
 
 Al arrancar, el asistente elige el siguiente saludo de la lista y empieza a escuchar. Mientras espera una respuesta de la nube, utiliza la siguiente frase breve de espera. Ambas listas son largas a propósito, para que no repita la misma frase cada mañana.

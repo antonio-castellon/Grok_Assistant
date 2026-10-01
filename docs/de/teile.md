@@ -27,6 +27,6 @@ Grok wird auf zwei unterschiedliche Arten aufgerufen, jeweils für einen klar ab
 
 Ist ein Agent offen, benutzt die Frage die Datei dieses Agenten und die Sitzung dieses Agenten. Den Agenten schließen kehrt zum normalen Assistenten zurück. Das lokale Heft bleibt, wo es war.
 
-Gesprochene Sätze, Befehlswörter, Hilfe und Persönlichkeiten liegen in `src/grok_assistant/lang/`. `hellos-es.txt` und `waits-es.txt` sind die spanischen Sätze, die die Stimme durchgeht. Die Farben sind JSON-Dateien in `ui/themes/`. Der Weg vom Mikrofon bleibt ein direkter Aufruf; die Ordner gruppieren nur den Code.
+Gesprochene Sätze, Befehlswörter, Hilfe und Persönlichkeiten liegen in `src/grok_assistant/lang/`. `hellos-es.txt` und `waits-es.txt` sind die spanischen Sätze, die die Stimme durchgeht. Die Farben sind JSON-Dateien in `ui/themes/`. Wie man sie ändert, steht in [Aussehen](aussehen.md). Der Weg vom Mikrofon bleibt ein direkter Aufruf; die Ordner gruppieren nur den Code.
 
 Beim Start wählt der Assistent die nächste Begrüßung aus der Liste und beginnt anschließend zuzuhören. Während er auf eine Antwort aus der Cloud wartet, verwendet er den nächsten kurzen Wartesatz. Beide Listen sind bewusst lang, damit nicht jeden Morgen dieselbe Formulierung zu hören ist.

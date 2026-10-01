@@ -161,6 +161,8 @@
     "about.lead": "Cada orden de abajo se puede decir. Casi todas empiezan por comando. El ejemplo es una frase completa.",
     "about.example": "Ejemplo",
     "about.body": "Lo que se habla en casa, se queda en casa.\n\nTu voz se procesa aquí y el audio nunca sale del equipo. Grok solo recibe el texto cuando necesitas preguntarle algo o darle una orden. El resto, ni sale ni se comparte.",
+    "about.experimental": "Esta aplicación es experimental.",
+    "about.license_note": "El archivo LICENSE.md, junto al programa, dice los límites.",
     "market.hint": "Nada baja solo. En el menú entra cuando la descarga llega al 100 %.",
     "market.stt": "Motor escucha (STT)",
     "market.voices": "Voces",

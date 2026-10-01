@@ -12,6 +12,8 @@ irm https://x.ai/cli/install.ps1 | iex
 
 **Iniciar sesión** opens `grok login`, which uses the browser. **Comprobar** asks `grok models` whether the account is ready. **Continuar** starts the assistant anyway, so local orders still work while the cloud is absent. There is no API key to paste in.
 
+The first time it starts, if there is no `LICENSE.md` next to the executable, it copies one there. If the file is already there, it leaves it as it is.
+
 To build that executable again from this folder:
 
 ```powershell

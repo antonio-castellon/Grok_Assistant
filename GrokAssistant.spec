@@ -27,6 +27,7 @@ a = Analysis(
         (str(root / "scripts"), "scripts"),
         (str(root / "listeners"), "listeners"),
         (str(root / "docs" / "img"), "docs/img"),
+        (str(root / "LICENSE.md"), "."),
         (str(portaudio), "_sounddevice_data/portaudio-binaries"),
     ],
     hiddenimports=[

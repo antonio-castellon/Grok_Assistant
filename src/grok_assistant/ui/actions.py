@@ -538,6 +538,8 @@ class ActionMixin:
         body.insert("end", "\nWeb  ")
         body.insert("end", "www.castellon.ch", "site")
         body.insert("end", "\n\n" + _ui("about.body", ""))
+        body.insert("end", "\n\n" + _ui("about.experimental", "Esta aplicación es experimental."))
+        body.insert("end", "\n" + _ui("about.license_note", "El archivo LICENSE.md, junto al programa, dice los límites."))
         body.bind("<Key>", lambda _event: "break")
         self._fill_commands(commands)
         window.protocol("WM_DELETE_WINDOW", window.destroy)

@@ -161,6 +161,8 @@
     "about.lead": "Each order below can be spoken. Most start with command. The example is a full phrase.",
     "about.example": "Example",
     "about.body": "What is said at home stays at home.\n\nYour voice is processed here and the audio never leaves this computer. Grok only receives the text when you need to ask something or give an order. The rest neither leaves nor is shared.",
+    "about.experimental": "This application is experimental.",
+    "about.license_note": "The file LICENSE.md, next to the program, states the limits.",
     "market.hint": "Nothing downloads by itself. It can be chosen once the download reaches 100%.",
     "market.stt": "Listening engine (STT)",
     "market.voices": "Voices",

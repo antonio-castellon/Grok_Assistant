@@ -27,6 +27,6 @@ There are two distinct ways Grok is called, and they serve different purposes.
 
 If an agent is open, the question uses that agent's file and that agent's session. `cerrar agente` returns to the normal assistant. The local notebook stays where it was.
 
-Spoken lines, command words, help, and personalities are in `src/grok_assistant/lang/`. `hellos-es.txt` and `waits-es.txt` are the Spanish lines the voice rotates through. Colors are JSON files in `ui/themes/`. The listening path is still a direct call; the folders only group the code.
+Spoken lines, command words, help, and personalities are in `src/grok_assistant/lang/`. `hellos-es.txt` and `waits-es.txt` are the Spanish lines the voice rotates through. Colors are JSON files in `ui/themes/`. How to change them is in [Look](look.md). The listening path is still a direct call; the folders only group the code.
 
 At startup, the assistant picks the next greeting from the list and then starts listening. While it waits for a cloud response, it uses the next short waiting phrase. Both lists are deliberately long so the assistant does not greet you with the same sentence every morning.

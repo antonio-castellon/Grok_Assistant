@@ -161,6 +161,8 @@
     "about.lead": "Jeder Auftrag unten kann gesagt werden. Fast alle beginnen mit befehl. Das Beispiel ist ein ganzer Satz.",
     "about.example": "Beispiel",
     "about.body": "Was zu Hause gesprochen wird, bleibt zu Hause.\n\nDeine Stimme wird hier verarbeitet und das Audio verlässt den Computer nie. Grok erhält den Text nur, wenn du etwas fragen oder einen Auftrag geben musst. Der Rest geht nicht hinaus und wird nicht geteilt.",
+    "about.experimental": "Diese Anwendung ist ein Experiment.",
+    "about.license_note": "Die Datei LICENSE.md neben dem Programm nennt die Grenzen.",
     "market.hint": "Nichts lädt von allein. Wählbar wird es, wenn der Download 100 % erreicht.",
     "market.stt": "Hörmotor (STT)",
     "market.voices": "Stimmen",

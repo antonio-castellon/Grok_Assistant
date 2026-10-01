@@ -8,7 +8,7 @@ import tempfile
 import traceback
 from pathlib import Path
 
-from grok_assistant.paths import bundle_root, default_data_dir, load_lines
+from grok_assistant.paths import bundle_root, default_data_dir, ensure_license, load_lines
 
 _FAULT_LOG = None
 
@@ -33,6 +33,7 @@ def main(argv: list[str] | None = None) -> None:
 
 
 def _main(argv: list[str] | None) -> None:
+    ensure_license()
     args = list(sys.argv[1:] if argv is None else argv)
     if "--check" in args:
         _write_check()
