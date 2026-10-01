@@ -14,13 +14,13 @@ Mientras el programa está abierto, puede seguir escuchando. El audio se queda e
 
 Esa es la idea básica. Debajo se puede ver la ventana mientras escucha y el menú del icono, con Escucha abierto.
 
-![La ventana en espera, con el registro en vivo](docs/img/app-window.png)
+![La ventana en espera, en la pestaña Simple](docs/img/app-window.png)
 
 ![El menú del icono, con Escucha abierto](docs/img/tray-menu.png)
 
 El diagrama de abajo muestra qué ocurre con una frase desde que se pronuncia.
 
-![El motor STT pasa la voz a texto. Sin conversación, el modelo local mira si es un comando completo. En una conversación, el texto va directo a Grok.](docs/img/flow.svg)
+![El motor STT pasa la voz a texto. Sin conversación, el modelo local mira si es un comando completo. En una conversación, anota la frase y el texto va a Grok.](docs/img/flow.svg)
 
 ## Seguir leyendo
 

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 860" role="img" font-family="Segoe UI, Helvetica, Arial, sans-serif">
   <title>How a phrase moves through Grok Assistant</title>
-  <desc>The STT engine turns speech into text. Before a conversation, the local model checks for a complete command. During a conversation, the text goes straight to Grok.</desc>
+  <desc>The STT engine turns speech into text. Before a conversation, the local model checks for a complete command. During a conversation, it notes the line and the text goes to Grok.</desc>
   <rect width="1180" height="860" fill="#0e1418"/>
   <text x="40" y="40" fill="#f4f7f8" font-size="26" font-weight="650">How a phrase moves</text>
   <text x="40" y="66" fill="#9aafbb" font-size="15">The audio stops at the STT engine. Grok only receives text.</text>
@@ -41,7 +41,7 @@
   <text x="1000" y="552" fill="#e8a030" font-size="13" text-anchor="middle">STT → Grok</text>
   <path d="M800 362 H1000 V430" stroke="#e8a030" stroke-width="2" fill="none"/>
   <polygon points="994,426 1000,438 1006,426" fill="#e8a030"/>
-  <text x="900" y="352" fill="#e8a030" font-size="13">Yes. Skip the local model.</text>
+  <text x="812" y="352" fill="#e8a030" font-size="13">Yes. It notes the line and the text goes on.</text>
 
   <rect x="180" y="448" width="560" height="86" rx="14" fill="#142824" stroke="#1f6f6a"/>
   <text x="460" y="482" fill="#f4f7f8" font-size="18" text-anchor="middle" font-weight="650">Local model</text>
@@ -78,6 +78,6 @@
   <text x="868" y="642" fill="#e8a030" font-size="13">to Grok</text>
 
   <rect x="40" y="740" width="1100" height="88" rx="14" fill="#121c22" stroke="#314552"/>
-  <text x="60" y="774" fill="#f4f7f8" font-size="16" font-weight="650">While a conversation is open, the next phrase skips the local model.</text>
-  <text x="60" y="802" fill="#9aafbb" font-size="15">STT writes the text, and that text goes to Grok. A goodbye or a clear order can still finish here.</text>
+  <text x="60" y="774" fill="#f4f7f8" font-size="16" font-weight="650">While a conversation is open, the local model notes the line.</text>
+  <text x="60" y="802" fill="#9aafbb" font-size="15">The text still goes to Grok. A goodbye or a clear order can still finish here.</text>
 </svg>

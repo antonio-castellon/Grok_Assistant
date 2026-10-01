@@ -16,13 +16,13 @@ While the program is running, it can keep listening. Speech is turned into text 
 
 That is the basic idea. Below are the listening window and the icon menu, with Escucha open. The pictures are the same in every language.
 
-![The window waiting, with the live log](docs/img/app-window.png)
+![The window waiting, on the Simple tab](docs/img/app-window.png)
 
 ![The icon menu, with Escucha open](docs/img/tray-menu.png)
 
 The diagram below shows what happens to a spoken phrase from the moment it is heard.
 
-![The STT engine turns speech into text. Before a conversation, the local model checks for a complete command. During a conversation, the text goes straight to Grok.](docs/img/flow.svg)
+![The STT engine turns speech into text. Before a conversation, the local model checks for a complete command. During a conversation, it notes the line and the text goes to Grok.](docs/img/flow.svg)
 
 ## Read on
 

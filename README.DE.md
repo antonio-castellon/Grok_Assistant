@@ -14,13 +14,13 @@ Solange das Programm läuft, kann der Assistent weiter zuhören. Das Audio bleib
 
 Das ist die Grundidee. Unten das Fenster beim Zuhören und das Symbolmenü mit geöffnetem Escucha. Die Bilder sind in jeder Sprache dieselben.
 
-![Das Fenster im Warten, mit dem laufenden Protokoll](docs/img/app-window.png)
+![Das Fenster im Warten, auf dem Tab Einfach](docs/img/app-window.png)
 
 ![Das Symbolmenü mit geöffnetem Escucha](docs/img/tray-menu.png)
 
 Die folgende Grafik zeigt, was mit einem gesprochenen Satz passiert.
 
-![Der STT-Motor macht aus Sprache Text. Ohne Gespräch prüft das lokale Modell, ob es ein voller Auftrag ist. Im Gespräch geht der Text direkt an Grok.](docs/img/flow.svg)
+![Der STT-Motor macht aus Sprache Text. Ohne Gespräch prüft das lokale Modell, ob es ein voller Auftrag ist. Im Gespräch notiert es den Satz, und der Text geht an Grok.](docs/img/flow.svg)
 
 ## Weiterlesen
 

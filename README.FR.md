@@ -14,13 +14,13 @@ Tant que le programme fonctionne, l'assistant peut rester à l'écoute. L'audio 
 
 C'est l'idée générale. Ci-dessous, la fenêtre pendant l'écoute et le menu de l'icône, avec Escucha ouvert. Les images sont les mêmes dans chaque langue.
 
-![La fenêtre en attente, avec le journal en direct](docs/img/app-window.png)
+![La fenêtre en attente, sur l'onglet Simple](docs/img/app-window.png)
 
 ![Le menu de l'icône, avec Escucha ouvert](docs/img/tray-menu.png)
 
 Le schéma ci-dessous montre ce qui arrive à une phrase à partir du moment où elle est prononcée.
 
-![Le moteur STT transforme la parole en texte. Sans conversation, le modèle local vérifie si c'est un ordre complet. Dans une conversation, le texte va droit à Grok.](docs/img/flow.svg)
+![Le moteur STT transforme la parole en texte. Sans conversation, le modèle local vérifie si c'est un ordre complet. Dans une conversation, il note la phrase et le texte va à Grok.](docs/img/flow.svg)
 
 ## Lire la suite
 
