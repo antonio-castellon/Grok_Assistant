@@ -15,11 +15,33 @@ def test_a_print_take_stays_open_through_a_short_pause():
     assert TAKE_QUIET == 1.0
     assert ear._capture_ready("qué hora es", 0.5, 2.0) is False
     assert ear._capture_ready("qué hora es", TAKE_QUIET, 2.0) is True
-    assert ear._capture_ready("qué", TAKE_QUIET, TAKE_MIN_VOICE - 0.1) is False
+    assert ear._capture_ready("", TAKE_QUIET, TAKE_MIN_VOICE - 0.1) is False
+    assert ear._capture_ready("Hola, droga", 0.2, 0.0) is False
+    assert ear._capture_ready("Hola, droga", TAKE_QUIET, 0.0) is True
     assert ear._capture_ready("", TAKE_QUIET, 2.0) is True
     assert ear._capture_ready("frase larga", 0.2, TAKE_MAX_VOICE) is True
     assert tone(True) == (880, 140)
     assert tone(False) == (494, 220)
+
+
+def test_a_decoded_word_counts_as_sound_and_restarts_the_pause():
+    from grok_assistant.enroll_audio import TAKE_MIN_VOICE
+    from grok_assistant.kroko_ear import capture_has_sound, note_capture_speech
+
+    mark, quiet, voiced = note_capture_speech("", "Hola, droga", 2.0, 0.0)
+    assert mark == "Hola, droga"
+    assert quiet == 0.0
+    assert voiced == TAKE_MIN_VOICE
+    same, quiet, voiced = note_capture_speech(mark, "Hola, droga", 0.4, voiced)
+    assert same == mark
+    assert quiet == 0.4
+    grown, quiet, _voiced = note_capture_speech(mark, ". Hola, Grog", 1.0, voiced)
+    assert grown == ". Hola, Grog"
+    assert quiet == 0.0
+    assert capture_has_sound("Hola, droga", 0.0) is True
+    assert capture_has_sound("", 0.2) is True
+    assert capture_has_sound("", 0.0) is False
+    assert capture_has_sound("   ", 0.0) is False
 
 
 def test_sixteen_different_phrases():

@@ -75,6 +75,7 @@ class OfflineEar:
         self._stop = threading.Event()
         self._paused = threading.Event()
         self._capture = threading.Event()
+        self._flush = threading.Event()
         self._thread: threading.Thread | None = None
 
     def start(self) -> bool:
@@ -102,6 +103,10 @@ class OfflineEar:
             self._capture.set()
         else:
             self._capture.clear()
+
+    def request_flush(self) -> None:
+        """Hand back the open take when the wait runs out."""
+        self._flush.set()
 
     def stop(self) -> None:
         self._stop.set()
@@ -183,6 +188,7 @@ class OfflineEar:
                         speech.clear()
                         voiced = 0.0
                         silent = 0.0
+                        self._flush.clear()
                         continue
                     chunk = np.ascontiguousarray(samples, dtype=np.float32).reshape(-1)
                     capturing = self._capture.is_set()
@@ -194,8 +200,15 @@ class OfflineEar:
                     elif speech:
                         speech.append(chunk)
                         silent += 0.1
+                    flushing = self._flush.is_set()
+                    if flushing:
+                        self._flush.clear()
                     if capturing:
-                        ended = speech and ((silent >= TAKE_QUIET and voiced >= TAKE_MIN_VOICE) or voiced >= TAKE_MAX_VOICE)
+                        ended = bool(speech) and (
+                            (silent >= TAKE_QUIET and voiced >= TAKE_MIN_VOICE)
+                            or voiced >= TAKE_MAX_VOICE
+                            or (flushing and voiced > 0)
+                        )
                     else:
                         ended = speech and ((silent >= 0.7 and voiced >= 0.4) or voiced >= 30.0)
                     if not ended:

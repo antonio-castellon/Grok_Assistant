@@ -2126,10 +2126,21 @@ class TrayApp:
             # Reaction, then up to eight seconds of speech, then one of silence.
             text, audio = self._take_box.get(timeout=12)
         except queue.Empty:
-            return "", None
+            self._flush_open_ear()
+            try:
+                text, audio = self._take_box.get(timeout=1.0)
+            except queue.Empty:
+                text, audio = "", None
         finally:
             self._take_open = False
         return str(text or ""), audio
+
+    def _flush_open_ear(self) -> None:
+        """The wait ran out. Keep whatever sound the open ear already caught."""
+        for ear in (self.kroko, self.offline):
+            flush = getattr(ear, "request_flush", None)
+            if flush is not None:
+                flush()
 
     def _drop_queued_phrases(self) -> None:
         kept = []

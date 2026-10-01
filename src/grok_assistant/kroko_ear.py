@@ -26,6 +26,21 @@ def kroko_dir() -> Path | None:
     return streaming_dir("kroko")
 
 
+def note_capture_speech(mark: str, heard: str, quiet: float, voiced: float) -> tuple[str, float, float]:
+    """A new decoded word restarts the pause. The word is not matched to the phrase."""
+    from grok_assistant.enroll_audio import TAKE_MIN_VOICE
+
+    heard = " ".join((heard or "").split())
+    if heard and heard != mark:
+        return heard, 0.0, max(voiced, TAKE_MIN_VOICE)
+    return mark, quiet, voiced
+
+
+def capture_has_sound(text: str, voiced: float) -> bool:
+    """True when a timed-out take already caught sound worth keeping."""
+    return bool(" ".join((text or "").split())) or voiced > 0
+
+
 def _model(folder: Path, prefix: str) -> Path | None:
     files = list(folder.glob(f"{prefix}*.onnx"))
     if not files:
@@ -102,6 +117,8 @@ class KrokoEar:
         self._thread: threading.Thread | None = None
         self._partial_seq = 0
         self._last_partial = ""
+        self._capture_mark = ""
+        self._flush = threading.Event()
 
     def start(self) -> bool:
         folder = streaming_dir(self.kind)
@@ -131,6 +148,10 @@ class KrokoEar:
         else:
             self._capture.clear()
 
+    def request_flush(self) -> None:
+        """Hand back the open take when the wait runs out, words included."""
+        self._flush.set()
+
     def stop(self) -> None:
         self._stop.set()
 
@@ -151,13 +172,16 @@ class KrokoEar:
         return bool(endpoint) and limit <= 0.7
 
     def _capture_ready(self, text: str, quiet: float, voiced: float) -> bool:
-        """The raw sound ends the take. The listening engine does not."""
+        """End the take on sound plus a pause. The words are not checked."""
         from grok_assistant.enroll_audio import TAKE_MAX_VOICE, TAKE_MIN_VOICE, TAKE_QUIET
 
-        del text
         if voiced >= TAKE_MAX_VOICE:
             return True
-        return voiced >= TAKE_MIN_VOICE and quiet >= TAKE_QUIET
+        if quiet < TAKE_QUIET:
+            return False
+        if voiced >= TAKE_MIN_VOICE:
+            return True
+        return bool(" ".join((text or "").split()))
 
     def _report(self, text: str) -> None:
         self.on_status(text)
@@ -222,6 +246,8 @@ class KrokoEar:
                         heard_audio.clear()
                         parts.clear()
                         self._last_partial = ""
+                        self._capture_mark = ""
+                        self._flush.clear()
                         continue
                     chunk = np.ascontiguousarray(samples, dtype=np.float32).reshape(-1)
                     heard_audio.append(chunk)
@@ -232,6 +258,8 @@ class KrokoEar:
                     segment = result if isinstance(result, str) else getattr(result, "text", "")
                     segment = str(segment).strip()
                     capturing = self._capture.is_set()
+                    if not capturing:
+                        self._capture_mark = ""
                     loud = float(np.sqrt(np.mean(np.square(chunk)))) > (0.004 if capturing else 0.01)
                     quiet = 0.0 if loud else quiet + 0.1
                     if loud:
@@ -244,16 +272,24 @@ class KrokoEar:
                         recognizer.reset(stream)
                         segment = ""
                     heard = " ".join(part for part in [*parts, segment] if part) if capturing else segment
+                    if capturing:
+                        self._capture_mark, quiet, voiced = note_capture_speech(
+                            self._capture_mark, heard, quiet, voiced
+                        )
                     ready = (
                         self._capture_ready(heard, quiet, voiced)
                         if capturing
                         else self._ready(segment, quiet, recognizer.is_endpoint(stream))
                     )
-                    if heard and heard != self._last_partial and not ready:
+                    flushing = self._flush.is_set()
+                    if flushing:
+                        self._flush.clear()
+                    keep = flushing and capturing and capture_has_sound(heard, voiced)
+                    if heard and heard != self._last_partial and not ready and not keep:
                         self._partial_seq += 1
                         self._last_partial = heard
                         self.on_partial(heard, self._partial_seq)
-                    if ready:
+                    if ready or keep:
                         recognizer.reset(stream)
                         quiet = 0.0
                         voiced = 0.0
@@ -261,7 +297,8 @@ class KrokoEar:
                         heard_audio.clear()
                         parts.clear()
                         self._last_partial = ""
-                        if heard or capturing:
+                        self._capture_mark = ""
+                        if audio is not None and (heard or capturing):
                             self.on_line(heard, audio)
                     elif not capturing and recognizer.is_endpoint(stream) and not segment:
                         recognizer.reset(stream)
