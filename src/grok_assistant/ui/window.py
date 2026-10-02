@@ -21,7 +21,6 @@ class WindowMixin:
         self.ui: queue.Queue = queue.Queue()
         self._heard_box: queue.Queue = queue.Queue()
         self._mic_held = False
-        self.view_from = 0
         self._debug_cache: list[str] = []
         self.debug_text = None
         self.status_var = tk.StringVar(value=_ui("status.starting", "Arrancando"))

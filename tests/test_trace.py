@@ -66,3 +66,31 @@ def test_the_trace_button_sits_with_pause_and_clear(tmp_path):
         assert app.trace_button.cget("text") == "Guardar traza"
     finally:
         root.destroy()
+
+
+def test_clear_empties_the_debug_window(tmp_path):
+    import tkinter as tk
+
+    from grok_assistant.rules.hub import build
+    from grok_assistant.ui.app import TrayApp
+
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
+        root.update()
+        app.hub.brain.note("frase vieja")
+        app._paint()
+        assert "frase vieja" in app.debug_text.get("1.0", "end")
+        app._clear_view()
+        assert app.debug_text.get("1.0", "end").strip() == ""
+        assert app.hub.brain.logs == []
+        app._clear_view()
+        assert app.debug_text.get("1.0", "end").strip() == ""
+        app.hub.brain.note("frase nueva")
+        app._paint()
+        shown = app.debug_text.get("1.0", "end")
+        assert "frase nueva" in shown
+        assert "frase vieja" not in shown
+    finally:
+        root.destroy()

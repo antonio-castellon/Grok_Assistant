@@ -257,7 +257,7 @@ class WorkerMixin:
         self.debug_text.insert("end", line + "\n")
 
     def _clear_view(self) -> None:
-        self.view_from = len(self.hub.brain.logs)
+        self.hub.brain.logs.clear()
         self._paint()
 
     def _toggle_from_ui(self) -> None:
