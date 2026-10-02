@@ -28,7 +28,6 @@ Dans Réglages, Grok ne fait que chercher sur internet. Un administrateur peut p
 
 - [Mode d'emploi](docs/fr/guide.md)
 - [Aspect](docs/fr/aspect.md)
-- [L'espagnol d'abord, parce qu'il a été développé et essayé d'abord en espagnol](docs/fr/ecoute.md)
 - [Empreintes et oreilles](docs/fr/empreintes.md)
 - [Sessions et agents](docs/fr/sessions.md)
 - [Pourquoi Grok, et pas une autre fenêtre de chat](docs/fr/grok.md)

@@ -30,7 +30,6 @@ In Settings, Grok only searches the internet. An administrator can allow Grok to
 
 - [How to use it](docs/en/guide.md)
 - [Look](docs/en/look.md)
-- [Spanish first, because it was developed and tested in Spanish first](docs/en/listening.md)
 - [Voice prints and listeners](docs/en/prints.md)
 - [Sessions and agents](docs/en/sessions.md)
 - [Why Grok, and not another chat window](docs/en/why-grok.md)
