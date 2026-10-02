@@ -13,8 +13,14 @@ BUNDLE = PACKAGE / "_bundle"
 
 
 def stage() -> None:
+    """Copy repo files into the package. A wheel built from the sdist already has them."""
     from grok_assistant.buildinfo import write_stamp
 
+    speak = ROOT / "scripts" / "speak.ps1"
+    if not speak.is_file():
+        if not (BUNDLE / "scripts" / "speak.ps1").is_file():
+            raise SystemExit("scripts/speak.ps1 is missing")
+        return
     if BUNDLE.exists():
         shutil.rmtree(BUNDLE)
     shutil.copytree(ROOT / "scripts", BUNDLE / "scripts")
