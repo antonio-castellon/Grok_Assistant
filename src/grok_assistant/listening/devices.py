@@ -158,11 +158,6 @@ def resolve_output(saved: str, speakers: list[dict] | None = None) -> tuple[str,
     return _resolve(saved, speakers, listed_outputs)
 
 
-def _invalid_rate(exc: BaseException) -> bool:
-    text = str(exc).casefold()
-    return "invalid sample rate" in text or "-9997" in text
-
-
 def _native_rate(index: int | None) -> int | None:
     """The rate the endpoint actually opens at. WASAPI often refuses 16 kHz."""
     import sounddevice as sd
@@ -231,31 +226,185 @@ class _ResampledInput:
         return self._stream.close()
 
 
+def _wasapi(index: int | None) -> bool:
+    import sounddevice as sd
+
+    try:
+        if index is None:
+            chosen = sd.default.device[0]
+            if chosen is None or int(chosen) < 0:
+                return False
+            info = sd.query_devices(int(chosen))
+        else:
+            info = sd.query_devices(int(index))
+        hosts = list(sd.query_hostapis())
+        name = str(hosts[int(info["hostapi"])]["name"])
+    except Exception:
+        return False
+    return "WASAPI" in name.upper()
+
+
+# Shared capture on the AMD array stays near 1e-6. A real room, even a quiet
+# one, is louder than that on a working endpoint. Exclusive mode there reaches
+# about 1e-3, but the first instant of that stream is still digital silence.
+_REPLACE = 1e-5
+_SETTLED = 1e-3
+_PROBE_SECONDS = 0.35
+
+
+def _level(stream, rate: int) -> float:
+    """Highest sample in a short capture. Stops once the room is clearly present."""
+    import numpy as np
+
+    block = max(1, int(rate * 0.05))
+    remain = max(block, int(rate * _PROBE_SECONDS))
+    peak = 0.0
+    while remain > 0:
+        count = min(block, remain)
+        data, _overflow = stream.read(count)
+        audio = np.asarray(data, dtype=np.float32).reshape(-1)
+        if audio.size:
+            heard = float(np.max(np.abs(audio)))
+            if heard > peak:
+                peak = heard
+        if peak >= _SETTLED:
+            return peak
+        remain -= count
+    return peak
+
+
+def _prefer(peak: float, best: float | None) -> bool:
+    """A later opening replaces the current one only when it is clearly louder."""
+    if best is None:
+        return True
+    return peak >= max(best * 10.0, _REPLACE)
+
+
+def _deliver(index: int | None, rate: int, exclusive: bool, latency, wanted: int):
+    import sounddevice as sd
+
+    stream = sd.InputStream(**_stream_kwargs(index, rate, latency, exclusive))
+    if rate == wanted:
+        return stream
+    return _ResampledInput(stream, rate, wanted)
+
+
+def _stream_kwargs(index: int | None, rate: int, latency, exclusive: bool) -> dict:
+    import sounddevice as sd
+
+    kwargs = {"channels": 1, "dtype": "float32", "samplerate": int(rate)}
+    if latency is not None:
+        kwargs["latency"] = latency
+    if index is not None:
+        kwargs["device"] = index
+    if exclusive:
+        kwargs["extra_settings"] = sd.WasapiSettings(exclusive=True)
+    return kwargs
+
+
+def _open_plans(index: int | None, wanted: int) -> list[tuple[int, bool]]:
+    """Shared at the recognizer rate, then the endpoint rate, then WASAPI exclusive.
+
+    The AMD array's shared WASAPI stream stays near digital silence.
+    Exclusive mode on that same endpoint delivers the microphone.
+    """
+    plans = [(wanted, False)]
+    native = _native_rate(index)
+    if native and native != wanted:
+        plans.append((native, False))
+    if _wasapi(index):
+        plans.append((native or wanted, True))
+    unique = []
+    for plan in plans:
+        if plan not in unique:
+            unique.append(plan)
+    return unique
+
+
+def _indexes_for(name: str, index: int | None) -> list[int | None]:
+    """The chosen endpoint, then the same name on a driver that can be read.
+
+    WDM-KS publishes the microphone again, and PortAudio cannot read it with a
+    blocking stream. Opening it aborts the search even after a live capture.
+    """
+    import sounddevice as sd
+
+    chosen: list[int | None] = [index]
+    if not name:
+        return chosen
+    try:
+        devices = list(sd.query_devices())
+        hosts = list(sd.query_hostapis())
+    except Exception:
+        return chosen
+    for position, device in enumerate(devices):
+        try:
+            if int(device["max_input_channels"]) <= 0:
+                continue
+            host_name = str(hosts[int(device["hostapi"])]["name"])
+        except (KeyError, TypeError, ValueError, IndexError):
+            continue
+        if "WDM-KS" in host_name.upper():
+            continue
+        label = " ".join(str(device.get("name") or "").split())
+        if label == name and position not in chosen:
+            chosen.append(position)
+    return chosen
+
+
 def open_input(saved: str, samplerate: int = 16000, latency: float | None = None):
     """Open the chosen input, or the system default when the name is empty or gone.
 
     The recognizer wants 16 kHz. A WASAPI microphone often accepts only its own
     mix rate, so that stream is opened there and each read is brought back.
+    When shared capture stays near silence and exclusive mode is clearly louder,
+    the louder opening is the one that stays open.
     """
     import sounddevice as sd
 
     wanted = int(samplerate)
-    kwargs = {"channels": 1, "dtype": "float32", "samplerate": wanted}
-    if latency is not None:
-        kwargs["latency"] = latency
-    _name, index = resolve_microphone(saved)
-    if index is not None:
-        kwargs["device"] = index
-    try:
-        return sd.InputStream(**kwargs)
-    except Exception as exc:
-        if not _invalid_rate(exc):
-            raise
-        native = _native_rate(index)
-        if native is None or native == wanted:
-            raise
-        kwargs["samplerate"] = native
-        return _ResampledInput(sd.InputStream(**kwargs), native, wanted)
+    name, index = resolve_microphone(saved)
+    last: BaseException | None = None
+    winner: tuple[float, int | None, int, bool] | None = None
+    for device in _indexes_for(name, index):
+        for rate, exclusive in _open_plans(device, wanted):
+            try:
+                trial = sd.InputStream(**_stream_kwargs(device, rate, latency, exclusive))
+            except Exception as exc:
+                last = exc
+                continue
+            try:
+                with trial:
+                    peak = _level(trial, rate)
+            except Exception as exc:
+                last = exc
+                continue
+            best = None if winner is None else winner[0]
+            if not _prefer(peak, best):
+                continue
+            winner = (peak, device, rate, exclusive)
+            if peak < _SETTLED:
+                continue
+            try:
+                return _deliver(device, rate, exclusive, latency, wanted)
+            except Exception as exc:
+                last = exc
+                winner = None
+                continue
+        if winner is not None and winner[0] >= _REPLACE:
+            try:
+                return _deliver(winner[1], winner[2], winner[3], latency, wanted)
+            except Exception as exc:
+                last = exc
+                winner = None
+    if winner is not None:
+        try:
+            return _deliver(winner[1], winner[2], winner[3], latency, wanted)
+        except Exception as exc:
+            last = exc
+    if last is not None:
+        raise last
+    raise RuntimeError("el micrófono abre pero no entrega sonido")
 
 
 def _play_on(audio, rate: int, index: int | None) -> bool:

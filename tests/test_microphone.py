@@ -145,6 +145,15 @@ def test_open_input_passes_the_chosen_index(monkeypatch):
             opened.clear()
             opened.update(kwargs)
 
+        def read(self, frames):
+            return [0.1] * frames, False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
     import sys
     import types
 
@@ -176,6 +185,12 @@ def test_open_input_follows_the_microphone_rate_when_16k_is_rejected(monkeypatch
         def read(self, frames):
             return [0.25] * frames, False
 
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
     import sys
     import types
 
@@ -194,6 +209,192 @@ def test_open_input_follows_the_microphone_rate_when_16k_is_rejected(monkeypatch
     assert len(audio) == 1600
     assert overflow is False
     assert float(audio[0]) == 0.25
+
+
+def test_a_silent_wasapi_microphone_opens_in_exclusive_mode(monkeypatch):
+    monkeypatch.setattr(
+        "grok_assistant.listening.devices.listed_inputs",
+        lambda: [{"index": 25, "name": "Microphone Array (AMD Audio Device)", "hostapi": 3}],
+    )
+    opened = []
+
+    class Settings:
+        def __init__(self, exclusive=False):
+            self.exclusive = exclusive
+
+    class Stream:
+        def __init__(self, **kwargs):
+            opened.append(dict(kwargs))
+            self.exclusive = bool(getattr(kwargs.get("extra_settings"), "exclusive", False))
+
+        def read(self, frames):
+            value = 0.2 if self.exclusive else 0.0
+            return [value] * frames, False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    import sys
+    import types
+
+    info = {
+        "name": "Microphone Array (AMD Audio Device)",
+        "hostapi": 0,
+        "max_input_channels": 2,
+        "default_samplerate": 48000.0,
+    }
+    fake = types.ModuleType("sounddevice")
+    fake.InputStream = Stream
+    fake.WasapiSettings = Settings
+    fake.query_devices = lambda index=None: info if index is not None else [info]
+    fake.query_hostapis = lambda: [{"name": "Windows WASAPI"}]
+    fake.default = types.SimpleNamespace(device=(25, 5))
+    monkeypatch.setitem(sys.modules, "sounddevice", fake)
+    from grok_assistant.listening.devices import open_input
+
+    source = open_input("Microphone Array (AMD Audio Device)", 16000, latency=0.5)
+    assert any(bool(getattr(row.get("extra_settings"), "exclusive", False)) for row in opened)
+    audio, overflow = source.read(1600)
+    assert len(audio) == 1600
+    assert overflow is False
+    assert abs(float(audio[0]) - 0.2) < 1e-6
+
+
+def _wasapi_open(monkeypatch, read):
+    """List the AMD array and record every InputStream. `read(stream, frames)` supplies samples."""
+    monkeypatch.setattr(
+        "grok_assistant.listening.devices.listed_inputs",
+        lambda: [{"index": 25, "name": "Microphone Array (AMD Audio Device)", "hostapi": 0}],
+    )
+    opened = []
+
+    class Settings:
+        def __init__(self, exclusive=False):
+            self.exclusive = exclusive
+
+    class Stream:
+        def __init__(self, **kwargs):
+            opened.append(dict(kwargs))
+            self.exclusive = bool(getattr(kwargs.get("extra_settings"), "exclusive", False))
+            self.rate = int(kwargs["samplerate"])
+            self.sent = 0
+
+        def read(self, frames):
+            return read(self, frames)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    import sys
+    import types
+
+    info = {
+        "name": "Microphone Array (AMD Audio Device)",
+        "hostapi": 0,
+        "max_input_channels": 2,
+        "default_samplerate": 48000.0,
+    }
+    fake = types.ModuleType("sounddevice")
+    fake.InputStream = Stream
+    fake.WasapiSettings = Settings
+    fake.query_devices = lambda index=None: info if index is not None else [info]
+    fake.query_hostapis = lambda: [{"name": "Windows WASAPI"}]
+    fake.default = types.SimpleNamespace(device=(25, 5))
+    monkeypatch.setitem(sys.modules, "sounddevice", fake)
+    return opened
+
+
+def test_exclusive_mode_wins_when_shared_capture_stays_near_zero(monkeypatch):
+    def read(stream, frames):
+        if not stream.exclusive:
+            return [1e-7] * frames, False
+        # Exclusive capture is silent for the first instant, then the room arrives.
+        silent = int(stream.rate * 0.2)
+        if stream.sent >= silent:
+            return [0.002] * frames, False
+        stream.sent += frames
+        if stream.sent <= silent:
+            return [0.0] * frames, False
+        early = frames - (stream.sent - silent)
+        return [0.0] * early + [0.002] * (frames - early), False
+
+    opened = _wasapi_open(monkeypatch, read)
+    from grok_assistant.listening.devices import open_input
+
+    open_input("Microphone Array (AMD Audio Device)", 16000, latency=0.5)
+    assert opened[-1]["samplerate"] == 48000
+    assert opened[-1]["extra_settings"].exclusive is True
+
+
+def test_a_live_shared_microphone_stays_shared(monkeypatch):
+    def read(stream, frames):
+        value = 0.0003 if stream.exclusive else 0.0002
+        return [value] * frames, False
+
+    opened = _wasapi_open(monkeypatch, read)
+    from grok_assistant.listening.devices import open_input
+
+    open_input("Microphone Array (AMD Audio Device)", 16000, latency=0.5)
+    assert not bool(getattr(opened[-1].get("extra_settings"), "exclusive", False))
+
+
+def test_a_silent_exclusive_mode_keeps_the_shared_microphone(monkeypatch):
+    def read(stream, frames):
+        return [0.0] * frames, False
+
+    opened = _wasapi_open(monkeypatch, read)
+    from grok_assistant.listening.devices import open_input
+
+    open_input("Microphone Array (AMD Audio Device)", 16000, latency=0.5)
+    assert not bool(getattr(opened[-1].get("extra_settings"), "exclusive", False))
+
+
+def test_a_driver_that_cannot_be_read_does_not_drop_a_live_microphone(monkeypatch):
+    monkeypatch.setattr(
+        "grok_assistant.listening.devices.listed_inputs",
+        lambda: [{"index": 0, "name": "Mic", "hostapi": 0}],
+    )
+    opened = []
+    devices = [
+        {"name": "Mic", "hostapi": 0, "max_input_channels": 1, "default_samplerate": 16000.0},
+        {"name": "Mic", "hostapi": 1, "max_input_channels": 1, "default_samplerate": 16000.0},
+    ]
+
+    class Stream:
+        def __init__(self, **kwargs):
+            if kwargs.get("device") == 1:
+                raise RuntimeError("Unanticipated host error [PaErrorCode -9999]")
+            opened.append(dict(kwargs))
+
+        def read(self, frames):
+            return [0.0002] * frames, False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    import sys
+    import types
+
+    fake = types.ModuleType("sounddevice")
+    fake.InputStream = Stream
+    fake.query_devices = lambda index=None: devices[index] if index is not None else devices
+    fake.query_hostapis = lambda: [{"name": "Windows WASAPI"}, {"name": "Windows WDM-KS"}]
+    fake.default = types.SimpleNamespace(device=(0, 1))
+    monkeypatch.setitem(sys.modules, "sounddevice", fake)
+    from grok_assistant.listening.devices import open_input
+
+    open_input("Mic", 16000)
+    assert opened
+    assert all(row.get("device") == 0 for row in opened)
 
 
 def test_open_input_still_raises_when_the_microphone_is_unavailable(monkeypatch):
