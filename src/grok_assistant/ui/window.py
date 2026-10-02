@@ -353,14 +353,16 @@ class WindowMixin:
         self.talk_hint.pack(pady=(14, 4))
         settings_row = tk.Frame(simple, bg=look.bg)
         settings_row.pack(pady=(8, 0))
-        days = tk.Frame(settings_row, bg=look.bg)
-        days.pack(side="left", padx=22, anchor="n")
+        # One row per band: a caption that wraps must not drop its spinbox.
+        settings_row.columnconfigure(0, weight=1, uniform="pair")
+        settings_row.columnconfigure(1, weight=1, uniform="pair")
         self.shared_label = tk.Label(
-            days, text="", bg=look.bg, fg=look.muted, font=("Segoe UI", 13), wraplength=300, justify="center",
+            settings_row, text="", bg=look.bg, fg=look.muted, font=("Segoe UI", 13),
+            wraplength=300, justify="center",
         )
-        self.shared_label.pack()
-        days_row = tk.Frame(days, bg=look.bg)
-        days_row.pack(pady=(6, 0))
+        self.shared_label.grid(row=0, column=0, sticky="s", padx=22)
+        days_row = tk.Frame(settings_row, bg=look.bg)
+        days_row.grid(row=1, column=0, pady=(6, 0))
         self.shared_days_var = tk.StringVar(value=str(self.hub.brain.settings.shared_days))
         self.shared_days_box = tk.Spinbox(
             days_row, from_=1, to=365, width=4, textvariable=self.shared_days_var,
@@ -374,18 +376,17 @@ class WindowMixin:
         self.shared_unit = tk.Label(days_row, text="", bg=look.bg, fg=look.ink, font=("Segoe UI", 16))
         self.shared_unit.pack(side="left", padx=(10, 0))
         self.days_hint = tk.Label(
-            days, text="", wraplength=300, justify="center",
+            settings_row, text="", wraplength=300, justify="center",
             bg=look.bg, fg=look.muted, font=("Segoe UI", 12),
         )
-        self.days_hint.pack(pady=(8, 0))
-        quiet = tk.Frame(settings_row, bg=look.bg)
-        quiet.pack(side="left", padx=22, anchor="n")
+        self.days_hint.grid(row=2, column=0, sticky="n", padx=22, pady=(8, 0))
         self.quiet_label = tk.Label(
-            quiet, text="", bg=look.bg, fg=look.muted, font=("Segoe UI", 13), wraplength=300, justify="center",
+            settings_row, text="", bg=look.bg, fg=look.muted, font=("Segoe UI", 13),
+            wraplength=300, justify="center",
         )
-        self.quiet_label.pack()
-        quiet_row = tk.Frame(quiet, bg=look.bg)
-        quiet_row.pack(pady=(6, 0))
+        self.quiet_label.grid(row=0, column=1, sticky="s", padx=22)
+        quiet_row = tk.Frame(settings_row, bg=look.bg)
+        quiet_row.grid(row=1, column=1, pady=(6, 0))
         from grok_assistant.notebook.settings import format_quiet_minutes
 
         self.quiet_minutes_var = tk.StringVar(value=format_quiet_minutes(self.hub.brain.settings.quiet_minutes))
@@ -401,10 +402,10 @@ class WindowMixin:
         self.quiet_unit = tk.Label(quiet_row, text="", bg=look.bg, fg=look.ink, font=("Segoe UI", 16))
         self.quiet_unit.pack(side="left", padx=(10, 0))
         self.quiet_hint = tk.Label(
-            quiet, text="", wraplength=300, justify="center",
+            settings_row, text="", wraplength=300, justify="center",
             bg=look.bg, fg=look.muted, font=("Segoe UI", 12),
         )
-        self.quiet_hint.pack(pady=(8, 0))
+        self.quiet_hint.grid(row=2, column=1, sticky="n", padx=22, pady=(8, 0))
         self._paint_simple()
 
         self.debug_label = ttk.Label(self.page_debug, text=_ui("window.debug", "Depuración — lo que oye y lo que hace después"), style="Muted.TLabel")

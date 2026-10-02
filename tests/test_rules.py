@@ -1102,13 +1102,22 @@ def test_simple_tab_chooses_how_to_talk_and_how_many_days(tmp_path):
     from grok_assistant.ui.app import TrayApp
 
     root = tk.Tk()
+    root.geometry("1000x800+40+40")
+    root.attributes("-alpha", 0)
     root.withdraw()
     try:
         hub = build(tmp_path, tmp_path / "agents")
         hub.brain.settings.wake_name = "Miguel"
         activate("es")
         app = TrayApp(root, hub)
+        root.deiconify()
         root.update()
+        days_y = app.shared_days_box.master.winfo_y()
+        quiet_y = app.quiet_minutes_box.master.winfo_y()
+        assert days_y > 0 and days_y == quiet_y
+        assert app.shared_label.winfo_y() + app.shared_label.winfo_height() == (
+            app.quiet_label.winfo_y() + app.quiet_label.winfo_height()
+        )
         assert app.talk_mode_box.get() == "Pregunta seguida"
         hint = app.talk_hint.cget("text")
         assert "Miguel" in hint and "qué hora es" in hint and "más rápida" in hint
@@ -1146,6 +1155,7 @@ def test_simple_tab_chooses_how_to_talk_and_how_many_days(tmp_path):
         activate("en")
         app._apply_chrome()
         root.update()
+        assert app.shared_days_box.master.winfo_y() == app.quiet_minutes_box.master.winfo_y()
         assert app.talk_mode_box.get() == "Open chat"
         assert "Hello Miguel" in app.talk_hint.cget("text")
         assert "days" in app.days_hint.cget("text")
