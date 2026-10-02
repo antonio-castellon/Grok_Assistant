@@ -57,6 +57,8 @@
     "menu.install_windows": "Installer la voix Windows…",
     "menu.test_on": "Activer l'essai",
     "menu.test_off": "Désactiver l'essai",
+    "menu.test_note_on": "mode essai : activé",
+    "menu.test_note_off": "mode essai : désactivé",
     "menu.identify": "Identifier ma voix",
     "menu.rename": "Changer le nom…",
     "menu.refresh_models": "Actualiser la liste",

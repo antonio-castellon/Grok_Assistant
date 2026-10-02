@@ -101,7 +101,8 @@ class ActionMixin:
         self._paint()
 
     def _toggle_test(self) -> None:
-        self._command("salir" if self.hub.brain.test_mode else "prueba")
+        # The same Escucha row turns the test on and off. It does not wait for a spoken "salir".
+        self.jobs.put(("test", ""))
 
     def _command(self, words: str) -> None:
         self.jobs.put(("phrase", f"comando {words}"))

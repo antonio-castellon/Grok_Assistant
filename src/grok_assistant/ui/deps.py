@@ -31,7 +31,7 @@ from grok_assistant.listening.voiceprint import VoicePrint
 from grok_assistant.paths import bundle_root
 from grok_assistant.rules.hub import Hub, build
 from grok_assistant.speaking.speech import Speaker
-from grok_assistant.ui.chrome import _agent_label, _outside_clause, _ui, _used, _version_line, detail_line, look
+from grok_assistant.ui.chrome import _agent_label, _outside_clause, _ui, _used, _version_line, detail_line, look, test_switch_label
 from grok_assistant.ui.round import RoundButton, RoundNotebook
 from grok_assistant.ui.theme import apply_saved, available, theme_by_id
 from grok_assistant.ui.win_tray import WinTray

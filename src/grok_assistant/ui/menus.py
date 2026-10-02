@@ -258,10 +258,7 @@ class MenuMixin:
         menu.add_cascade(label=_ui("menu.recognizer", "Reconocedor"), menu=self.menu_ear)
         menu.add_cascade(label=_ui("menu.identifier", "Identificador texto"), menu=self.menu_identifier)
         menu.add_separator()
-        if self.hub.brain.test_mode:
-            menu.add_command(label=_used(True) + _ui("menu.test_off", "Desactivar prueba"), command=self._toggle_test)
-        else:
-            menu.add_command(label=_ui("menu.test_on", "Activar prueba"), command=self._toggle_test)
+        menu.add_command(label=test_switch_label(self.hub.brain.test_mode), command=self._toggle_test)
         menu.add_command(label=_ui("menu.rename", "Cambiar nombre…"), command=self._rename_assistant)
 
     def _fill_identifiers(self) -> None:
@@ -398,7 +395,7 @@ class MenuMixin:
                 ("sub", text("menu.recognizer", "Reconocedor"), ears),
                 ("sub", text("menu.identifier", "Identificador texto"), self._identifier_items()),
                 ("sep",),
-                ("cmd", _ui("menu.test_off", "Desactivar prueba") if brain.test_mode else _ui("menu.test_on", "Activar prueba"), "test-toggle", brain.test_mode),
+                ("cmd", test_switch_label(brain.test_mode), "test-toggle", False),
                 ("cmd", _ui("menu.rename", "Cambiar nombre…"), "rename", False),
             ]),
             ("sub", text("menu.voice", "Voz"), voices + [

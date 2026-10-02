@@ -57,6 +57,8 @@
     "menu.install_windows": "Windows-Sprache installieren…",
     "menu.test_on": "Test einschalten",
     "menu.test_off": "Test ausschalten",
+    "menu.test_note_on": "Testmodus: ein",
+    "menu.test_note_off": "Testmodus: aus",
     "menu.identify": "Meine Stimme erkennen",
     "menu.rename": "Namen ändern…",
     "menu.refresh_models": "Liste aktualisieren",

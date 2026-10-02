@@ -57,6 +57,8 @@
     "menu.install_windows": "Install Windows speech…",
     "menu.test_on": "Turn test on",
     "menu.test_off": "Turn test off",
+    "menu.test_note_on": "test mode: on",
+    "menu.test_note_off": "test mode: off",
     "menu.identify": "Identify my voice",
     "menu.rename": "Change name…",
     "menu.refresh_models": "Refresh list",

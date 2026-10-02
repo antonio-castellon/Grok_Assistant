@@ -476,6 +476,30 @@ def test_test_mode_hears_and_does_nothing(world):
     assert hub.brain.test_mode is False
 
 
+def test_the_menu_test_switch_logs_the_change_and_renames_itself(world):
+    hub, _cli, _clock = world
+    from grok_assistant.i18n import activate
+    from grok_assistant.ui.chrome import test_switch_label
+
+    activate("es")
+    assert test_switch_label(False) == "Activar prueba"
+    assert test_switch_label(True) == "Desactivar prueba"
+    entered = hub.brain._enter_test("Activar prueba")
+    assert hub.brain.test_mode is True
+    shown = "\n".join(hub.brain.logs)
+    assert "Activar prueba" in shown
+    assert "modo prueba: activado" in shown
+    assert entered.speak[0] in shown
+    left = hub.brain._leave_test("Desactivar prueba")
+    assert hub.brain.test_mode is False
+    assert left.speak == ["Salgo de la prueba. Vuelvo a escuchar."]
+    shown = "\n".join(hub.brain.logs)
+    assert "Desactivar prueba" in shown
+    assert "modo prueba: desactivado" in shown
+    assert left.speak[0] in shown
+    assert test_switch_label(False) == "Activar prueba"
+
+
 def test_locked_voice_is_the_only_one_heard(world):
     hub, _cli, _clock = world
     hub.brain.embedder_ready = True

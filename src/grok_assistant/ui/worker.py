@@ -68,6 +68,15 @@ class WorkerMixin:
             self.say(payload)
             self._refresh()
             return
+        if kind == "test":
+            active = self.hub.brain.test_mode
+            heard = _ui("menu.test_off", "Desactivar prueba") if active else _ui("menu.test_on", "Activar prueba")
+            turn = self.hub.brain._leave_test(heard) if active else self.hub.brain._enter_test(heard)
+            self._refresh()
+            for line in turn.speak:
+                self.say(line)
+            self._refresh()
+            return
         if kind == "files":
             result = self.hub.set_grok_files(payload == "1", speaker=self.say)
             self._apply(result)

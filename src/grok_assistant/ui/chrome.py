@@ -10,6 +10,13 @@ def _ui(key: str, fallback: str = "") -> str:
 
     return text(key, fallback)
 
+
+def test_switch_label(active: bool) -> str:
+    """The one Escucha row. While the test is on, the same row says how to turn it off."""
+    if active:
+        return _ui("menu.test_off", "Desactivar prueba")
+    return _ui("menu.test_on", "Activar prueba")
+
 def detail_line(snap: dict) -> str:
     """Each current setting as a label and a value in brackets."""
     parts = (

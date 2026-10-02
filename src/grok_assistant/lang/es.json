@@ -57,6 +57,8 @@
     "menu.install_windows": "Windows español… instalar",
     "menu.test_on": "Activar prueba",
     "menu.test_off": "Desactivar prueba",
+    "menu.test_note_on": "modo prueba: activado",
+    "menu.test_note_off": "modo prueba: desactivado",
     "menu.identify": "Identificar mi voz",
     "menu.rename": "Cambiar nombre…",
     "menu.refresh_models": "Actualizar lista",

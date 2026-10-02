@@ -8,16 +8,20 @@ class PrintMixin:
 
     def _enter_test(self, heard: str) -> Turn:
         self.test_mode = True
-        self._record(heard, "comando", False, "prueba")
-        return self._said(
-            [say("test_enter", "Modo prueba. Anoto lo que oigo y no hago nada. Para salir, di salir, o desactívalo en el menú.")],
-            status="Prueba",
+        line = say(
+            "test_enter",
+            "Modo prueba. Anoto lo que oigo y no hago nada. Para salir, di salir, o desactívalo en el menú.",
         )
+        self._record(heard, "comando", False, text("menu.test_note_on", "modo prueba: activado"))
+        self._step(line)
+        return self._said([line], status="Prueba")
 
     def _leave_test(self, heard: str) -> Turn:
         self.test_mode = False
-        self._record(heard, "comando", False, "salir de la prueba")
-        return self._said([say("test_leave", "Salgo de la prueba. Vuelvo a escuchar.")])
+        line = say("test_leave", "Salgo de la prueba. Vuelvo a escuchar.")
+        self._record(heard, "comando", False, text("menu.test_note_off", "modo prueba: desactivado"))
+        self._step(line)
+        return self._said([line])
 
     def _test(self, heard: str, norms: list[str]) -> Turn:
         bare = [word for word in norms if word != "comando"]
