@@ -91,8 +91,6 @@ class WorkerMixin:
     def say(self, text: str) -> None:
         if not text:
             return
-        self._speaking = True
-        self._push_mic_pause()
         self.music.hold_for_speech()
         try:
             voice = self._voice_name()
@@ -101,8 +99,6 @@ class WorkerMixin:
                 self._note(f"no pude decir: {text}")
         finally:
             self.music.release_after_speech()
-            self._speaking = False
-            self._push_mic_pause()
 
     def _play_song(self, title: str) -> None:
         def status(message: str) -> None:
