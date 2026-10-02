@@ -446,23 +446,20 @@ class WindowMixin:
         self.send_button = RoundButton(bar, text=_ui("window.send", "Enviar"), command=self._send, padx=18, pady=8)
         self.send_button.pack(side="left", padx=(8, 0))
 
-        self.trace_row = ttk.Frame(self.page_debug)
-        self.trace_row.pack(fill="x", padx=12, pady=(0, 8))
-        self.trace_button = RoundButton(
-            self.trace_row, text=_ui("window.trace", "Guardar traza"), command=self._save_trace, padx=18, pady=8,
-        )
-        self.trace_button.pack(side="left")
-        self.trace_hint = ttk.Label(
-            self.trace_row, text=_ui("window.trace_hint", "Audio oído, modelo local y decisiones"), style="Muted.TLabel",
-        )
-        self.trace_hint.pack(side="left", padx=(12, 0))
-
         actions = ttk.Frame(self.page_debug)
         actions.pack(fill="x", padx=12, pady=(0, 12))
         self.pause_button = RoundButton(actions, text=_ui("menu.pause", "Pausar escucha"), command=self._toggle_from_ui, padx=18, pady=8)
         self.pause_button.pack(side="left")
         self.clear_button = RoundButton(actions, text=_ui("window.clear", "Limpiar registro"), command=self._clear_view, padx=18, pady=8)
         self.clear_button.pack(side="left", padx=8)
+        self.trace_button = RoundButton(
+            actions, text=_ui("window.trace", "Guardar traza"), command=self._save_trace, padx=18, pady=8,
+        )
+        self.trace_button.pack(side="left", padx=(8, 0))
+        self.trace_hint = ttk.Label(
+            actions, text=_ui("window.trace_hint", "Audio oído, modelo local y decisiones"), style="Muted.TLabel",
+        )
+        self.trace_hint.pack(side="left", padx=(12, 0))
         self.quit_button = RoundButton(actions, text=_ui("menu.quit", "Salir"), command=lambda: self._quit(None, None), padx=18, pady=8)
         self.quit_button.pack(side="right")
 

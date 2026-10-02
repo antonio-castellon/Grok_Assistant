@@ -48,7 +48,7 @@ def test_the_zip_holds_the_wav_the_model_text_and_the_decision(tmp_path):
         assert "password" not in archive.read("ajustes.json").decode("utf-8")
 
 
-def test_the_trace_button_sits_under_the_text_box(tmp_path):
+def test_the_trace_button_sits_with_pause_and_clear(tmp_path):
     import tkinter as tk
 
     from grok_assistant.rules.hub import build
@@ -59,8 +59,10 @@ def test_the_trace_button_sits_under_the_text_box(tmp_path):
     try:
         app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
         root.update()
-        slaves = list(app.page_debug.pack_slaves())
-        assert slaves.index(app.trace_row) == slaves.index(app.entry.master) + 1
+        slaves = list(app.pause_button.master.pack_slaves())
+        assert app.trace_button.master is app.pause_button.master
+        assert app.clear_button.master is app.pause_button.master
+        assert slaves.index(app.pause_button) < slaves.index(app.clear_button) < slaves.index(app.trace_button)
         assert app.trace_button.cget("text") == "Guardar traza"
     finally:
         root.destroy()
