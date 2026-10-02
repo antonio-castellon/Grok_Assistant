@@ -152,14 +152,35 @@ def tone(start: bool) -> tuple[int, int]:
     return 494, 220
 
 
-def play_tone(start: bool) -> None:
+def play_tone(start: bool, output: str = "") -> None:
     frequency, duration = tone(start)
+    if output and _tone_on_speaker(frequency, duration, output):
+        return
     try:
         import winsound
 
         winsound.Beep(frequency, duration)
     except (ImportError, RuntimeError, OSError):
         return
+
+
+def _tone_on_speaker(frequency: int, duration: int, output: str) -> bool:
+    try:
+        import numpy as np
+
+        from grok_assistant.listening.devices import play_samples
+    except Exception:
+        return False
+    rate = 16000
+    count = max(1, int(rate * duration / 1000))
+    step = np.arange(count, dtype=np.float32) / rate
+    wave = (0.2 * np.sin(2 * np.pi * frequency * step)).astype(np.float32)
+    fade = min(160, count // 4)
+    if fade:
+        ramp = np.linspace(0.0, 1.0, fade, dtype=np.float32)
+        wave[:fade] *= ramp
+        wave[-fade:] *= ramp[::-1]
+    return play_samples(wave, rate, output)
 
 
 def record_phrase(read=None, seconds: float = 8.0):

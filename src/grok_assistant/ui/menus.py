@@ -56,6 +56,7 @@ class MenuMixin:
         self.menu_language = tk.Menu(self.menu_settings, postcommand=self._fill_language, **kw)
         self.menu_theme = tk.Menu(self.menu_settings, postcommand=self._fill_theme, **kw)
         self.menu_microphone = tk.Menu(self.menu_settings, postcommand=self._fill_microphone, **kw)
+        self.menu_output = tk.Menu(self.menu_settings, postcommand=self._fill_output, **kw)
         from grok_assistant.i18n import text
 
         bar.add_cascade(label=text("menu.listen", "Escucha"), menu=self.menu_escucha)
@@ -89,6 +90,7 @@ class MenuMixin:
         menu.add_cascade(label=_ui("menu.language", "Idioma"), menu=self.menu_language)
         menu.add_cascade(label=_ui("menu.theme", "Aspecto"), menu=self.menu_theme)
         menu.add_cascade(label=_ui("menu.microphone", "Micrófono"), menu=self.menu_microphone)
+        menu.add_cascade(label=_ui("menu.output", "Altavoz"), menu=self.menu_output)
         menu.add_command(label=_ui("menu.market", "Voice market"), command=self._open_market)
         menu.add_separator()
         if enabled():
@@ -429,6 +431,7 @@ class MenuMixin:
                 ("sub", text("menu.language", "Idioma"), self._language_items()),
                 ("sub", text("menu.theme", "Aspecto"), self._theme_rows()),
                 ("sub", text("menu.microphone", "Micrófono"), self._microphone_rows()),
+                ("sub", text("menu.output", "Altavoz"), self._output_rows()),
                 ("cmd", text("menu.market", "Voice market"), "market", False),
                 ("sep",),
                 ("cmd", _ui("menu.startup_off", "Desactivar arranque con Windows") if self._startup_on() else _ui("menu.startup_on", "Activar arranque con Windows"), "startup", self._startup_on()),
@@ -471,6 +474,10 @@ class MenuMixin:
             self._pick_microphone("")
         elif key.startswith("mic:"):
             self._pick_microphone(key.split(":", 1)[1])
+        elif key == "out-default":
+            self._pick_output("")
+        elif key.startswith("out:"):
+            self._pick_output(key.split(":", 1)[1])
         elif key == "files-off":
             self.jobs.put(("files", "0"))
         elif key == "files-on":
@@ -631,6 +638,58 @@ class MenuMixin:
         self._sync_ear()
         shown = chosen or _ui("menu.microphone_default", "Predeterminado")
         self._note(f"micrófono: {shown}")
+        if hasattr(self, "_paint"):
+            self._paint()
+
+    def _output_names(self) -> tuple[str, list[str]]:
+        from grok_assistant.listening.devices import listed_outputs, normalize_device
+
+        current = normalize_device(self.hub.brain.settings.output)
+        speakers = listed_outputs() or []
+        names = [row["name"] for row in speakers]
+        if current not in names:
+            current = ""
+        return current, names
+
+    def _fill_output(self) -> None:
+        menu = self.menu_output
+        menu.delete(0, "end")
+        current, names = self._output_names()
+        menu.add_command(
+            label=_used(current == "") + _ui("menu.output_default", "Predeterminado"),
+            command=lambda: self._pick_output(""),
+        )
+        if not names:
+            menu.add_command(label=_ui("menu.output_none", "No hay altavoces"), state="disabled")
+            return
+        menu.add_separator()
+        for name in names:
+            menu.add_command(
+                label=_used(name == current) + name,
+                command=lambda picked=name: self._pick_output(picked),
+            )
+
+    def _output_rows(self) -> list:
+        current, names = self._output_names()
+        rows = [("cmd", _ui("menu.output_default", "Predeterminado"), "out-default", current == "")]
+        if not names:
+            rows.append(("cmd", _ui("menu.output_none", "No hay altavoces"), "noop", False))
+            return rows
+        rows.append(("sep",))
+        for name in names:
+            rows.append(("cmd", name, f"out:{name}", name == current))
+        return rows
+
+    def _pick_output(self, name: str) -> None:
+        from grok_assistant.listening.devices import normalize_device
+
+        chosen = normalize_device(name)
+        if chosen == normalize_device(self.hub.brain.settings.output):
+            return
+        self.hub.brain.settings.output = chosen
+        self.hub.brain.persist()
+        shown = chosen or _ui("menu.output_default", "Predeterminado")
+        self._note(f"altavoz: {shown}")
         if hasattr(self, "_paint"):
             self._paint()
 

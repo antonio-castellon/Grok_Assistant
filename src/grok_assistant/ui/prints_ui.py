@@ -81,7 +81,7 @@ class PrintMixin:
         self._set_capture(True)
         self._set_hold(True)
         self._hold_mic(False)
-        threading.Thread(target=play_tone, args=(True,), daemon=True).start()
+        threading.Thread(target=play_tone, args=(True, self.hub.brain.settings.output), daemon=True).start()
         self.ui.put(self._ensure_print_modal)
         self._refresh()
 
@@ -92,7 +92,7 @@ class PrintMixin:
         self.hub.brain.hearing = False
         self._set_hold(False)
         self._set_capture(False)
-        play_tone(False)
+        play_tone(False, self.hub.brain.settings.output)
         self._refresh()
 
     def _set_capture(self, capture: bool) -> None:
@@ -262,7 +262,7 @@ class PrintMixin:
         self._set_capture(True)
         self._set_hold(True)
         self._hold_mic(False)
-        threading.Thread(target=play_tone, args=(True,), daemon=True).start()
+        threading.Thread(target=play_tone, args=(True, self.hub.brain.settings.output), daemon=True).start()
         self.ui.put(self._mark_print_retry)
 
     def _mark_print_retry(self) -> None:

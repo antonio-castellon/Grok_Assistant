@@ -54,17 +54,17 @@ class Speaker:
             found.extend(name for name, tongue in _linux_voices() if tongue == wanted)
         return found or ["Predeterminada"]
 
-    def say(self, text: str, voice: str | None, volume: int) -> bool:
+    def say(self, text: str, voice: str | None, volume: int, output: str = "") -> bool:
         text = (text or "").strip()
         if not text:
             return True
         volume = max(0, min(100, int(volume)))
         model = _piper_by_label().get(voice or "")
-        if model and _piper_say(text, model):
+        if model and _piper_say(text, model, output):
             return True
         if os.name == "nt":
-            return _windows_say(text, voice, volume)
-        return _linux_say(text, voice, volume)
+            return _windows_say(text, voice, volume, output)
+        return _linux_say(text, voice, volume, output)
 
 
 def _windows_voices() -> list[tuple[str, str]]:
@@ -94,28 +94,36 @@ def _windows_voices() -> list[tuple[str, str]]:
     return found
 
 
-def _windows_say(text: str, voice: str | None, volume: int) -> bool:
+def _windows_say(text: str, voice: str | None, volume: int, output: str = "") -> bool:
     script = bundle_root() / "scripts" / "speak.ps1"
     if not script.exists():
         return False
     handle = tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt", delete=False)
+    wav = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    wav.close()
     try:
         handle.write(text)
         handle.close()
         done = subprocess.run(
-            ["powershell", "-NoProfile", "-File", str(script), handle.name, str(volume), voice or ""],
+            ["powershell", "-NoProfile", "-File", str(script), handle.name, str(volume), voice or "", wav.name],
             capture_output=True,
             text=True,
             timeout=120,
             check=False,
             **no_window(),
         )
-        return done.returncode == 0
+        if done.returncode != 0 or not Path(wav.name).exists() or Path(wav.name).stat().st_size < 45:
+            return False
+        return _play_file(wav.name, output)
     except (OSError, subprocess.TimeoutExpired):
         return False
     finally:
         try:
             os.remove(handle.name)
+        except OSError:
+            pass
+        try:
+            os.remove(wav.name)
         except OSError:
             pass
 
@@ -157,7 +165,27 @@ def _piper_voices() -> list[tuple[str, str]]:
     return rows
 
 
-def _piper_say(text: str, model: Path) -> bool:
+def _play_file(path: str, output: str) -> bool:
+    from grok_assistant.listening.devices import play_wav
+
+    if play_wav(path, output):
+        return True
+    if os.name == "nt":
+        try:
+            import winsound
+
+            winsound.PlaySound(path, winsound.SND_FILENAME)
+            return True
+        except (RuntimeError, OSError):
+            return False
+    player = shutil.which("aplay") or shutil.which("afplay")
+    if not player:
+        return False
+    played = subprocess.run([player, path], check=False, **no_window())
+    return played.returncode == 0
+
+
+def _piper_say(text: str, model: Path, output: str = "") -> bool:
     binary = _piper_executable()
     if binary is None or not model.exists():
         return False
@@ -175,15 +203,7 @@ def _piper_say(text: str, model: Path) -> bool:
         )
         if done.returncode != 0 or not Path(wav.name).exists():
             return False
-        if os.name == "nt":
-            import winsound
-            winsound.PlaySound(wav.name, winsound.SND_FILENAME)
-            return True
-        player = shutil.which("aplay") or shutil.which("afplay")
-        if not player:
-            return False
-        played = subprocess.run([player, wav.name], check=False, **no_window())
-        return played.returncode == 0
+        return _play_file(wav.name, output)
     except (OSError, subprocess.TimeoutExpired):
         return False
     finally:
@@ -203,20 +223,37 @@ def _linux_voices() -> list[tuple[str, str]]:
     return [(name, voice_lang(name)) for name in names if voice_lang(name)]
 
 
-def _linux_say(text: str, voice: str | None, volume: int) -> bool:
+def _linux_say(text: str, voice: str | None, volume: int, output: str = "") -> bool:
     binary = shutil.which("espeak-ng") or shutil.which("espeak")
     if not binary:
         return False
     amplitude = str(max(0, min(200, volume * 2)))
+    wav = None
+    command = [binary, "-v", voice or "es", "-a", amplitude]
+    if output:
+        wav = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        wav.close()
+        command.extend(["-w", wav.name])
+    command.append(text)
     try:
         done = subprocess.run(
-            [binary, "-v", voice or "es", "-a", amplitude, text],
+            command,
             capture_output=True,
             text=True,
             timeout=120,
             check=False,
             **no_window(),
         )
+        if done.returncode != 0:
+            return False
+        if wav is None:
+            return True
+        return _play_file(wav.name, output)
     except (OSError, subprocess.TimeoutExpired):
         return False
-    return done.returncode == 0
+    finally:
+        if wav is not None:
+            try:
+                os.remove(wav.name)
+            except OSError:
+                pass

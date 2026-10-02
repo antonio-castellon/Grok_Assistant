@@ -37,6 +37,27 @@ def _mpv_url() -> str:
     raise RuntimeError("no encuentro mpv para Windows")
 
 
+def match_audio_device(listing: str, wanted: str) -> str:
+    """The mpv device id whose description is exactly the saved speaker name."""
+    name = " ".join(str(wanted or "").split())
+    if not name:
+        return ""
+    for line in (listing or "").splitlines():
+        text = line.strip()
+        if not text.startswith("'"):
+            continue
+        end = text.find("'", 1)
+        if end < 0:
+            continue
+        ident = text[1:end]
+        rest = text[end + 1 :].strip()
+        if rest.startswith("(") and rest.endswith(")"):
+            rest = rest[1:-1].strip()
+        if rest == name:
+            return ident
+    return ""
+
+
 _PIPE = r"\\.\pipe\grok-assistant-mpv" if os.name == "nt" else "/tmp/grok-assistant-mpv"
 _YTDLP = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
 _SEVEN = "https://www.7-zip.org/a/7zr.exe"
@@ -50,6 +71,8 @@ class Music:
         self.user_paused = False
         self._held = False
         self.url = ""
+        self.output = ""
+        self._devices = None
 
     def available(self) -> bool:
         return self._tool("yt-dlp") is not None and self._tool("mpv") is not None
@@ -83,7 +106,7 @@ class Music:
             return False
         return self.available()
 
-    def play(self, title: str, volume: int, on_status=None) -> str | None:
+    def play(self, title: str, volume: int, on_status=None, output: str = "") -> str | None:
         if not self.available() and not self.ensure(on_status):
             return "No pude bajar el reproductor de YouTube."
         try:
@@ -100,6 +123,7 @@ class Music:
         lines = [line.strip() for line in (done.stdout or "").splitlines() if line.strip()]
         if done.returncode != 0 or not lines:
             return "No encuentro esa canción."
+        self.output = " ".join(str(output or "").split())
         self._start(lines[0], volume)
         return None
 
@@ -140,9 +164,13 @@ class Music:
     def _start(self, url: str, volume: int | None) -> None:
         if self.proc is not None and self.proc.poll() is None:
             self.proc.terminate()
-        command = [str(self._tool("mpv")), "--no-video", "--really-quiet", f"--input-ipc-server={_PIPE}", url]
+        command = [str(self._tool("mpv")), "--no-video", "--really-quiet", f"--input-ipc-server={_PIPE}"]
         if volume is not None:
-            command.insert(-1, f"--volume={max(0, min(100, int(volume)))}")
+            command.append(f"--volume={max(0, min(100, int(volume)))}")
+        device = self._output_device(self.output)
+        if device:
+            command.append(f"--audio-device={device}")
+        command.append(url)
         self.proc = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **no_window())
         self.url = url
         self.loaded = True
@@ -156,6 +184,35 @@ class Music:
             return None
         match = next(self.folder.rglob(f"{name}.exe"), None)
         return match
+
+    def _output_device(self, wanted: str) -> str:
+        name = " ".join(str(wanted or "").split())
+        if not name:
+            return ""
+        if self._devices is None:
+            self._devices = self._device_listing()
+        found = match_audio_device(self._devices, name)
+        if found:
+            return found
+        self._devices = self._device_listing()
+        return match_audio_device(self._devices, name)
+
+    def _device_listing(self) -> str:
+        binary = self._tool("mpv")
+        if binary is None:
+            return ""
+        try:
+            done = subprocess.run(
+                [str(binary), "--audio-device=help"],
+                capture_output=True,
+                text=True,
+                timeout=8,
+                check=False,
+                **no_window(),
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return ""
+        return (done.stdout or "") + (done.stderr or "")
 
     def _ipc(self, line: str) -> bool:
         try:

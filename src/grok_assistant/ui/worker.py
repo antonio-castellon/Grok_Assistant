@@ -94,7 +94,8 @@ class WorkerMixin:
         self.music.hold_for_speech()
         try:
             voice = self._voice_name()
-            ok = self.speaker.say(text, None if voice == "Predeterminada" else voice, self.hub.brain.settings.volume)
+            output = self._output_name()
+            ok = self.speaker.say(text, None if voice == "Predeterminada" else voice, self.hub.brain.settings.volume, output)
             if not ok:
                 self._note(f"no pude decir: {text}")
         finally:
@@ -104,12 +105,23 @@ class WorkerMixin:
         def status(message: str) -> None:
             self.ui.put(lambda message=message: self.say(message))
 
-        trouble = self.music.play(title, self.hub.brain.settings.volume, status)
+        trouble = self.music.play(title, self.hub.brain.settings.volume, status, self._output_name())
         if trouble:
             self.ui.put(lambda trouble=trouble: self.say(trouble))
             return
         self._music_note = False
         self.ui.put(lambda: self._note("la música suena. Sigo oyendo solo una voz registrada."))
+
+    def _output_name(self) -> str:
+        from grok_assistant.listening.devices import listed_outputs, resolve_output
+
+        saved = self.hub.brain.settings.output
+        speakers = listed_outputs()
+        name, _index = resolve_output(saved, speakers)
+        if speakers is not None and name != saved:
+            self.hub.brain.settings.output = name
+            self.hub.brain.persist()
+        return name
 
     def _voice_name(self) -> str:
         voices = self.hub.brain.voices

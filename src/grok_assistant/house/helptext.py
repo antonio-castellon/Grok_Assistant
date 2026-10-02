@@ -78,6 +78,7 @@ HELP_TOPICS = (
         "Dentro de una charla, el texto reconocido sigue hacia Grok hasta que te despides. "
         "Si al arrancar el único oído era el teclado y uno de estos motores ya está en el disco, se elige ese. "
         "Si hay varios micrófonos, en Ajustes, Micrófono, eliges cuál escucha. Predeterminado es el de Windows. "
+        "En Ajustes, Altavoz, eliges por dónde se oye la voz y la música. Predeterminado es la salida de Windows. "
         "Los oídos de este programa usan esa elección. El dictado de Windows español sigue el micrófono que marca el sistema.",
         "comando reconocedor teclado",
     ),
