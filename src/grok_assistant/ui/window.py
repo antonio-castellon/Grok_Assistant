@@ -53,7 +53,6 @@ class WindowMixin:
         if chosen != self.hub.brain.settings.recognizer:
             self.hub.brain.settings.recognizer = chosen
             self.hub.brain.persist()
-        self._choose_best_ear(False)
         apply_saved(self.hub.brain.settings.theme)
         self._style()
         self._build_window()

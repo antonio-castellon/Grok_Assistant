@@ -111,22 +111,6 @@ class MenuMixin:
             command=lambda: self.jobs.put(("files", "1")),
         )
 
-    def _choose_best_ear(self, sync: bool) -> None:
-        """Pick the listener with the best hit rate across every print."""
-        rated = self.hub.brain.speakers.combined_accuracies()
-        current = self.hub.brain.settings.recognizer
-        chosen = highest_accuracy(
-            rated,
-            eligible_ears(self.hub.brain.recognizers, self.hub.brain.settings.language),
-            current,
-        )
-        if chosen == current or chosen not in self.hub.brain.recognizers:
-            return
-        self.hub.brain.settings.recognizer = chosen
-        self.hub.brain.persist()
-        if sync:
-            self._sync_ear()
-
     def _announce_combined(self) -> None:
         rated = self.hub.brain.speakers.combined_accuracies()
         recognizers = self.hub.brain.recognizers
@@ -153,7 +137,7 @@ class MenuMixin:
         self._note(line)
 
     def _apply_best_ear(self) -> None:
-        self._choose_best_ear(True)
+        # A new score is information beside the name. It does not replace the chosen engine.
         self._announce_combined()
         self._paint()
 

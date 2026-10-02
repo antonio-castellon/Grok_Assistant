@@ -20,7 +20,6 @@ from grok_assistant.listening.listen import (
     Dictation,
     discover_recognizers,
     eligible_ears,
-    highest_accuracy,
     install_windows_speech,
     preferred_recognizer,
     with_accuracy,

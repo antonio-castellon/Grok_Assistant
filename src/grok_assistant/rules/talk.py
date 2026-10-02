@@ -288,7 +288,8 @@ class TalkMixin:
         return not speaker_id
 
     def _voice_allowed(self, speaker_id: str | None) -> bool:
-        if not self.embedder_ready:
+        """A locked print filters other voices. A click or a typed line has no print."""
+        if not self.embedder_ready or not speaker_id:
             return True
         if self.speakers.locked:
             return speaker_id == self.speakers.locked

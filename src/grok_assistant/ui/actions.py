@@ -153,7 +153,6 @@ class ActionMixin:
                 if candidate in installed:
                     self.hub.brain.settings.recognizer = candidate
                     break
-        self._choose_best_ear(False)
         self.hub.brain.persist()
         self.hub.brain.set_devices(self.speaker.list_voices(code), self.hub.brain.recognizers)
         self._build_menus()

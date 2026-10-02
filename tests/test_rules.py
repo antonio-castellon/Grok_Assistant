@@ -508,6 +508,20 @@ def test_locked_voice_is_the_only_one_heard(world):
     assert hub.run("hola grok", speaker_id="Ana").spoken
 
 
+def test_a_menu_can_change_the_ear_while_a_print_is_locked(world):
+    hub, _cli, _clock = world
+    hub.brain.embedder_ready = True
+    hub.brain.speakers.add("Ana", [[1.0, 0.0]], lock=True)
+    hub.brain.recognizers = ["teclado", "kroko", "small"]
+    hub.brain.settings.recognizer = "small"
+    result = hub.run("comando reconocedor kroko")
+    assert "kroko" in result.spoken[0].lower()
+    assert hub.brain.settings.recognizer == "kroko"
+    assert any(item[:2] == ("recognizer", "kroko") for item in result.effects)
+    assert hub.run("hola grok", speaker_id="Luis").spoken == []
+    assert hub.run("comando reconocedor small").spoken
+
+
 def test_audio_without_a_saved_print_is_not_processed(world):
     hub, cli, _clock = world
     hub.brain.embedder_ready = True
