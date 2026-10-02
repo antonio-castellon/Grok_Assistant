@@ -1,6 +1,6 @@
 # Licencia y límites — Grok Assistant
 
-Versión candidata 1.0. Aplicación experimental.
+Versión candidata 1.0.1. Aplicación experimental.
 
 Autor: Antonio Castellon, Castellon.CH.
 
@@ -24,7 +24,7 @@ Este archivo está en español. La traducción al inglés es una ayuda para leer
 
 # License and limits — Grok Assistant
 
-Release candidate 1.0. Experimental application.
+Release candidate 1.0.1. Experimental application.
 
 Author: Antonio Castellon, Castellon.CH.
 

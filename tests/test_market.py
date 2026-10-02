@@ -35,9 +35,9 @@ def test_the_footer_shows_the_release_numbers():
 
     previous = code()
     try:
-        assert __version__ == "1.0.1rc3"
-        assert __release__ == "v1.0-rc.3"
-        line = f"v1.0-rc.3 ({build_line()})"
+        assert __version__ == "1.0.1"
+        assert __release__ == "v1.0.1-rc"
+        line = f"v1.0.1-rc ({build_line()})"
         for language in ("es", "en", "fr", "de"):
             activate(language)
             assert _version_line() == line
