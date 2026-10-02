@@ -190,7 +190,7 @@
     "window.mode_abierta": "Conversation ouverte",
     "window.hint_seguida": "Dis «Bonjour {name}» et la question dans la même phrase. Par exemple : «Bonjour {name}, quelle heure est-il ?». Il répond quand tu t'arrêtes. C'est le plus rapide.",
     "window.hint_saludo": "Dis «Bonjour {name}» et attends la réponse. Ensuite pose la question, sans répéter le nom. Une courte pause après le nom laisse le micro ouvert au cas où la question suit.",
-    "window.hint_abierta": "Dis «Bonjour {name}» pour ouvrir. Tant que le coin affiche {banner}, pose tes questions sans le nom. Cela se ferme avec merci ou d'accord, et ne s'éteint pas tout seul.",
+    "window.hint_abierta": "Dis «Bonjour {name}» pour ouvrir. Tant que le coin affiche {banner}, pose tes questions sans le nom. Cela se ferme avec merci ou d'accord, ou quand le silence atteint les minutes à côté.",
     "window.detail_model": "modèle",
     "window.detail_effort": "effort",
     "window.detail_voice": "voix",
@@ -201,6 +201,9 @@
     "window.shared_label": "Jours où les conversations restent en mémoire",
     "window.shared_unit": "jours",
     "window.hint_days": "Le carnet garde au plus ces jours en arrière. Le jour nouveau entre et le plus ancien sort. Une session nommée ne s'efface pas seule.",
+    "window.quiet_label": "Minutes de silence pour fermer",
+    "window.quiet_unit": "min",
+    "window.hint_quiet": "Si personne ne parle pendant ces minutes, la discussion se ferme seule. Merci, d'accord ou ok merci la ferment aussi.",
     "window.debug": "Journal — ce qui a été entendu, et ce qui a suivi",
     "flow.caption": "L'audio s'arrête au moteur d'écoute. Grok ne reçoit que du texte.",
     "flow.abierta_caption": "Conversation ouverte. Toute la conversation passe par le filtre de Grok : il décide si c'est un ordre pour cet ordinateur ou une question pour internet.",
@@ -297,6 +300,7 @@
   },
   "speech": {
     "hello": "Bonjour.",
+    "chat_open": "Dis-moi.",
     "here": "Oui, je suis là.",
     "presence": "Oui, je t'écoute.",
     "what_song": "Quelle chanson ?",
@@ -320,6 +324,7 @@
   "screen_help": "commencer : bonjour grok. finir : merci ou d'accord. Les commandes commencent par le mot commande.",
   "help": [
     {"title": "Commencer", "body": "Hors conversation, le micro entend et n'envoie rien. Un salut ouvre la discussion. Une question dans la même phrase part aussi. Un salut seul reste ouvert deux secondes.", "example": "bonjour grok"},
+    {"title": "Ouvrir la discussion", "body": "commande question, commande ouvrir la discussion ou commande ouvrir la conversation ouvre sans le nom. Elle se ferme quand le silence atteint les minutes de l'onglet Simple, ou avec merci.", "example": "commande question"},
     {"title": "Demander", "body": "Conversation ouverte : une phrase qui n'est pas un ordre part en texte. L'audio reste sur cette machine.", "example": "quelle heure est il"},
     {"title": "Finir", "body": "merci, d'accord, au revoir et ferme terminent ici, sans appel au nuage.", "example": "merci"},
     {"title": "Commandes", "body": "Presque tout ordre commence par le mot commande. Une lettre mal entendue passe encore.", "example": "commande monte le volume"},
@@ -369,6 +374,7 @@
     "session_groups": {"listar": ["liste", "lister"], "cerrar": ["ferme", "fermer"], "crear": ["cree", "creer"], "abrir": ["ouvre", "ouvrir"], "borrar": ["efface", "supprime"]},
     "agent_groups": {"listar": ["liste", "lister"], "cerrar": ["ferme", "fermer"], "crear": ["cree", "creer"], "abrir": ["ouvre", "ouvrir", "parle"]},
     "fixed": [
+      {"id": "abrir charla", "phrases": ["question", "ouvrir la discussion", "ouvre la discussion", "ouvrir la conversation", "ouvre la conversation"]},
       {"id": "subir volumen", "phrases": ["monte le volume", "monter le volume", "augmente le volume"]},
       {"id": "bajar volumen", "phrases": ["baisse le volume", "baisser le volume", "diminue le volume"]},
       {"id": "otra voz", "phrases": ["voix suivante", "autre voix"]},

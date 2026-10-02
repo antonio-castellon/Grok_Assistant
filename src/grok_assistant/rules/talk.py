@@ -28,6 +28,7 @@ class TalkMixin:
             return self._test(heard, norms)
         if not speaker_id and vector and self.embedder_ready:
             speaker_id = self.speakers.closest(vector, self.settings.recognizer)
+        self._turn_speaker = speaker_id
         if self._silent_stranger(speaker_id, vector):
             return Turn()
         if not norms:
@@ -387,6 +388,14 @@ class TalkMixin:
             self.naming = None
             return self._said([f"He oído: {heard}. 6 de 6. A partir de ahora me llamo {chosen}."])
         return self._said([f"He oído: {heard}. {count} de 6. Otra vez."])
+
+    def _open_chat(self) -> Turn:
+        """Open the chat without the wake name. Silence or a thanks line closes it."""
+        self.in_conversation = True
+        self.detail_used = False
+        self.opener = getattr(self, "_turn_speaker", None)
+        self._touch()
+        return self._said([say("chat_open", "Dime.")], status="Conversación")
 
     def _presence(self, heard: str) -> Turn:
         self._record(heard, "ignorar", False, "presencia")

@@ -323,7 +323,7 @@ class WindowMixin:
         simple = tk.Frame(self.page_simple, bg=look.bg)
         simple.pack(expand=True)
         mode_row = tk.Frame(simple, bg=look.bg)
-        mode_row.pack(pady=(0, 22))
+        mode_row.pack(pady=(0, 10))
         self.talk_label = tk.Label(
             mode_row, text="", bg=look.bg, fg=look.muted, font=("Segoe UI", 14),
         )
@@ -350,13 +350,17 @@ class WindowMixin:
             simple, text="", wraplength=680, justify="center",
             bg=look.bg, fg=look.ink, font=("Segoe UI", 13),
         )
-        self.talk_hint.pack(pady=(26, 6))
-        days = tk.Frame(simple, bg=look.bg)
-        days.pack(pady=(16, 0))
-        self.shared_label = tk.Label(days, text="", bg=look.bg, fg=look.muted, font=("Segoe UI", 14))
+        self.talk_hint.pack(pady=(14, 4))
+        settings_row = tk.Frame(simple, bg=look.bg)
+        settings_row.pack(pady=(8, 0))
+        days = tk.Frame(settings_row, bg=look.bg)
+        days.pack(side="left", padx=22, anchor="n")
+        self.shared_label = tk.Label(
+            days, text="", bg=look.bg, fg=look.muted, font=("Segoe UI", 13), wraplength=300, justify="center",
+        )
         self.shared_label.pack()
         days_row = tk.Frame(days, bg=look.bg)
-        days_row.pack(pady=(8, 0))
+        days_row.pack(pady=(6, 0))
         self.shared_days_var = tk.StringVar(value=str(self.hub.brain.settings.shared_days))
         self.shared_days_box = tk.Spinbox(
             days_row, from_=1, to=365, width=4, textvariable=self.shared_days_var,
@@ -370,10 +374,37 @@ class WindowMixin:
         self.shared_unit = tk.Label(days_row, text="", bg=look.bg, fg=look.ink, font=("Segoe UI", 16))
         self.shared_unit.pack(side="left", padx=(10, 0))
         self.days_hint = tk.Label(
-            simple, text="", wraplength=680, justify="center",
+            days, text="", wraplength=300, justify="center",
             bg=look.bg, fg=look.muted, font=("Segoe UI", 12),
         )
-        self.days_hint.pack(pady=(12, 0))
+        self.days_hint.pack(pady=(8, 0))
+        quiet = tk.Frame(settings_row, bg=look.bg)
+        quiet.pack(side="left", padx=22, anchor="n")
+        self.quiet_label = tk.Label(
+            quiet, text="", bg=look.bg, fg=look.muted, font=("Segoe UI", 13), wraplength=300, justify="center",
+        )
+        self.quiet_label.pack()
+        quiet_row = tk.Frame(quiet, bg=look.bg)
+        quiet_row.pack(pady=(6, 0))
+        from grok_assistant.notebook.settings import format_quiet_minutes
+
+        self.quiet_minutes_var = tk.StringVar(value=format_quiet_minutes(self.hub.brain.settings.quiet_minutes))
+        self.quiet_minutes_box = tk.Spinbox(
+            quiet_row, from_=0.1, to=60, increment=0.1, width=5, textvariable=self.quiet_minutes_var,
+            command=self._pick_quiet_minutes, justify="center",
+            font=("Segoe UI", 18), bg=look.field, fg=look.ink, buttonbackground=look.panel,
+            insertbackground=look.ink, relief="flat", highlightthickness=1, highlightbackground=look.teal,
+        )
+        self.quiet_minutes_box.pack(side="left")
+        self.quiet_minutes_box.bind("<FocusOut>", lambda _event: self._pick_quiet_minutes())
+        self.quiet_minutes_box.bind("<Return>", lambda _event: self._pick_quiet_minutes())
+        self.quiet_unit = tk.Label(quiet_row, text="", bg=look.bg, fg=look.ink, font=("Segoe UI", 16))
+        self.quiet_unit.pack(side="left", padx=(10, 0))
+        self.quiet_hint = tk.Label(
+            quiet, text="", wraplength=300, justify="center",
+            bg=look.bg, fg=look.muted, font=("Segoe UI", 12),
+        )
+        self.quiet_hint.pack(pady=(8, 0))
         self._paint_simple()
 
         self.debug_label = ttk.Label(self.page_debug, text=_ui("window.debug", "Depuración — lo que oye y lo que hace después"), style="Muted.TLabel")
@@ -445,7 +476,7 @@ class WindowMixin:
         fallback = {
             "seguida": "Di «Hola {name}» y la pregunta en la misma frase. Por ejemplo: «Hola {name}, ¿qué hora es?». Al callar, responde. Es la forma más rápida.",
             "saludo": "Di «Hola {name}» y espera a que conteste. Luego haz la pregunta, sin repetir el nombre. Si paras un momento después del nombre, el micrófono sigue por si la pregunta viene detrás.",
-            "abierta": "Di «Hola {name}» para abrir. Mientras la esquina diga {banner}, pregunta cuando quieras, sin el nombre. Se cierra con gracias, vale o adiós, y no se apaga sola.",
+            "abierta": "Di «Hola {name}» para abrir. Mientras la esquina diga {banner}, pregunta cuando quieras, sin el nombre. Se cierra con gracias, vale u ok, o cuando el silencio llega a los minutos de abajo.",
         }[current if current in {"seguida", "saludo", "abierta"} else "seguida"]
         self.talk_hint.configure(text=_ui(hint_key, fallback).replace("{name}", name).replace("{banner}", banner))
         self.shared_label.configure(text=_ui("window.shared_label", "Días que se recuerdan las conversaciones"))
@@ -454,6 +485,12 @@ class WindowMixin:
             "window.hint_days",
             "El cuaderno guarda como máximo estos días hacia atrás. Entra el día nuevo y sale el más antiguo. Una sesión con nombre no caduca.",
         ))
+        self.quiet_label.configure(text=_ui("window.quiet_label", "Minutos de silencio para cerrar"))
+        self.quiet_unit.configure(text=_ui("window.quiet_unit", "min"))
+        self.quiet_hint.configure(text=_ui(
+            "window.hint_quiet",
+            "Si nadie habla durante estos minutos, la charla se cierra sola. Gracias, vale u ok gracias también la cierran.",
+        ))
         shown_days = str(self.hub.brain.settings.shared_days)
         try:
             editing = self.shared_days_box.focus_get() is self.shared_days_box
@@ -461,6 +498,15 @@ class WindowMixin:
             editing = False
         if not editing and self.shared_days_var.get() != shown_days:
             self.shared_days_var.set(shown_days)
+        from grok_assistant.notebook.settings import format_quiet_minutes
+
+        shown_quiet = format_quiet_minutes(self.hub.brain.settings.quiet_minutes)
+        try:
+            editing_quiet = self.quiet_minutes_box.focus_get() is self.quiet_minutes_box
+        except tk.TclError:
+            editing_quiet = False
+        if not editing_quiet and self.quiet_minutes_var.get() != shown_quiet:
+            self.quiet_minutes_var.set(shown_quiet)
 
     def _pick_talk_mode(self, _event=None) -> None:
         if getattr(self, "_painting_simple", False):
@@ -489,6 +535,18 @@ class WindowMixin:
             settings.shared_days = days
             self.hub.brain.persist()
         self.hub.brain.sessions.roll(self.hub.brain.wall(), days)
+
+    def _pick_quiet_minutes(self) -> None:
+        from grok_assistant.notebook.settings import format_quiet_minutes, normalize_quiet_minutes
+
+        minutes = normalize_quiet_minutes(self.quiet_minutes_var.get())
+        shown = format_quiet_minutes(minutes)
+        if self.quiet_minutes_var.get() != shown:
+            self.quiet_minutes_var.set(shown)
+        settings = self.hub.brain.settings
+        if settings.quiet_minutes != minutes:
+            settings.quiet_minutes = minutes
+            self.hub.brain.persist()
 
     def _pause_caption(self, big: bool = False) -> str:
         if self.user_paused:

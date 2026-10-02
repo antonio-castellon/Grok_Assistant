@@ -1,7 +1,7 @@
 """The on-screen command list. Speech reads the same lines, without the quotes."""
 
 SCREEN_HELP = """\
-iniciar: "hola grok" o "¿estás ahí?"   acabar: "gracias" o "vale"
+iniciar: "hola grok" o "comando pregunta"   acabar: "gracias" o "vale"
 COMANDOS (iniciar con palabra "comando")
 SESION ( abrir ¦ crear ¦ borrar ) NOMBRE , listar , cerrar
 AGENTE ( abrir ¦ crear ) NOMBRE , listar , cerrar
@@ -23,11 +23,19 @@ HELP_TOPICS = (
     (
         "Empezar a hablar",
         "El micrófono ya está escuchando, pero mientras la esquina diga ESPERA no se manda nada a Grok. "
-        "Para abrir la charla, saluda por su nombre. Si la pregunta va en la misma frase, sale en ese momento. "
+        "Para abrir la charla, saluda por su nombre, o di comando pregunta, comando abrir charla o comando abrir conversación. "
+        "Si la pregunta va en la misma frase que el nombre, sale en ese momento. "
         "En la pestaña Simple eliges cómo quieres hablar: la pregunta en el mismo aliento, primero el saludo, o la charla abierta. "
         "De fábrica se llama grok. El nombre se cambia en Escucha, Cambiar nombre. Si el oído lo deforma, puedes repetirlo seis veces: "
         "cada repetición enseña lo que se oyó, y esas formas también sirven para despertarlo.",
         "hola grok",
+    ),
+    (
+        "Abrir sin el nombre",
+        "comando pregunta, comando abrir charla o comando abrir conversación abren la charla sin decir el nombre. "
+        "A partir de ahí preguntas cuando quieras. Se cierra cuando el silencio llega a los minutos de la pestaña Simple, "
+        "o al momento si dices gracias, vale, vale gracias u ok gracias.",
+        "comando pregunta",
     ),
     (
         "Preguntar",

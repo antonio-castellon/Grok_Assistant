@@ -547,13 +547,43 @@ def test_admin_lasts_five_minutes(world):
     assert any("administrador" in line for line in result.spoken)
 
 
-def test_open_chat_mode_stays_up_past_a_minute(world):
+def test_open_chat_uses_the_silence_minutes(world):
     hub, _cli, clock = world
     hub.brain.settings.talk_mode = "abierta"
+    hub.brain.settings.quiet_minutes = 3
     hub.run("hola grok")
     clock.t += 120
     hub.tick()
     assert hub.brain.in_conversation
+    clock.t += 61
+    hub.tick()
+    assert not hub.brain.in_conversation
+
+
+def test_question_command_opens_without_the_name(world):
+    hub, cli, clock = world
+    hub.brain.settings.quiet_minutes = 0.5
+    opened = hub.run("comando pregunta")
+    assert opened.spoken == ["Dime."]
+    assert hub.brain.in_conversation
+    assert cli.calls == []
+    assert hub.run("comando abrir charla").spoken == ["Dime."]
+    assert hub.run("comando abrir conversacion").spoken == ["Dime."]
+    assert hub.run("comando abre conversacion").spoken == ["Dime."]
+    clock.t += 29
+    hub.tick()
+    assert hub.brain.in_conversation
+    clock.t += 2
+    hub.tick()
+    assert not hub.brain.in_conversation
+    again = hub.run("comando pregunta")
+    assert again.spoken == ["Dime."]
+    closed = hub.run("vale, gracias")
+    assert not hub.brain.in_conversation
+    assert closed.spoken == ["De nada."]
+    hub.run("comando abrir charla")
+    assert hub.run("ok gracias").spoken == ["De nada."]
+    assert not hub.brain.in_conversation
 
 
 def test_shared_notebook_rolls_by_the_chosen_days(world):
@@ -1098,6 +1128,17 @@ def test_simple_tab_chooses_how_to_talk_and_how_many_days(tmp_path):
         app.shared_days_var.set("400")
         app._pick_shared_days()
         assert hub.brain.settings.shared_days == 365
+        assert "minutos" in app.quiet_label.cget("text").lower()
+        app.quiet_minutes_var.set("0,5")
+        app._pick_quiet_minutes()
+        assert hub.brain.settings.quiet_minutes == 0.5
+        assert app.quiet_minutes_var.get() == "0.5"
+        app.quiet_minutes_var.set("0")
+        app._pick_quiet_minutes()
+        assert hub.brain.settings.quiet_minutes == 0.1
+        app.quiet_minutes_var.set("90")
+        app._pick_quiet_minutes()
+        assert hub.brain.settings.quiet_minutes == 60.0
         activate("en")
         app._apply_chrome()
         root.update()

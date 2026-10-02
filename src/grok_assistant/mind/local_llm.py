@@ -32,7 +32,8 @@ SYSTEM = (
     "reconocedor teclado, reconocedor windows, reconocedor kroko, reconocedor whisper, reconocedor base, reconocedor canary,\n"
     "listar sesiones, crear sesion NOMBRE, abrir sesion NOMBRE, cerrar sesion, borrar sesion NOMBRE,\n"
     "listar agentes, abrir agente NOMBRE, crear agente NOMBRE, cerrar agente,\n"
-    "ayuda, prueba, identifica mi voz, lista las personas, borra NOMBRE, modo administrador."
+    "ayuda, prueba, identifica mi voz, lista las personas, borra NOMBRE, modo administrador,\n"
+    "abrir charla."
 )
 
 

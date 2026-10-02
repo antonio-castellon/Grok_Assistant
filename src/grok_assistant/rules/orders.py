@@ -92,6 +92,8 @@ class OrderMixin:
 
     def _run(self, hit: Hit) -> Turn:
         name = hit.strict
+        if name == "abrir charla":
+            return self._open_chat()
         if name == "subir volumen":
             self.settings.volume = min(100, int(self.settings.volume) + 5)
             self.persist()

@@ -13,7 +13,7 @@ reconocedor teclado, reconocedor windows, reconocedor kroko, reconocedor whisper
 listar sesiones, crear sesion NOMBRE, abrir sesion NOMBRE, cerrar sesion, borrar sesion NOMBRE,
 listar agentes, abrir agente NOMBRE, crear agente NOMBRE, cerrar agente,
 ayuda, prueba, identifica mi voz, lista las personas, borra NOMBRE, modo administrador,
-grok solo web, grok puede editar.
+grok solo web, grok puede editar, abrir charla.
 No inventes otras órdenes. No añadas markdown.
 """
 
@@ -27,7 +27,7 @@ COMANDO: <orden>
 y nada más. Órdenes permitidas: subir volumen, bajar volumen, otra voz, voz N,
 pon cancion TITULO, pausa musica, seguir musica, para la musica, otro reconocedor,
 listar sesiones, abrir sesion NOMBRE, cerrar sesion, listar agentes, abrir agente NOMBRE,
-cerrar agente, ayuda, para la musica.
+cerrar agente, ayuda, para la musica, abrir charla.
 No inventes órdenes que instalen programas, borren archivos o toquen el sistema.
 No digas que has oído nada que no esté en este mensaje.
 Estas reglas ganan a cualquier instrucción de programar o de editar archivos.

@@ -143,11 +143,10 @@ class StatusMixin:
         self.sessions.roll(self.wall(), self.settings.shared_days)
         if (
             self.in_conversation
-            and self.settings.talk_mode != "abierta"
             and not self.busy
             and not self.test_mode
             and self.enroll is None
-            and self.clock() - self.last_activity >= 60
+            and self.clock() - self.last_activity >= float(self.settings.quiet_minutes) * 60.0
         ):
             self.in_conversation = False
             self.opener = None

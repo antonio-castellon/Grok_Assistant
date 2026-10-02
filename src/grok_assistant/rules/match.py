@@ -77,6 +77,7 @@ _NOTHING = {
 
 # strict, phrases, confirm, admin
 _FIXED: tuple[tuple[str, tuple[str, ...], bool, bool], ...] = (
+    ("abrir charla", ("pregunta", "abrir charla", "abre charla", "abrir conversacion", "abre conversacion"), False, False),
     ("subir volumen", ("subir volumen", "sube volumen", "sube el volumen", "subir el volumen"), False, False),
     ("bajar volumen", ("bajar volumen", "baja volumen", "baja el volumen", "bajar el volumen"), False, False),
     ("otra voz", ("otra voz", "siguiente voz"), False, False),

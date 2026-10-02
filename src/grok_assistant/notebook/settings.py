@@ -25,6 +25,28 @@ def normalize_shared_days(value) -> int:
     return max(1, min(365, days))
 
 
+def normalize_quiet_minutes(value) -> float:
+    """Silence before an open chat closes. Minutes, one decimal, from 0.1 to 60."""
+    raw = str(value if value is not None else "").strip().replace(",", ".")
+    try:
+        minutes = float(raw)
+    except (TypeError, ValueError):
+        return 1.0
+    minutes = round(minutes, 1)
+    if minutes < 0.1:
+        return 0.1
+    if minutes > 60:
+        return 60.0
+    return minutes
+
+
+def format_quiet_minutes(value) -> str:
+    text = f"{normalize_quiet_minutes(value):.1f}"
+    if text.endswith(".0"):
+        return text[:-2]
+    return text
+
+
 def normalize_theme(value) -> str:
     key = str(value or "").strip()
     if not key or len(key) > 64:
@@ -64,6 +86,7 @@ class Settings:
     line_themes: list = field(default_factory=lambda: list(THEMES))
     talk_mode: str = "seguida"
     shared_days: int = 1
+    quiet_minutes: float = 1.0
     theme: str = "noche"
     grok_files: bool = False
 
@@ -91,6 +114,7 @@ class Settings:
         item.line_themes = normalize_choice(item.line_themes, THEMES)
         item.talk_mode = normalize_talk_mode(item.talk_mode)
         item.shared_days = normalize_shared_days(item.shared_days)
+        item.quiet_minutes = normalize_quiet_minutes(item.quiet_minutes)
         item.theme = normalize_theme(item.theme)
         item.grok_files = normalize_flag(item.grok_files)
         return item
