@@ -25,9 +25,10 @@ def detail_line(snap: dict) -> str:
 
 
 def _version_line() -> str:
-    from grok_assistant import __version__
+    from grok_assistant import __release__
+    from grok_assistant.buildinfo import build_line
 
-    return f"{_ui('about.channel', 'release candidate')} {__version__}"
+    return f"{__release__} ({build_line()})"
 
 def _used(active: bool) -> str:
     if not active:

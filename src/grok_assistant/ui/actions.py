@@ -532,11 +532,8 @@ class ActionMixin:
         body.tag_configure("quiet", foreground=look.muted, spacing3=10)
         self._link_tag(body, "github", "https://github.com/antonio-castellon")
         self._link_tag(body, "site", "https://www.castellon.ch")
-        from grok_assistant.buildinfo import build_line
-
         body.insert("end", "Antonio Castellon\n", "name")
         body.insert("end", _version_line() + "\n", "quiet")
-        body.insert("end", build_line() + "\n", "quiet")
         body.insert("end", "Castellon.CH\n", "quiet")
         body.insert("end", "GitHub  ")
         body.insert("end", "antonio-castellon", "github")

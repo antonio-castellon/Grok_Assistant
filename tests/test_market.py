@@ -27,24 +27,20 @@ class FakeCLI:
         return "Son las tres."
 
 
-def test_the_app_is_release_candidate_1_0():
-    from grok_assistant import __version__
-    from grok_assistant.i18n import activate, code, text
+def test_the_footer_shows_the_release_numbers():
+    from grok_assistant import __release__, __version__
+    from grok_assistant.buildinfo import build_line
+    from grok_assistant.i18n import activate, code
     from grok_assistant.ui.chrome import _version_line
 
     previous = code()
     try:
         assert __version__ == "1.0"
-        activate("en")
-        assert _version_line() == "release candidate 1.0"
-        activate("es")
-        assert _version_line() == "versión candidata 1.0"
+        assert __release__ == "v1.0-rc.2"
+        line = f"v1.0-rc.2 ({build_line()})"
         for language in ("es", "en", "fr", "de"):
             activate(language)
-            channel = text("about.channel")
-            assert channel
-            assert "0.1.0" not in channel
-            assert "1.0" not in channel
+            assert _version_line() == line
     finally:
         activate(previous)
 
