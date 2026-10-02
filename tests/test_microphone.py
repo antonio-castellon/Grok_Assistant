@@ -443,7 +443,7 @@ def test_settings_menu_picks_a_microphone_and_reopens_the_ear(tmp_path, monkeypa
     created = []
 
     class Ear:
-        def __init__(self, kind, on_line, on_status=None, silence=None, device=""):
+        def __init__(self, kind, on_line, on_status=None, silence=None, device="", on_partial=None):
             self.kind = kind
             self.device = device
             self.stopped = False

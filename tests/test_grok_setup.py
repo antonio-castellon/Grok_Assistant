@@ -18,15 +18,15 @@ def test_the_command_guide_says_how_long_a_phrase_stays_open():
     from grok_assistant.i18n import bundled_dir
 
     body = next(text for title, text, _example in HELP_TOPICS if title.startswith("Motor"))
-    assert "0,7 segundos" in body
+    assert "1,2 segundos" in body
     assert "0,4 segundos" in body
     assert "30 segundos" in body
     assert "2 segundos" in body
     assert "minutos de silencio" in body
     needles = {
-        "en": ("0.7 seconds", "0.4 seconds", "30 seconds"),
-        "fr": ("0,7 seconde", "0,4 seconde", "30 secondes"),
-        "de": ("0,7 Sekunden", "0,4 Sekunden", "30 Sekunden"),
+        "en": ("1.2 seconds", "0.4 seconds", "30 seconds"),
+        "fr": ("1,2 seconde", "0,4 seconde", "30 secondes"),
+        "de": ("1,2 Sekunden", "0,4 Sekunden", "30 Sekunden"),
     }
     for code, parts in needles.items():
         pack = json.loads((bundled_dir() / f"{code}.json").read_text(encoding="utf-8"))

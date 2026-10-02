@@ -21,10 +21,12 @@ def test_a_print_take_stays_open_through_a_short_pause():
     from grok_assistant.listening.kroko_ear import KrokoEar
 
     ear = KrokoEar(lambda *_: None, talk_mode=lambda: "saludo")
-    assert ear._ready("qué hora es", 0.7, True) is True
-    assert ear._ready("hola grok", 0.7, True) is False
+    assert ear._ready("qué hora es", 0.7, True) is False
+    assert ear._ready("qué hora es", 1.2, True) is True
+    assert ear._ready("hola grok", 1.2, True) is False
     fast = KrokoEar(lambda *_: None)
-    assert fast._ready("hola grok", 0.7, True) is True
+    assert fast._ready("hola grok", 0.7, True) is False
+    assert fast._ready("hola grok", 1.2, True) is True
     assert TAKE_QUIET == 1.0
     assert ear._capture_ready("qué hora es", 0.5, 2.0) is False
     assert ear._capture_ready("qué hora es", TAKE_QUIET, 2.0) is True

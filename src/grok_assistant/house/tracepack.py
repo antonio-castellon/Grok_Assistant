@@ -36,6 +36,7 @@ def _write_tree(root: Path, brain, sent, folder: Path) -> None:
     _json(root / "nube.json", [[kind, text] for kind, text in list(sent or [])])
     _json(root / "ajustes.json", _settings(brain))
     _audio(root / "audio", list(getattr(brain, "heard_clips", [])))
+    _live(root / "en-vivo", Path(folder) / "live")
     for name in ("ear.log", "crash.log"):
         _tail(folder / name, root / name)
 
@@ -63,6 +64,20 @@ def _settings(brain) -> dict:
     from dataclasses import asdict
 
     return asdict(brain.settings)
+
+
+def _live(folder: Path, source: Path) -> None:
+    if not source.is_dir():
+        return
+    files = sorted(source.glob("frase-*.wav"), key=lambda item: item.stat().st_mtime)[-30:]
+    if not files:
+        return
+    folder.mkdir(parents=True, exist_ok=True)
+    for path in files:
+        try:
+            (folder / path.name).write_bytes(path.read_bytes())
+        except OSError:
+            continue
 
 
 def _audio(folder: Path, clips: list) -> None:
@@ -112,5 +127,6 @@ llm-instruccion.txt — las instrucciones de ese modelo.
 nube.json — el texto que salió hacia Grok.
 ajustes.json — las opciones guardadas, sin la contraseña.
 audio/ — el wav de cada frase que el micrófono cerró, y al lado lo que se transcribió.
+en-vivo/ — el wav temporal que se iba escribiendo mientras se hablaba.
 ear.log y crash.log — si existen, el final de esos registros.
 """

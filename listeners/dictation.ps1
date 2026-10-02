@@ -62,8 +62,8 @@ try {
     [Console]::Out.Flush()
     exit 3
 }
-$engine.EndSilenceTimeout = [TimeSpan]::FromMilliseconds(700)
-$engine.EndSilenceTimeoutAmbiguous = [TimeSpan]::FromMilliseconds(700)
+$engine.EndSilenceTimeout = [TimeSpan]::FromMilliseconds(1200)
+$engine.EndSilenceTimeoutAmbiguous = [TimeSpan]::FromMilliseconds(1200)
 $engine.InitialSilenceTimeout = [TimeSpan]::FromSeconds(2)
 [Console]::Out.WriteLine("READY")
 [Console]::Out.Flush()

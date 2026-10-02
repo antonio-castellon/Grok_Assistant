@@ -965,9 +965,9 @@ def test_a_short_reread_does_not_erase_the_sentence():
     from grok_assistant.listening.refine import choose_transcript
 
     assert endpoint_quiet("Ola Grok", "grok", "saludo") == 2.0
-    assert endpoint_quiet("Ola Grok qué hora es", "grok", "saludo") == 0.7
-    assert endpoint_quiet("Ola Grok", "grok", "seguida") == 0.7
-    assert endpoint_quiet("Ola Grok", "grok", "abierta") == 0.7
+    assert endpoint_quiet("Ola Grok qué hora es", "grok", "saludo") == 1.2
+    assert endpoint_quiet("Ola Grok", "grok", "seguida") == 1.2
+    assert endpoint_quiet("Ola Grok", "grok", "abierta") == 1.2
     assert choose_transcript("qué tiempo hace mañana", "1.0") == "qué tiempo hace mañana"
 
 
@@ -1200,7 +1200,7 @@ def test_simple_tab_chooses_how_to_talk_and_how_many_days(tmp_path):
         assert hub.brain.settings.talk_mode == "saludo"
         assert app._phrase_silence() == 2.0
         hub.brain.in_conversation = True
-        assert app._phrase_silence() == 0.7
+        assert app._phrase_silence() == 1.2
         hub.brain.in_conversation = False
         app.talk_mode_box.set("Charla abierta")
         app._pick_talk_mode()

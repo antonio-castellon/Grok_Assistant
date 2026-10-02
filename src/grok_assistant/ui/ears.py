@@ -68,7 +68,14 @@ class EarMixin:
         if want_offline and (self.offline is None or self.offline.kind != kind or getattr(self.offline, "device", None) != device):
             if self.offline is not None:
                 self._release_ear(self.offline)
-            ear = OfflineEar(kind, self._heard, self._kroko_status, silence=self._phrase_silence, device=device)
+            ear = OfflineEar(
+                kind,
+                self._heard,
+                self._kroko_status,
+                silence=self._phrase_silence,
+                device=device,
+                on_partial=self._preview,
+            )
             if ear.start():
                 self.offline = ear
                 self._note(f"cargo {RECOGNIZER_LABELS[kind]}")

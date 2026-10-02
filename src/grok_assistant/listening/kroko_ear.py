@@ -122,6 +122,7 @@ class KrokoEar:
         self._capture_mark = ""
         self._flush = threading.Event()
         self._hold = False
+        self._tape = None
 
     def start(self) -> bool:
         folder = streaming_dir(self.kind)
@@ -182,10 +183,10 @@ class KrokoEar:
             mode = "seguida"
         limit = endpoint_quiet(text, name, mode)
         # «Primero el saludo» keeps a bare hello open for two seconds.
-        # The other ways close at 0.7 s, or at the model's own endpoint.
-        if quiet >= limit - 0.051:
-            return True
-        return bool(endpoint) and limit <= 0.7
+        # The other ways close 1.2 s after the last new word. The model's own
+        # pause is earlier, so a breath does not send the phrase on.
+        del endpoint
+        return quiet >= limit - 0.051
 
     def _capture_ready(self, text: str, quiet: float, voiced: float) -> bool:
         """End the take on sound plus a pause. The words are not checked."""
@@ -266,6 +267,7 @@ class KrokoEar:
                         parts.clear()
                         self._last_partial = ""
                         self._capture_mark = ""
+                        self._tape_finish(False)
                         self._flush.clear()
                         continue
                     chunk = np.ascontiguousarray(samples, dtype=np.float32).reshape(-1)
@@ -283,6 +285,8 @@ class KrokoEar:
                     quiet = 0.0 if loud else quiet + 0.1
                     if loud:
                         voiced += 0.1
+                    if voiced > 0:
+                        self._tape_write(chunk)
                     # The model marks a pause at about 0.6 s. During a take that pause
                     # is only a breath: keep the audio and join the next words.
                     if capturing and recognizer.is_endpoint(stream):
@@ -291,6 +295,8 @@ class KrokoEar:
                         recognizer.reset(stream)
                         segment = ""
                     heard = " ".join(part for part in [*parts, segment] if part) if capturing else segment
+                    if not capturing and heard and heard != self._last_partial:
+                        quiet = 0.0
                     if capturing:
                         self._capture_mark, quiet, voiced = note_capture_speech(
                             self._capture_mark, heard, quiet, voiced
@@ -317,7 +323,9 @@ class KrokoEar:
                         parts.clear()
                         self._last_partial = ""
                         self._capture_mark = ""
-                        if audio is not None and (heard or capturing):
+                        send = audio is not None and (heard or capturing)
+                        self._tape_finish(send)
+                        if send:
                             self.on_line(heard, audio)
                     elif not capturing and recognizer.is_endpoint(stream) and not segment:
                         recognizer.reset(stream)
@@ -326,6 +334,21 @@ class KrokoEar:
                         heard_audio.clear()
                         parts.clear()
                         self._last_partial = ""
+                        self._tape_finish(False)
         except Exception as exc:
             self.error = f"{_label(self.kind)} se detuvo: {exc}"
             self._report(self.error)
+            self._tape_finish(False)
+
+    def _tape_write(self, chunk) -> None:
+        if self._tape is None:
+            from grok_assistant.listening.spool import PhraseTape
+
+            self._tape = PhraseTape()
+        self._tape.write(chunk)
+
+    def _tape_finish(self, keep: bool) -> None:
+        tape = self._tape
+        self._tape = None
+        if tape is not None:
+            tape.finish(keep)

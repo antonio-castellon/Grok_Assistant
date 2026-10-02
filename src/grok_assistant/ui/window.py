@@ -543,10 +543,12 @@ class WindowMixin:
         self._draw_flow(None)
 
     def _phrase_silence(self) -> float:
+        from grok_assistant.rules.match import GREETING_QUIET, PHRASE_QUIET
+
         brain = self.hub.brain
         if brain.settings.talk_mode == "saludo" and not brain.in_conversation:
-            return 2.0
-        return 0.7
+            return GREETING_QUIET
+        return PHRASE_QUIET
 
     def _pick_shared_days(self) -> None:
         from grok_assistant.notebook.settings import normalize_shared_days
