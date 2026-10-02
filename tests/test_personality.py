@@ -101,13 +101,23 @@ def test_personality_window_saves_a_free_behavior(tmp_path):
         root.destroy()
 
 
-def test_windows_follow_the_selected_language(tmp_path):
+def test_windows_follow_the_selected_language(tmp_path, monkeypatch):
     import tkinter as tk
 
+    from grok_assistant.house.marketplace import Offer
     from grok_assistant.rules.hub import build
     from grok_assistant.i18n import activate
     from grok_assistant.ui.app import TrayApp
     from grok_assistant.ui.theme import look
+
+    original = Offer.ready
+
+    def kroko_ready(self, root=None):
+        if self.engine_id == "kroko":
+            return True
+        return original(self, root)
+
+    monkeypatch.setattr(Offer, "ready", kroko_ready)
 
     root = tk.Tk()
     root.withdraw()
