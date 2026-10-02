@@ -140,11 +140,7 @@ class Hub:
                 self.brain._log("LLM: sin modelo")
                 return Turn(status=self.brain.status_label())
             return None
-        try:
-            self.mind.wake_name = self.brain.settings.wake_name
-            data = self.mind.interpret(original, self.brain.in_conversation)
-        except Exception:
-            data = None
+        data = self._ask_model(original, self.brain.in_conversation)
         if data and data.get("accion") == "saludo":
             from grok_assistant.rules.match import tokenize
 
@@ -181,12 +177,21 @@ class Hub:
         if not ready:
             self.brain._log("LLM: sin modelo")
             return
+        data = self._ask_model(original, True)
+        self.brain._log(_intent_line(data, original))
+
+    def _ask_model(self, phrase: str, in_conversation: bool) -> dict | None:
+        state = "abierta" if in_conversation else "cerrada"
         try:
             self.mind.wake_name = self.brain.settings.wake_name
-            data = self.mind.interpret(original, True)
+            data = self.mind.interpret(phrase, in_conversation)
         except Exception:
             data = None
-        self.brain._log(_intent_line(data, original))
+        raw = ""
+        if isinstance(data, dict):
+            raw = str(data.pop("_raw", "") or "")
+        self.brain.note_model(phrase, state, raw, data if isinstance(data, dict) else None)
+        return data if isinstance(data, dict) else None
 
     def _identifier_ready(self) -> bool:
         if not self.brain.settings.local_llm or self.mind is None:

@@ -99,10 +99,12 @@ class LocalMind:
             content = payload["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError):
             return None
-        parsed = parse_intent(str(content))
+        raw = str(content)
+        parsed = parse_intent(raw)
         if parsed:
+            parsed["_raw"] = raw
             return parsed
-        return {"accion": "ilegible", "orden": "", "texto": ""}
+        return {"accion": "ilegible", "orden": "", "texto": "", "_raw": raw}
 
     def _ensure_server(self) -> bool:
         if self._healthy():

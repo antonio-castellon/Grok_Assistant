@@ -124,6 +124,10 @@ class EarMixin:
                 and chosen.casefold() != primary.casefold()
             )
             heard_by = f"{label} · relectura" if replaced else label
+        try:
+            self.hub.brain.keep_heard(chosen, audio, primary=primary, second=second, heard_by=heard_by, who=who)
+        except Exception as exc:
+            self._write_crash(exc)
         self.jobs.put(("phrase", chosen, embedding, who, heard_by))
 
     def _mic_voice(self, embedding) -> tuple[bool, str | None]:

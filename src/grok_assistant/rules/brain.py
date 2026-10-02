@@ -65,6 +65,8 @@ class Brain(TraceMixin, PrintMixin, OrderMixin, TalkMixin, StatusMixin):
         self.phase = ""
         self.effort_now = "low"
         self.logs: list[str] = []
+        self.heard_clips: list[dict] = []
+        self.model_notes: list[dict] = []
         self._flow_heard = ""
         self.hearing = False
         self.sessions.roll(self.wall(), self.settings.shared_days)
