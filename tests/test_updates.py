@@ -110,7 +110,7 @@ def test_the_update_button_appears_only_when_there_is_one(tmp_path):
         app._build_about()
         about = app._about_win.winfo_children()[0]._tabs[0][0].winfo_children()[0].get("1.0", "end")
         assert about.count("(build ") == 1
-        assert "v1.0.1-rc" in about
+        assert "v1.0.2-rc" in about
         app._update_offer = {"tag": "v1.0-rc.2", "url": PREFIX + "v1.0-rc.2/GrokAssistant.exe", "build": "bbbbbbbbbbbb"}
         app._place_update_button()
         assert app.update_button in app.footer.pack_slaves()
