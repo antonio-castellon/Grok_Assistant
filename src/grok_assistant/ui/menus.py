@@ -47,6 +47,7 @@ class MenuMixin:
         self.menu_banter = tk.Menu(bar, **kw)
         self.menu_banter_kinds = tk.Menu(self.menu_banter, postcommand=self._fill_banter_kinds, **kw)
         self.menu_banter_themes = tk.Menu(self.menu_banter, postcommand=self._fill_banter_themes, **kw)
+        self.menu_banter_waits = tk.Menu(self.menu_banter, postcommand=self._fill_banter_waits, **kw)
         self.menu_talk = tk.Menu(bar, **kw)
         self.menu_musica = tk.Menu(bar, **kw)
         self.menu_people = tk.Menu(bar, postcommand=self._fill_people, **kw)
@@ -68,6 +69,7 @@ class MenuMixin:
         self.menu_talk.add_cascade(label=text("menu.agent", "Agente"), menu=self.menu_agente)
         self.menu_banter.add_cascade(label=text("menu.banter_kinds", "Tipo"), menu=self.menu_banter_kinds)
         self.menu_banter.add_cascade(label=text("menu.banter_themes", "Tema"), menu=self.menu_banter_themes)
+        self.menu_banter.add_cascade(label=text("menu.banter_waits", "Espera"), menu=self.menu_banter_waits)
         self.menu_musica.add_command(label=_ui("menu.music_pause", "Pausar"), command=lambda: self._command("pausa musica"))
         self.menu_musica.add_command(label=_ui("menu.music_resume", "Seguir"), command=lambda: self._command("seguir musica"))
         self.menu_musica.add_command(label=_ui("menu.music_stop", "Parar"), command=lambda: self._command("para la musica"))
@@ -404,6 +406,7 @@ class MenuMixin:
                 ("sub", text("menu.banter", "Saludos"), [
                     ("sub", text("menu.banter_kinds", "Tipo"), self._banter_kind_rows()),
                     ("sub", text("menu.banter_themes", "Tema"), self._banter_theme_rows()),
+                    ("sub", text("menu.banter_waits", "Espera"), self._wait_rows()),
                 ]),
             ]),
             ("sub", text("menu.talk", "Charla"), [
@@ -614,11 +617,26 @@ class MenuMixin:
             for theme in THEMES
         ]
 
+    def _wait_rows(self) -> list:
+        from grok_assistant.speaking.waits import STYLES
+
+        selected = set(self.hub.brain.settings.wait_styles)
+        rows = [
+            ("cmd", _ui(f"wait.style.{style}", style), f"banter-wait:{style}", style in selected)
+            for style in STYLES
+        ]
+        rows.append(("sep",))
+        rows.append(("cmd", _ui("wait.style.mix", "Mezcla de todo"), "banter-wait:mix", set(STYLES) <= selected))
+        return rows
+
     def _fill_banter_kinds(self) -> None:
         self._fill_checks(self.menu_banter_kinds, self._banter_kind_rows())
 
     def _fill_banter_themes(self) -> None:
         self._fill_checks(self.menu_banter_themes, self._banter_theme_rows())
+
+    def _fill_banter_waits(self) -> None:
+        self._fill_checks(self.menu_banter_waits, self._wait_rows())
 
     def _fill_checks(self, menu, rows: list) -> None:
         menu.delete(0, "end")

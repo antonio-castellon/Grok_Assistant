@@ -27,6 +27,6 @@ Grok est appelé de deux manières distinctes, chacune avec un rôle bien préci
 
 Si un agent est ouvert, la question utilise le fichier de cet agent et la session de cet agent. Fermer l'agent revient à l'assistant normal. Le cahier local reste où il était.
 
-Les phrases parlées, les mots des commandes, l'aide et les personnalités sont dans `src/grok_assistant/lang/`. `hellos-es.txt` et `waits-es.txt` sont les phrases espagnoles que la voix fait tourner. Les couleurs sont des fichiers JSON dans `ui/themes/`. Pour les changer, voir [Aspect](aspect.md). Le chemin du micro reste un appel direct ; les dossiers ne font que ranger le code.
+Les phrases parlées, les mots des commandes, l'aide et les personnalités sont dans `src/grok_assistant/lang/`. `banter.json` garde les salutations, par type et par thème. `waits.json` garde la phrase d'attente pendant que Grok cherche, en cinq styles. Avec les autres styles cochés, une moqueuse sort une fois sur huit. Les couleurs sont des fichiers JSON dans `ui/themes/`. Pour les changer, voir [Aspect](aspect.md). Le chemin du micro reste un appel direct ; les dossiers ne font que ranger le code.
 
 Au démarrage, l'assistant choisit le prochain message d'accueil de la liste, puis se met à écouter. Lorsqu'il attend une réponse du cloud, il utilise la prochaine courte phrase d'attente. Les deux listes sont volontairement longues afin d'éviter de répéter la même phrase chaque matin.

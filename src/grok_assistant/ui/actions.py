@@ -255,23 +255,38 @@ class ActionMixin:
 
     def _banter_set(self, key: str, enabled: bool | None = None, var=None) -> None:
         from grok_assistant.speaking.banter import KINDS, THEMES, apply_choice
+        from grok_assistant.speaking.waits import STYLES
 
         head, item = key.split(":", 1)
-        kinds = head == "banter-kind"
-        allowed = KINDS if kinds else THEMES
         settings = self.hub.brain.settings
-        current = list(settings.line_kinds if kinds else settings.line_themes)
-        mix = kinds and item == "mix"
+        if head == "banter-wait":
+            allowed = STYLES
+            current = list(settings.wait_styles)
+            mix = item == "mix"
+        elif head == "banter-kind":
+            allowed = KINDS
+            current = list(settings.line_kinds)
+            mix = item == "mix"
+        else:
+            allowed = THEMES
+            current = list(settings.line_themes)
+            mix = False
         if enabled is None:
             enabled = (set(allowed) != set(current)) if mix else item not in current
         chosen = apply_choice(current, allowed, item, bool(enabled), mix=mix)
-        if kinds:
+        if head == "banter-wait":
+            settings.wait_styles = chosen
+        elif head == "banter-kind":
             settings.line_kinds = chosen
         else:
             settings.line_themes = chosen
         if var is not None:
-            var.set(set(KINDS) <= set(chosen) if mix else item in chosen)
+            var.set(set(allowed) <= set(chosen) if mix else item in chosen)
         self.hub.brain.persist()
+        if head == "banter-wait":
+            picked = ", ".join(_ui(f"wait.style.{name}", name) for name in STYLES if name in settings.wait_styles)
+            self._note(f"{_ui('menu.banter_waits', 'Espera')}: {picked}.")
+            return
         picked_kinds = ", ".join(_ui(f"banter.kind.{name}", name) for name in KINDS if name in settings.line_kinds)
         picked_themes = ", ".join(_ui(f"banter.theme.{name}", name) for name in THEMES if name in settings.line_themes)
         self._note(f"{_ui('menu.banter', 'Saludos')}: {picked_kinds}. {picked_themes}.")

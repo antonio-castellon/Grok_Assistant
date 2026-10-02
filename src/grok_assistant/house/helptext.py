@@ -133,8 +133,9 @@ HELP_TOPICS = (
     ),
     (
         "Saludos y esperas",
-        "En Voz, Saludos, marcas el tipo y el tema de tres frases que ya están guardadas: la del arranque, la del saludo cuando hace rato que no hablas, y la de espera mientras Grok busca. "
-        "Decirlas no pide internet.",
+        "En Voz, Saludos, el tipo y el tema eligen el saludo del arranque y el saludo cuando hace rato que no hablas. "
+        "Espera elige la frase corta de mientras Grok busca: naturales, con un poco de gracia, humor seco, tecnología o gamberras. "
+        "Con los otros estilos marcados, una gamberra sale una de cada ocho. Decirlas no pide internet.",
         "comando ayuda",
     ),
     (

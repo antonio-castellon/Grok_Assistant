@@ -320,7 +320,7 @@ def build(data_dir: Path | None = None, agents_dir: Path | None = None, cli: Gro
         ),
         AdminAuth(data / "admin.json"),
         load_lines("hellos-es.txt"),
-        load_lines("waits-es.txt"),
+        ["Un momento."],
         clock=clock,
         wall=wall,
         persist=persist,

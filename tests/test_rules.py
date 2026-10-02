@@ -44,10 +44,14 @@ def world(tmp_path):
 
 
 def test_lists_are_long_and_distinct():
+    from grok_assistant.speaking.waits import catalog
+
     hellos = load_lines("hellos-es.txt")
-    waits = load_lines("waits-es.txt")
+    waits = [row["text"] for row in catalog("es")]
     assert len(hellos) >= 180
-    assert len(waits) >= 166
+    assert len(waits) == 96
+    assert waits[0] == "Un momento, que lo miro."
+    assert "Buscando... el plan B sigue siendo buscar." in waits
     assert len(set(hellos)) == len(hellos)
     assert len(set(waits)) == len(waits)
     assert all(line.startswith("Hola,") for line in hellos)
@@ -126,11 +130,11 @@ def test_question_sends_text_and_a_filler_not_the_room(world):
     hub, cli, _clock = world
     hub.run("hablan de fútbol en la cocina")
     hub.run("hola grok")
-    from grok_assistant.speaking.banter import pool
+    from grok_assistant.speaking.waits import pick
 
-    spoken = pool("es", hub.brain.settings.line_kinds, hub.brain.settings.line_themes)
+    spoken, _index = pick("es", hub.brain.settings.wait_styles, 0)
     result = hub.run("qué hora es")
-    assert result.spoken[0] == spoken[0]
+    assert result.spoken[0] == spoken
     assert result.spoken[1] == "Son las tres."
     assert cli.calls[0][0] == "converse"
     assert cli.calls[0][1] == "qué hora es"

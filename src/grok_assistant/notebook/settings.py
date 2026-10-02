@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from grok_assistant.speaking.banter import KINDS, THEMES, normalize_choice
+from grok_assistant.speaking.waits import STYLES
 from grok_assistant.house.personality import blank_personality, normalize_personality
 
 TALK_MODES = ("seguida", "saludo", "abierta")
@@ -84,6 +85,7 @@ class Settings:
     personality: dict = field(default_factory=blank_personality)
     line_kinds: list = field(default_factory=lambda: list(KINDS))
     line_themes: list = field(default_factory=lambda: list(THEMES))
+    wait_styles: list = field(default_factory=lambda: list(STYLES))
     talk_mode: str = "seguida"
     shared_days: int = 1
     quiet_minutes: float = 1.0
@@ -112,6 +114,7 @@ class Settings:
         item.language = str(item.language or "es").strip().lower() or "es"
         item.line_kinds = normalize_choice(item.line_kinds, KINDS)
         item.line_themes = normalize_choice(item.line_themes, THEMES)
+        item.wait_styles = normalize_choice(item.wait_styles, STYLES)
         item.talk_mode = normalize_talk_mode(item.talk_mode)
         item.shared_days = normalize_shared_days(item.shared_days)
         item.quiet_minutes = normalize_quiet_minutes(item.quiet_minutes)

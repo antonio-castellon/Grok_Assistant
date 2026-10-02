@@ -147,7 +147,18 @@ class PrintMixin:
         )
 
     def _next_wait(self) -> str:
-        return self._take_banter("wait_index")
+        from grok_assistant.speaking.waits import pick
+
+        line, index = pick(
+            self.settings.language,
+            self.settings.wait_styles,
+            self.settings.wait_index,
+            self.last_spoken,
+        )
+        self.settings.wait_index = index
+        self.last_spoken = line
+        self.persist()
+        return line
 
     def discard_capture(self) -> Turn:
         """Leave the recording. Nothing from this session is written."""

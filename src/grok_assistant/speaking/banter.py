@@ -1,4 +1,4 @@
-"""Offline greetings and waiting lines. Nothing here is fetched."""
+"""Offline greetings. The search line lives in waits.py. Nothing here is fetched."""
 
 from __future__ import annotations
 
