@@ -1,6 +1,6 @@
 [Read in English](README.md) · [Lire en français](README.FR.md) · [Auf Deutsch lesen](README.DE.md)
 
-![Marca de Grok, con Assistance debajo](docs/img/banner.jpg)
+![Marca de Grok, con Assistant debajo](docs/img/banner.jpg)
 
 # Grok Assistant
 
@@ -22,7 +22,7 @@ El diagrama de abajo muestra qué ocurre con una frase desde que se pronuncia.
 
 ![El motor STT pasa la voz a texto. Sin conversación, el modelo local mira si es un comando completo. En una conversación, anota la frase y el texto va a Grok.](docs/img/flow.svg)
 
-En Ajustes, Grok empieza solo con la web. Un administrador puede permitir que cambie archivos. El shell sigue apagado, y una ruta relativa cae en la carpeta de datos del asistente.
+En Ajustes, Grok solo busca en internet. Un administrador puede permitir que Grok cambie archivos de esta máquina. El shell sigue apagado, y una ruta relativa cae en la carpeta de datos del asistente.
 
 ## Seguir leyendo
 

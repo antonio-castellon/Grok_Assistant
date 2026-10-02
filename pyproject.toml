@@ -1,16 +1,25 @@
 [project]
-name = "grok-assistant"
+name = "grok_assistant"
 version = "1.0"
 description = "A PC voice assistant that listens at home and only calls Grok on purpose."
 readme = "README.md"
 requires-python = ">=3.11"
+license-files = ["LICENSE.md"]
+authors = [{name = "Antonio Castellon"}]
 dependencies = [
     "pystray>=0.19",
     "Pillow>=10",
+    "sherpa-onnx==1.13.8",
+    "sounddevice==0.5.6",
+    "numpy>=2.2,<2.5",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+
+[project.urls]
+Homepage = "https://github.com/antonio-castellon/Grok_Assistant"
+Repository = "https://github.com/antonio-castellon/Grok_Assistant"
 
 [project.scripts]
 grok-assistant = "grok_assistant.__main__:main"
@@ -19,11 +28,23 @@ grok-assistant = "grok_assistant.__main__:main"
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-grok_assistant = ["lines/*.txt", "lang/*.json", "ui/themes/*.json"]
+grok_assistant = [
+    "lines/*",
+    "lang/*",
+    "ui/themes/*",
+    "build_stamp.txt",
+    "_bundle/scripts/*",
+    "_bundle/listeners/*",
+    "_bundle/docs/img/*",
+    "_bundle/LICENSE.md",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

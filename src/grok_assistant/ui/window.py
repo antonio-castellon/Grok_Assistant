@@ -44,6 +44,7 @@ class WindowMixin:
         self._download_rows: dict[str, dict] = {}
         self.pause_file = hub.data_dir / "mic.pause"
         self._closing = False
+        self._update_offer = None
         voices = self.speaker.list_voices() or ["Predeterminada"]
         self.models = [self.hub.brain.settings.model]
         self.hub.brain.set_devices(voices, discover_recognizers())
@@ -69,9 +70,83 @@ class WindowMixin:
         threading.Thread(target=self._arm_refiner, daemon=True).start()
         threading.Thread(target=self._score_pending, daemon=True).start()
         threading.Thread(target=self._warm_piper, daemon=True).start()
+        threading.Thread(target=self._check_updates, daemon=True).start()
         self._note("ventana lista")
         self._announce_combined()
         self.root.after(200, self._pulse)
+
+    def _check_updates(self) -> None:
+        try:
+            from grok_assistant.house.updates import find_update
+
+            offer = find_update()
+        except Exception:
+            return
+        if not offer:
+            return
+
+        def show() -> None:
+            self._update_offer = offer
+            self._place_update_button()
+
+        self.ui.put(show)
+
+    def _place_update_button(self) -> None:
+        button = getattr(self, "update_button", None)
+        if button is None:
+            return
+        try:
+            if not int(button.winfo_exists()):
+                return
+        except tk.TclError:
+            return
+        if not self._update_offer:
+            try:
+                button.pack_forget()
+            except tk.TclError:
+                pass
+            return
+        button.configure(text=_ui("window.update", "Actualizar"))
+        if not button.winfo_ismapped():
+            button.pack(side="right", padx=(0, 12), pady=6)
+
+    def _confirm_update(self) -> None:
+        offer = self._update_offer
+        if not offer:
+            return
+        body = _ui(
+            "dialog.update_body",
+            "Hay una versión más nueva ({tag}). El programa se cerrará, se sustituirá y volverá a abrirse.",
+        ).replace("{tag}", str(offer.get("tag") or ""))
+        if not messagebox.askyesno(_ui("dialog.update_title", "Actualizar"), body, parent=self.root):
+            return
+        self.update_button.configure(state="disabled", text=_ui("window.updating", "Actualizando…"))
+
+        def work() -> None:
+            from grok_assistant.house.updates import apply_update
+
+            try:
+                ok = apply_update(offer)
+            except Exception:
+                ok = False
+            if ok:
+                self.ui.put(lambda: self._quit(None, None))
+                return
+
+            def fail() -> None:
+                try:
+                    self.update_button.configure(state="normal", text=_ui("window.update", "Actualizar"))
+                except tk.TclError:
+                    return
+                messagebox.showerror(
+                    _ui("dialog.update_title", "Actualizar"),
+                    _ui("dialog.update_fail", "No se pudo actualizar."),
+                    parent=self.root,
+                )
+
+            self.ui.put(fail)
+
+        threading.Thread(target=work, daemon=True).start()
 
     def _style(self) -> None:
         self.root.configure(bg=look.bg)
@@ -228,6 +303,12 @@ class WindowMixin:
             font=("Segoe UI", 12), anchor="w",
         )
         self.version_label.pack(fill="both", padx=18)
+        self.update_button = RoundButton(
+            self.footer, text=_ui("window.update", "Actualizar"), command=self._confirm_update,
+            bg=look.button, fg=look.ink, activebackground=look.button_active, activeforeground=look.ink,
+            font=("Segoe UI", 11), padx=16, pady=4,
+        )
+        self._place_update_button()
 
         self.pages = RoundNotebook(self.root, bar_parent=self.chrome)
         self.pages.pack(fill="both", expand=True, padx=18, pady=(8, 8))
@@ -426,6 +507,8 @@ class WindowMixin:
         quit_label = _ui("menu.quit", "Salir")
         self.quit_button.configure(text=quit_label)
         self.simple_quit.configure(text=_ui("window.big_quit", "Salir"))
+        if getattr(self, "update_button", None) is not None:
+            self.update_button.configure(text=_ui("window.update", "Actualizar"))
         self.pause_button.configure(text=self._pause_caption(False))
         self.simple_pause.configure(text=self._pause_caption(True))
         self._paint_simple()

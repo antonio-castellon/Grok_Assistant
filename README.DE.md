@@ -1,6 +1,6 @@
 [Read in English](README.md) · [Leer en español](README.ES.md) · [Lire en français](README.FR.md)
 
-![Grok-Zeichen, darunter Assistance](docs/img/banner.jpg)
+![Grok-Zeichen, darunter Assistant](docs/img/banner.jpg)
 
 # Grok Assistant
 
@@ -22,7 +22,7 @@ Die folgende Grafik zeigt, was mit einem gesprochenen Satz passiert.
 
 ![Der STT-Motor macht aus Sprache Text. Ohne Gespräch prüft das lokale Modell, ob es ein voller Auftrag ist. Im Gespräch notiert es den Satz, und der Text geht an Grok.](docs/img/flow.svg)
 
-In den Einstellungen beginnt Grok nur mit dem Web. Ein Administrator kann Dateiänderungen erlauben. Die Shell bleibt aus, und ein relativer Pfad landet im Datenordner des Assistenten.
+In den Einstellungen sucht Grok nur im Internet. Ein Administrator kann erlauben, dass Grok Dateien auf diesem Rechner ändert. Die Shell bleibt aus, und ein relativer Pfad landet im Datenordner des Assistenten.
 
 ## Weiterlesen
 

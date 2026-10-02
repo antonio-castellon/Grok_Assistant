@@ -7,11 +7,23 @@ import sys
 from pathlib import Path
 
 
+def resource_root(package_file: Path) -> Path:
+    """Repo root when this file sits in a checkout. An installed copy uses the staged bundle."""
+    package_file = Path(package_file).resolve()
+    checkout = package_file.parents[2]
+    if (checkout / "scripts" / "speak.ps1").is_file():
+        return checkout
+    bundled = package_file.parent / "_bundle"
+    if (bundled / "scripts" / "speak.ps1").is_file():
+        return bundled
+    return checkout
+
+
 def bundle_root() -> Path:
-    """Repo root in a checkout, or the unpacked folder inside the single executable."""
+    """Repo root in a checkout, the staged bundle in a pip install, or the folder inside the executable."""
     if getattr(sys, "frozen", False):
         return Path(getattr(sys, "_MEIPASS"))
-    return Path(__file__).resolve().parents[2]
+    return resource_root(Path(__file__))
 
 
 def lines_dir() -> Path:

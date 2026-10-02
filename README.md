@@ -1,6 +1,6 @@
 [Leer en español](README.ES.md) · [Lire en français](README.FR.md) · [Auf Deutsch lesen](README.DE.md)
 
-![Grok mark, with Assistance underneath](docs/img/banner.jpg)
+![Grok mark, with Assistant underneath](docs/img/banner.jpg)
 
 # Grok Assistant
 
@@ -24,7 +24,7 @@ The diagram below shows what happens to a spoken phrase from the moment it is he
 
 ![The STT engine turns speech into text. Before a conversation, the local model checks for a complete command. During a conversation, it notes the line and the text goes to Grok.](docs/img/flow.svg)
 
-In Settings, Grok starts with web lookup only. An administrator can allow file changes. The shell stays off, and a relative path lands in the assistant data folder.
+In Settings, Grok only searches the internet. An administrator can allow Grok to change files on this machine. The shell stays off, and a relative path lands in the assistant data folder.
 
 ## Read on
 

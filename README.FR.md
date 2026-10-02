@@ -1,6 +1,6 @@
 [Read in English](README.md) · [Leer en español](README.ES.md) · [Auf Deutsch lesen](README.DE.md)
 
-![Marque Grok, avec Assistance en dessous](docs/img/banner.jpg)
+![Marque Grok, avec Assistant en dessous](docs/img/banner.jpg)
 
 # Grok Assistant
 
@@ -22,7 +22,7 @@ Le schéma ci-dessous montre ce qui arrive à une phrase à partir du moment où
 
 ![Le moteur STT transforme la parole en texte. Sans conversation, le modèle local vérifie si c'est un ordre complet. Dans une conversation, il note la phrase et le texte va à Grok.](docs/img/flow.svg)
 
-Dans Réglages, Grok commence par le web seulement. Un administrateur peut lui permettre de modifier des fichiers. Le shell reste coupé, et un chemin relatif tombe dans le dossier de données de l'assistant.
+Dans Réglages, Grok ne fait que chercher sur internet. Un administrateur peut permettre à Grok de modifier les fichiers de cette machine. Le shell reste coupé, et un chemin relatif tombe dans le dossier de données de l'assistant.
 
 ## Lire la suite
 

@@ -97,11 +97,11 @@ class MenuMixin:
         menu.add_separator()
         files = bool(self.hub.brain.settings.grok_files)
         menu.add_command(
-            label=_used(not files) + _ui("menu.files_off", "Grok: solo la web"),
+            label=_used(not files) + _ui("menu.files_off", "Grok solo busca en internet"),
             command=lambda: self.jobs.put(("files", "0")),
         )
         menu.add_command(
-            label=_used(files) + _ui("menu.files_on", "Grok: puede cambiar archivos"),
+            label=_used(files) + _ui("menu.files_on", "Grok puede cambiar archivos de esta máquina"),
             command=lambda: self.jobs.put(("files", "1")),
         )
 
@@ -430,8 +430,8 @@ class MenuMixin:
                 ("cmd", _ui("menu.admin_mode", "Modo administrador"), "admin", False),
                 ("cmd", _ui("menu.password", "Contraseña…"), "password", False),
                 ("sep",),
-                ("cmd", _ui("menu.files_off", "Grok: solo la web"), "files-off", not brain.settings.grok_files),
-                ("cmd", _ui("menu.files_on", "Grok: puede cambiar archivos"), "files-on", bool(brain.settings.grok_files)),
+                ("cmd", _ui("menu.files_off", "Grok solo busca en internet"), "files-off", not brain.settings.grok_files),
+                ("cmd", _ui("menu.files_on", "Grok puede cambiar archivos de esta máquina"), "files-on", bool(brain.settings.grok_files)),
             ]),
             ("cmd", text("menu.about", "Acerca de"), "about", False),
             ("sep",),

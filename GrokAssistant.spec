@@ -7,6 +7,12 @@ import sherpa_onnx
 import sounddevice
 
 root = Path(SPECPATH)
+sys_path = str(root / "src")
+if sys_path not in __import__("sys").path:
+    __import__("sys").path.insert(0, sys_path)
+from grok_assistant.buildinfo import write_stamp
+
+write_stamp(root / "src" / "grok_assistant" / "build_stamp.txt")
 
 # The extension and its DLLs have to stay in sherpa_onnx/lib. Flattening them breaks the import.
 sherpa_bins = [
@@ -28,6 +34,7 @@ a = Analysis(
         (str(root / "listeners"), "listeners"),
         (str(root / "docs" / "img"), "docs/img"),
         (str(root / "LICENSE.md"), "."),
+        (str(root / "src" / "grok_assistant" / "build_stamp.txt"), "grok_assistant"),
         (str(portaudio), "_sounddevice_data/portaudio-binaries"),
     ],
     hiddenimports=[
@@ -38,7 +45,9 @@ a = Analysis(
         "grok_assistant.cloud.prompts",
         "grok_assistant.cloud.setup_grok",
         "grok_assistant.console",
+        "grok_assistant.buildinfo",
         "grok_assistant.house.helptext",
+        "grok_assistant.house.updates",
         "grok_assistant.house.marketplace",
         "grok_assistant.house.music",
         "grok_assistant.house.personality",
