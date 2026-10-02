@@ -4,7 +4,7 @@
 
 # Grok Assistant
 
-Versión candidata 1.0.2.
+Versión candidata 1.0.3.
 
 Llevaba años esperando que el Amazon Echo aprendiera a escuchar de verdad. Al final seguía siendo, sobre todo, un altavoz con un anillo de luz, así que decidí construir mi propio asistente para una persona mayor que ya tiene un pequeño portátil cerca.
 
