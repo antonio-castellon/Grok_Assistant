@@ -76,7 +76,9 @@ HELP_TOPICS = (
         "El motor en streaming para español también se queda en este equipo y cierra la frase poco después de que te calles. "
         "Whisper pequeño, Whisper base, Whisper small, Canary, Cohere, Zipformer francés y Zipformer inglés están en el Mercado de voz. Hay que descargarlos antes de poder elegirlos. Un Zipformer de otro idioma no se elige solo. "
         "Dentro de una charla, el texto reconocido sigue hacia Grok hasta que te despides. "
-        "Si al arrancar el único oído era el teclado y uno de estos motores ya está en el disco, se elige ese.",
+        "Si al arrancar el único oído era el teclado y uno de estos motores ya está en el disco, se elige ese. "
+        "Si hay varios micrófonos, en Ajustes, Micrófono, eliges cuál escucha. Predeterminado es el de Windows. "
+        "Los oídos de este programa usan esa elección. El dictado de Windows español sigue el micrófono que marca el sistema.",
         "comando reconocedor teclado",
     ),
     (

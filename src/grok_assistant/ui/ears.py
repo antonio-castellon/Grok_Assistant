@@ -6,10 +6,30 @@ from grok_assistant.ui.deps import *  # noqa: F401,F403
 class EarMixin:
     """The microphone and the live line."""
 
+    def _release_ear(self, ear) -> None:
+        if ear is None:
+            return
+        ear.stop()
+        join = getattr(ear, "join", None)
+        if callable(join):
+            join(1.5)
+
+    def _hearing_device(self) -> str:
+        from grok_assistant.listening.devices import listed_inputs, resolve_microphone
+
+        saved = self.hub.brain.settings.microphone
+        mics = listed_inputs()
+        name, _index = resolve_microphone(saved, mics)
+        if mics is not None and name != saved:
+            self.hub.brain.settings.microphone = name
+            self.hub.brain.persist()
+        return name
+
     def _sync_ear(self) -> None:
         if self._ears_suspended:
             return
         kind = self.hub.brain.settings.recognizer
+        device = self._hearing_device()
         want_windows = kind == "windows" and not self.user_paused
         want_stream = kind in STREAMING_KINDS and not self.user_paused
         if want_windows and self.dictation is None:
@@ -20,9 +40,9 @@ class EarMixin:
         if not want_windows and self.dictation is not None:
             self.dictation.stop()
             self.dictation = None
-        if want_stream and (self.kroko is None or self.kroko.kind != kind):
+        if want_stream and (self.kroko is None or self.kroko.kind != kind or getattr(self.kroko, "device", None) != device):
             if self.kroko is not None:
-                self.kroko.stop()
+                self._release_ear(self.kroko)
                 self.kroko = None
             ear = KrokoEar(
                 self._heard,
@@ -31,6 +51,7 @@ class EarMixin:
                 kind=kind,
                 on_partial=self._preview,
                 talk_mode=lambda: self.hub.brain.settings.talk_mode,
+                device=device,
             )
             if ear.start():
                 self.kroko = ear
@@ -41,13 +62,13 @@ class EarMixin:
             else:
                 self._note(ear.error or "ese oído no pudo escuchar")
         if not want_stream and self.kroko is not None:
-            self.kroko.stop()
+            self._release_ear(self.kroko)
             self.kroko = None
         want_offline = kind in OFFLINE_KINDS and not self.user_paused
-        if want_offline and (self.offline is None or self.offline.kind != kind):
+        if want_offline and (self.offline is None or self.offline.kind != kind or getattr(self.offline, "device", None) != device):
             if self.offline is not None:
-                self.offline.stop()
-            ear = OfflineEar(kind, self._heard, self._kroko_status, silence=self._phrase_silence)
+                self._release_ear(self.offline)
+            ear = OfflineEar(kind, self._heard, self._kroko_status, silence=self._phrase_silence, device=device)
             if ear.start():
                 self.offline = ear
                 self._note(f"cargo {RECOGNIZER_LABELS[kind]}")
@@ -55,7 +76,7 @@ class EarMixin:
                 self.offline = None
                 self._note(ear.error or "ese oído no pudo escuchar")
         if not want_offline and self.offline is not None:
-            self.offline.stop()
+            self._release_ear(self.offline)
             self.offline = None
 
     def _kroko_status(self, text: str) -> None:

@@ -6,6 +6,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from grok_assistant.listening.devices import normalize_microphone
 from grok_assistant.speaking.banter import KINDS, THEMES, normalize_choice
 from grok_assistant.speaking.waits import STYLES
 from grok_assistant.house.personality import blank_personality, normalize_personality
@@ -91,6 +92,7 @@ class Settings:
     quiet_minutes: float = 1.0
     theme: str = "noche"
     grok_files: bool = False
+    microphone: str = ""
 
     @classmethod
     def load(cls, path: Path) -> "Settings":
@@ -120,6 +122,7 @@ class Settings:
         item.quiet_minutes = normalize_quiet_minutes(item.quiet_minutes)
         item.theme = normalize_theme(item.theme)
         item.grok_files = normalize_flag(item.grok_files)
+        item.microphone = normalize_microphone(item.microphone)
         return item
 
     def save(self, path: Path) -> None:

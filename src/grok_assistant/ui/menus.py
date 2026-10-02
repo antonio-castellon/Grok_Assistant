@@ -55,6 +55,7 @@ class MenuMixin:
         self.menu_settings = tk.Menu(bar, postcommand=self._fill_settings, **kw)
         self.menu_language = tk.Menu(self.menu_settings, postcommand=self._fill_language, **kw)
         self.menu_theme = tk.Menu(self.menu_settings, postcommand=self._fill_theme, **kw)
+        self.menu_microphone = tk.Menu(self.menu_settings, postcommand=self._fill_microphone, **kw)
         from grok_assistant.i18n import text
 
         bar.add_cascade(label=text("menu.listen", "Escucha"), menu=self.menu_escucha)
@@ -87,6 +88,7 @@ class MenuMixin:
         menu.delete(0, "end")
         menu.add_cascade(label=_ui("menu.language", "Idioma"), menu=self.menu_language)
         menu.add_cascade(label=_ui("menu.theme", "Aspecto"), menu=self.menu_theme)
+        menu.add_cascade(label=_ui("menu.microphone", "Micrófono"), menu=self.menu_microphone)
         menu.add_command(label=_ui("menu.market", "Voice market"), command=self._open_market)
         menu.add_separator()
         if enabled():
@@ -426,6 +428,7 @@ class MenuMixin:
             ("sub", text("menu.settings", "Ajustes"), [
                 ("sub", text("menu.language", "Idioma"), self._language_items()),
                 ("sub", text("menu.theme", "Aspecto"), self._theme_rows()),
+                ("sub", text("menu.microphone", "Micrófono"), self._microphone_rows()),
                 ("cmd", text("menu.market", "Voice market"), "market", False),
                 ("sep",),
                 ("cmd", _ui("menu.startup_off", "Desactivar arranque con Windows") if self._startup_on() else _ui("menu.startup_on", "Activar arranque con Windows"), "startup", self._startup_on()),
@@ -464,6 +467,10 @@ class MenuMixin:
             self._password_dialog()
         elif key.startswith("theme:"):
             self._apply_theme(key.split(":", 1)[1])
+        elif key == "mic-default":
+            self._pick_microphone("")
+        elif key.startswith("mic:"):
+            self._pick_microphone(key.split(":", 1)[1])
         elif key == "files-off":
             self.jobs.put(("files", "0"))
         elif key == "files-on":
@@ -573,6 +580,59 @@ class MenuMixin:
     def _theme_rows(self) -> list:
         current = self.hub.brain.settings.theme
         return [("cmd", item.name, f"theme:{item.id}", item.id == current) for item in available()]
+
+    def _microphone_names(self) -> tuple[str, list[str]]:
+        from grok_assistant.listening.devices import listed_inputs, normalize_microphone
+
+        current = normalize_microphone(self.hub.brain.settings.microphone)
+        mics = listed_inputs() or []
+        names = [mic["name"] for mic in mics]
+        if current not in names:
+            current = ""
+        return current, names
+
+    def _fill_microphone(self) -> None:
+        menu = self.menu_microphone
+        menu.delete(0, "end")
+        current, names = self._microphone_names()
+        menu.add_command(
+            label=_used(current == "") + _ui("menu.microphone_default", "Predeterminado"),
+            command=lambda: self._pick_microphone(""),
+        )
+        if not names:
+            menu.add_command(label=_ui("menu.microphone_none", "No hay micrófonos"), state="disabled")
+            return
+        menu.add_separator()
+        for name in names:
+            menu.add_command(
+                label=_used(name == current) + name,
+                command=lambda picked=name: self._pick_microphone(picked),
+            )
+
+    def _microphone_rows(self) -> list:
+        current, names = self._microphone_names()
+        rows = [("cmd", _ui("menu.microphone_default", "Predeterminado"), "mic-default", current == "")]
+        if not names:
+            rows.append(("cmd", _ui("menu.microphone_none", "No hay micrófonos"), "noop", False))
+            return rows
+        rows.append(("sep",))
+        for name in names:
+            rows.append(("cmd", name, f"mic:{name}", name == current))
+        return rows
+
+    def _pick_microphone(self, name: str) -> None:
+        from grok_assistant.listening.devices import normalize_microphone
+
+        chosen = normalize_microphone(name)
+        if chosen == normalize_microphone(self.hub.brain.settings.microphone):
+            return
+        self.hub.brain.settings.microphone = chosen
+        self.hub.brain.persist()
+        self._sync_ear()
+        shown = chosen or _ui("menu.microphone_default", "Predeterminado")
+        self._note(f"micrófono: {shown}")
+        if hasattr(self, "_paint"):
+            self._paint()
 
     def _fill_language(self) -> None:
         from grok_assistant.i18n import languages, text

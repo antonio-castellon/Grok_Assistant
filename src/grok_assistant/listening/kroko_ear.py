@@ -104,8 +104,9 @@ def transcribe_clip(samples, kind: str = "kroko") -> str:
 
 
 class KrokoEar:
-    def __init__(self, on_line, on_status=None, wake_name=None, kind: str = "kroko", on_partial=None, talk_mode=None):
+    def __init__(self, on_line, on_status=None, wake_name=None, kind: str = "kroko", on_partial=None, talk_mode=None, device: str = ""):
         self.kind = kind if kind in STREAMING_KINDS else "kroko"
+        self.device = str(device or "")
         self.on_line = on_line
         self.on_partial = on_partial or (lambda *_ignored: None)
         self.on_status = on_status or (lambda _text: None)
@@ -161,6 +162,11 @@ class KrokoEar:
     def stop(self) -> None:
         self._stop.set()
 
+    def join(self, timeout: float = 1.5) -> None:
+        thread = self._thread
+        if thread is not None and thread is not threading.current_thread():
+            thread.join(timeout)
+
     def _ready(self, text: str, quiet: float, endpoint: bool) -> bool:
         from grok_assistant.rules.match import endpoint_quiet
 
@@ -208,7 +214,6 @@ class KrokoEar:
     def _loop(self, folder: Path) -> None:
         import numpy as np
         import sherpa_onnx
-        import sounddevice as sd
 
         try:
             encoder = _model(folder, "encoder")
@@ -237,7 +242,9 @@ class KrokoEar:
             stream = recognizer.create_stream()
             rate = 16000
             block = int(0.1 * rate)
-            source = sd.InputStream(channels=1, dtype="float32", samplerate=rate)
+            from grok_assistant.listening.devices import open_input
+
+            source = open_input(self.device, rate)
         except Exception as exc:
             self.error = f"{_label(self.kind)} no arrancó: {exc}"
             self._report(self.error)

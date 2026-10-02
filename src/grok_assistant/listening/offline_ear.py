@@ -67,8 +67,9 @@ def transcribe_clip(kind: str, samples) -> str:
 
 
 class OfflineEar:
-    def __init__(self, kind: str, on_line, on_status=None, silence=None):
+    def __init__(self, kind: str, on_line, on_status=None, silence=None, device: str = ""):
         self.kind = kind
+        self.device = str(device or "")
         self.on_line = on_line
         self.on_status = on_status or (lambda _text: None)
         self._silence = silence or (lambda: 0.7)
@@ -116,6 +117,11 @@ class OfflineEar:
 
     def stop(self) -> None:
         self._stop.set()
+
+    def join(self, timeout: float = 1.5) -> None:
+        thread = self._thread
+        if thread is not None and thread is not threading.current_thread():
+            thread.join(timeout)
 
     def _report(self, text: str) -> None:
         self.on_status(text)
@@ -166,7 +172,6 @@ class OfflineEar:
 
     def _loop(self) -> None:
         import numpy as np
-        import sounddevice as sd
 
         folder = model_dir(self.kind)
         if folder is None:
@@ -175,7 +180,9 @@ class OfflineEar:
             return
         try:
             recognizer = self._recognizer(folder)
-            source = sd.InputStream(channels=1, dtype="float32", samplerate=16000)
+            from grok_assistant.listening.devices import open_input
+
+            source = open_input(self.device, 16000)
         except Exception as exc:
             self.error = f"el oído no arrancó: {exc}"
             self._report(self.error)
