@@ -1063,8 +1063,58 @@ def test_an_illegible_reading_does_not_repeat_the_phrase(world):
     assert cli.calls == []
     assert not hub.brain.in_conversation
     text = "\n".join(hub.brain.logs)
-    assert "LLM: ilegible" in text
+    assert "LLM: comando o accion no detectada" in text
+    assert "LLM: ilegible" not in text
     assert "reconocedor" not in text
+    assert hub.skip_ear_note
+
+
+def test_a_dropped_phrase_omits_the_recognizer_and_an_open_chat_keeps_it(world):
+    hub, cli, _clock = world
+
+    class Echo:
+        def available(self):
+            return True
+
+        def interpret(self, phrase, in_conversation):
+            return {"accion": "ilegible", "orden": "", "texto": phrase}
+
+    hub.mind = Echo()
+    hub.brain.settings.local_llm = True
+
+    from grok_assistant.ui.worker import WorkerMixin
+
+    class Ear(WorkerMixin):
+        def __init__(self):
+            self.hub = hub
+
+        def say(self, text):
+            return None
+
+        def _apply(self, result):
+            return None
+
+        def _refresh(self):
+            return None
+
+        def _ask(self, title):
+            return ""
+
+    ear = Ear()
+    ear._job("phrase", "no sé si esto me está escuchando", None, None, "Whisper small · relectura")
+    text = "\n".join(hub.brain.logs)
+    assert "LLM: comando o accion no detectada" in text
+    assert "Whisper" not in text
+    assert cli.calls == []
+
+    ear._job("phrase", "hola grok", None, None, "Whisper small")
+    ear._job("phrase", "qué tiempo hará mañana", None, None, "Whisper base")
+    text = "\n".join(hub.brain.logs)
+    assert "Whisper small · relectura" not in text
+    assert any(line.endswith("Whisper small") for line in hub.brain.logs)
+    assert any(line.endswith("Whisper base") for line in hub.brain.logs)
+    assert cli.calls[-1][1] == "qué tiempo hará mañana"
+    assert not hub.skip_ear_note
 
 
 def test_an_open_conversation_logs_the_reading_and_keeps_the_question(world):

@@ -50,7 +50,7 @@ def _intent_line(data: dict | None, heard: str = "") -> str:
         return "LLM: sin respuesta"
     accion = " ".join(str(data.get("accion") or "").split()) or "vacío"
     if accion == "ilegible":
-        return "LLM: ilegible"
+        return "LLM: comando o accion no detectada"
     bits = [accion]
     orden = " ".join(str(data.get("orden") or "").split())
     texto = " ".join(str(data.get("texto") or "").split())
@@ -70,11 +70,13 @@ class Hub:
         self.on_effect = None
         self.mind = None
         self.sent: list[tuple] = []
+        self.skip_ear_note = False
 
     def startup(self) -> str:
         return self.brain.startup_line()
 
     def run(self, text: str, speaker=None, **kwargs) -> Result:
+        self.skip_ear_note = False
         self.brain.identifier_ready = self._identifier_ready()
         self.brain.mark_busy()
         try:
@@ -167,6 +169,8 @@ class Hub:
         stays = not self.brain.in_conversation or blank_phrase(original)
         self.brain._log(_intent_line(data, original))
         if stays:
+            if isinstance(data, dict) and str(data.get("accion") or "").strip() == "ilegible":
+                self.skip_ear_note = True
             return Turn(status=self.brain.status_label())
         return self._pass_through(turn, original)
 

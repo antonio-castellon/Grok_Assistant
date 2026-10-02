@@ -84,7 +84,7 @@ class WorkerMixin:
                 password = self._ask(_ui("dialog.admin", "Administrador"))
                 follow = self.hub.submit_password(password, speaker=self.say) if password else self.hub.cancel_password(speaker=self.say)
                 self._apply(follow)
-            if heard_by:
+            if heard_by and not self.hub.skip_ear_note:
                 self.hub.brain._step(heard_by)
             self._refresh()
 
