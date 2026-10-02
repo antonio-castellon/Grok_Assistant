@@ -12,6 +12,29 @@ def test_a_sign_in_prompt_is_not_ready():
     assert interpret_models("", "Please sign in with grok login", 1) == "signed_out"
 
 
+def test_the_command_guide_says_how_long_a_phrase_stays_open():
+    import json
+
+    from grok_assistant.i18n import bundled_dir
+
+    body = next(text for title, text, _example in HELP_TOPICS if title.startswith("Motor"))
+    assert "0,7 segundos" in body
+    assert "0,4 segundos" in body
+    assert "30 segundos" in body
+    assert "2 segundos" in body
+    assert "minutos de silencio" in body
+    needles = {
+        "en": ("0.7 seconds", "0.4 seconds", "30 seconds"),
+        "fr": ("0,7 seconde", "0,4 seconde", "30 secondes"),
+        "de": ("0,7 Sekunden", "0,4 Sekunden", "30 Sekunden"),
+    }
+    for code, parts in needles.items():
+        pack = json.loads((bundled_dir() / f"{code}.json").read_text(encoding="utf-8"))
+        stt = next(item["body"] for item in pack["help"] if "STT" in item["title"])
+        for part in parts:
+            assert part in stt
+
+
 def test_every_help_topic_has_an_example():
     from grok_assistant.house.helptext import help_topics
 
