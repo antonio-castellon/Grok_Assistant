@@ -78,16 +78,12 @@ class WorkerMixin:
             self._refresh()
             return
         if kind == "phrase":
-            self._hold_mic(True)
-            try:
-                result = self.hub.run(payload, speaker=self.say, vector=embedding, speaker_id=speaker_id)
-                self._apply(result)
-                if any(item[0] == "ask_password" for item in result.effects):
-                    password = self._ask(_ui("dialog.admin", "Administrador"))
-                    follow = self.hub.submit_password(password, speaker=self.say) if password else self.hub.cancel_password(speaker=self.say)
-                    self._apply(follow)
-            finally:
-                self._hold_mic(False)
+            result = self.hub.run(payload, speaker=self.say, vector=embedding, speaker_id=speaker_id)
+            self._apply(result)
+            if any(item[0] == "ask_password" for item in result.effects):
+                password = self._ask(_ui("dialog.admin", "Administrador"))
+                follow = self.hub.submit_password(password, speaker=self.say) if password else self.hub.cancel_password(speaker=self.say)
+                self._apply(follow)
             if heard_by:
                 self.hub.brain._step(heard_by)
             self._refresh()
@@ -95,6 +91,8 @@ class WorkerMixin:
     def say(self, text: str) -> None:
         if not text:
             return
+        self._speaking = True
+        self._push_mic_pause()
         self.music.hold_for_speech()
         try:
             voice = self._voice_name()
@@ -103,6 +101,8 @@ class WorkerMixin:
                 self._note(f"no pude decir: {text}")
         finally:
             self.music.release_after_speech()
+            self._speaking = False
+            self._push_mic_pause()
 
     def _play_song(self, title: str) -> None:
         def status(message: str) -> None:

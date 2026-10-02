@@ -69,6 +69,12 @@ class LocalMind:
         folder = self.data_dir / "llm"
         return any(folder.glob("*.gguf")) and _llama_exe(folder) is not None
 
+    def warm(self) -> bool:
+        """Load the selected model once and leave the server running."""
+        if not self.available():
+            return False
+        return self._ensure_server()
+
     def interpret(self, phrase: str, in_conversation: bool) -> dict | None:
         if not self.available():
             return None

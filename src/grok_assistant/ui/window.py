@@ -19,6 +19,9 @@ class WindowMixin:
         self.user_paused = False
         self.jobs: queue.Queue = queue.Queue()
         self.ui: queue.Queue = queue.Queue()
+        self._heard_box: queue.Queue = queue.Queue()
+        self._mic_held = False
+        self._speaking = False
         self.view_from = 0
         self._debug_cache: list[str] = []
         self.debug_text = None
@@ -59,6 +62,8 @@ class WindowMixin:
 
     def start(self) -> None:
         threading.Thread(target=self._worker, daemon=True).start()
+        threading.Thread(target=self._heard_worker, daemon=True).start()
+        threading.Thread(target=self._warm_mind, daemon=True).start()
         threading.Thread(target=self.hub.brain.agents.refresh_account, daemon=True).start()
         self.jobs.put(("startup", ""))
         self._start_tray()
@@ -74,6 +79,17 @@ class WindowMixin:
         self._note("ventana lista")
         self._announce_combined()
         self.root.after(200, self._pulse)
+
+    def _warm_mind(self) -> None:
+        mind = self.hub.mind
+        if mind is None or not self.hub.brain.settings.local_llm:
+            return
+        try:
+            ready = mind.warm()
+        except Exception:
+            return
+        if ready:
+            self.ui.put(lambda: self._note("el modelo local ya está en memoria"))
 
     def _check_updates(self) -> None:
         try:

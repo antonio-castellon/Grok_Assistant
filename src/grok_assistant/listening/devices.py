@@ -77,11 +77,14 @@ def resolve_microphone(saved: str, mics: list[dict] | None = None) -> tuple[str,
     return "", None
 
 
-def open_input(saved: str, samplerate: int = 16000):
+def open_input(saved: str, samplerate: int = 16000, latency: float | None = None):
     """Open the chosen input, or the system default when the name is empty or gone."""
     import sounddevice as sd
 
+    kwargs = {"channels": 1, "dtype": "float32", "samplerate": samplerate}
+    if latency is not None:
+        kwargs["latency"] = latency
     _name, index = resolve_microphone(saved)
-    if index is None:
-        return sd.InputStream(channels=1, dtype="float32", samplerate=samplerate)
-    return sd.InputStream(channels=1, dtype="float32", samplerate=samplerate, device=index)
+    if index is not None:
+        kwargs["device"] = index
+    return sd.InputStream(**kwargs)

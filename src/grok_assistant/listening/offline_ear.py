@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import queue
 import threading
 from pathlib import Path
 
@@ -79,7 +80,12 @@ class OfflineEar:
         self._capture = threading.Event()
         self._flush = threading.Event()
         self._hold = False
+        self._clips: queue.Queue = queue.Queue()
+        self._recognizer_live = None
+        self._model_ready = threading.Event()
+        self._overflowed = False
         self._thread: threading.Thread | None = None
+        self._decode_thread: threading.Thread | None = None
 
     def start(self) -> bool:
         if model_dir(self.kind) is None:
@@ -91,7 +97,9 @@ class OfflineEar:
         except ImportError:
             self.error = "falta el motor sherpa o el micrófono (sounddevice)"
             return False
-        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._decode_thread = threading.Thread(target=self._decode, name="ear-stt", daemon=True)
+        self._thread = threading.Thread(target=self._loop, name="ear-capture", daemon=True)
+        self._decode_thread.start()
         self._thread.start()
         return True
 
@@ -119,9 +127,9 @@ class OfflineEar:
         self._stop.set()
 
     def join(self, timeout: float = 1.5) -> None:
-        thread = self._thread
-        if thread is not None and thread is not threading.current_thread():
-            thread.join(timeout)
+        for thread in (self._thread, self._decode_thread):
+            if thread is not None and thread is not threading.current_thread():
+                thread.join(timeout)
 
     def _report(self, text: str) -> None:
         self.on_status(text)
@@ -170,19 +178,54 @@ class OfflineEar:
             num_threads=2,
         )
 
-    def _loop(self) -> None:
-        import numpy as np
-
+    def _decode(self) -> None:
         folder = model_dir(self.kind)
         if folder is None:
             self.error = "ese modelo no está en el disco"
             self._report(self.error)
+            self._model_ready.set()
             return
         try:
-            recognizer = self._recognizer(folder)
+            self._recognizer_live = self._recognizer(folder)
+        except Exception as exc:
+            self.error = f"el oído no arrancó: {exc}"
+            self._report(self.error)
+            self._model_ready.set()
+            return
+        self._model_ready.set()
+        self._serve_clips()
+
+    def _serve_clips(self) -> None:
+        while not self._stop.is_set():
+            try:
+                audio, capturing = self._clips.get(timeout=0.2)
+            except queue.Empty:
+                continue
+            self._transcribe(audio, capturing)
+
+    def _transcribe(self, audio, capturing: bool) -> None:
+        recognizer = self._recognizer_live
+        if recognizer is None:
+            return
+        stream = recognizer.create_stream()
+        stream.accept_waveform(16000, audio)
+        recognizer.decode_stream(stream)
+        text = str(getattr(stream.result, "text", "")).strip()
+        if capturing or text:
+            self.on_line(text, audio)
+
+    def _loop(self) -> None:
+        import numpy as np
+
+        if not self._model_ready.wait(30):
+            return
+        if self._recognizer_live is None or self._stop.is_set():
+            return
+        try:
             from grok_assistant.listening.devices import open_input
 
-            source = open_input(self.device, 16000)
+            # A deeper buffer keeps the words said while the recognizer is still busy.
+            source = open_input(self.device, 16000, latency=0.5)
         except Exception as exc:
             self.error = f"el oído no arrancó: {exc}"
             self._report(self.error)
@@ -196,7 +239,10 @@ class OfflineEar:
         try:
             with source:
                 while not self._stop.is_set():
-                    samples, _overflow = source.read(block)
+                    samples, overflow = source.read(block)
+                    if overflow and not self._overflowed:
+                        self._report("el micrófono llenó el búfer y se perdió un trozo")
+                    self._overflowed = bool(overflow)
                     if self._paused.is_set():
                         speech.clear()
                         voiced = 0.0
@@ -239,12 +285,10 @@ class OfflineEar:
                     speech.clear()
                     voiced = 0.0
                     silent = 0.0
-                    stream = recognizer.create_stream()
-                    stream.accept_waveform(rate, audio)
-                    recognizer.decode_stream(stream)
-                    text = str(getattr(stream.result, "text", "")).strip()
-                    if capturing or text:
-                        self.on_line(text, audio)
+                    waiting = self._clips.qsize()
+                    self._clips.put((audio, capturing))
+                    if waiting:
+                        self._report(f"hay {waiting + 1} frases esperando al reconocedor")
         except Exception as exc:
             self.error = f"el oído se detuvo: {exc}"
             self._report(self.error)

@@ -105,6 +105,18 @@ class EarMixin:
             self._settled_seq = seq
 
     def _heard(self, text: str, audio=None) -> None:
+        """Keep the capture thread free. The reading is accepted in order, later."""
+        self._heard_box.put((text, audio))
+
+    def _heard_worker(self) -> None:
+        while True:
+            text, audio = self._heard_box.get()
+            try:
+                self._accept_heard(text, audio)
+            except Exception as exc:
+                self._write_crash(exc)
+
+    def _accept_heard(self, text: str, audio=None) -> None:
         if self.user_paused:
             return
         self._settle_preview()

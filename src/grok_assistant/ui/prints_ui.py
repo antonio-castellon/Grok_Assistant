@@ -370,7 +370,11 @@ class PrintMixin:
             self.ui.put(self._apply_best_ear)
 
     def _hold_mic(self, hold: bool) -> None:
-        paused = hold or self.user_paused
+        self._mic_held = bool(hold)
+        self._push_mic_pause()
+
+    def _push_mic_pause(self) -> None:
+        paused = self._mic_held or self._speaking or self.user_paused
         if self.dictation is not None:
             self.dictation.set_paused(paused)
         if self.kroko is not None:
