@@ -160,6 +160,68 @@ def test_open_input_passes_the_chosen_index(monkeypatch):
     assert "device" not in opened
 
 
+def test_open_input_follows_the_microphone_rate_when_16k_is_rejected(monkeypatch):
+    monkeypatch.setattr(
+        "grok_assistant.listening.devices.listed_inputs",
+        lambda: [{"index": 25, "name": "Microphone Array (AMD Audio Device)", "hostapi": 3}],
+    )
+    opened = []
+
+    class Stream:
+        def __init__(self, **kwargs):
+            opened.append(dict(kwargs))
+            if kwargs["samplerate"] == 16000:
+                raise RuntimeError("Error opening InputStream: Invalid sample rate [PaErrorCode -9997]")
+
+        def read(self, frames):
+            return [0.25] * frames, False
+
+    import sys
+    import types
+
+    fake = types.ModuleType("sounddevice")
+    fake.InputStream = Stream
+    fake.query_devices = lambda index=None: {"default_samplerate": 48000.0}
+    fake.default = types.SimpleNamespace(device=(25, 5))
+    monkeypatch.setitem(sys.modules, "sounddevice", fake)
+    from grok_assistant.listening.devices import open_input
+
+    source = open_input("Microphone Array (AMD Audio Device)", 16000, latency=0.5)
+    assert opened[0]["samplerate"] == 16000
+    assert opened[1]["samplerate"] == 48000
+    assert opened[1]["device"] == 25
+    audio, overflow = source.read(1600)
+    assert len(audio) == 1600
+    assert overflow is False
+    assert float(audio[0]) == 0.25
+
+
+def test_open_input_still_raises_when_the_microphone_is_unavailable(monkeypatch):
+    monkeypatch.setattr(
+        "grok_assistant.listening.devices.listed_inputs",
+        lambda: [{"index": 7, "name": "USB", "hostapi": 0}],
+    )
+
+    class Stream:
+        def __init__(self, **kwargs):
+            raise RuntimeError("device unavailable")
+
+    import sys
+    import types
+
+    fake = types.ModuleType("sounddevice")
+    fake.InputStream = Stream
+    monkeypatch.setitem(sys.modules, "sounddevice", fake)
+    from grok_assistant.listening.devices import open_input
+
+    try:
+        open_input("USB", 16000)
+    except RuntimeError as exc:
+        assert "unavailable" in str(exc)
+    else:
+        raise AssertionError("a missing microphone must still be reported")
+
+
 def test_settings_menu_picks_a_microphone_and_reopens_the_ear(tmp_path, monkeypatch):
     import tkinter as tk
 

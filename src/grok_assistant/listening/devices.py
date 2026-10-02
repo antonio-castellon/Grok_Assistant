@@ -158,17 +158,104 @@ def resolve_output(saved: str, speakers: list[dict] | None = None) -> tuple[str,
     return _resolve(saved, speakers, listed_outputs)
 
 
-def open_input(saved: str, samplerate: int = 16000, latency: float | None = None):
-    """Open the chosen input, or the system default when the name is empty or gone."""
+def _invalid_rate(exc: BaseException) -> bool:
+    text = str(exc).casefold()
+    return "invalid sample rate" in text or "-9997" in text
+
+
+def _native_rate(index: int | None) -> int | None:
+    """The rate the endpoint actually opens at. WASAPI often refuses 16 kHz."""
     import sounddevice as sd
 
-    kwargs = {"channels": 1, "dtype": "float32", "samplerate": samplerate}
+    try:
+        if index is None:
+            chosen = sd.default.device[0]
+            if chosen is None or int(chosen) < 0:
+                return None
+            info = sd.query_devices(int(chosen))
+        else:
+            info = sd.query_devices(int(index))
+        rate = int(round(float(info["default_samplerate"])))
+    except Exception:
+        return None
+    return rate if rate > 0 else None
+
+
+def _resample(samples, source_rate: int, target_rate: int):
+    import numpy as np
+
+    audio = np.asarray(samples, dtype=np.float32).reshape(-1)
+    if audio.size == 0 or source_rate == target_rate:
+        return audio
+    length = int(round(audio.size * target_rate / source_rate))
+    if length <= 1:
+        return audio[:1]
+    positions = np.linspace(0.0, audio.size - 1, length)
+    return np.interp(positions, np.arange(audio.size, dtype=np.float64), audio).astype(np.float32)
+
+
+class _ResampledInput:
+    """A stream opened at the device rate whose read() returns the recognizer rate."""
+
+    def __init__(self, stream, source_rate: int, target_rate: int):
+        self._stream = stream
+        self._source = source_rate
+        self._target = target_rate
+
+    def read(self, frames: int):
+        count = max(1, int(round(frames * self._source / self._target)))
+        data, overflow = self._stream.read(count)
+        audio = _resample(data, self._source, self._target)
+        import numpy as np
+
+        if audio.size < frames:
+            audio = np.pad(audio, (0, frames - audio.size))
+        elif audio.size > frames:
+            audio = audio[:frames]
+        return audio, overflow
+
+    def __enter__(self):
+        self._stream.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return self._stream.__exit__(exc_type, exc, tb)
+
+    def start(self):
+        return self._stream.start()
+
+    def stop(self):
+        return self._stream.stop()
+
+    def close(self):
+        return self._stream.close()
+
+
+def open_input(saved: str, samplerate: int = 16000, latency: float | None = None):
+    """Open the chosen input, or the system default when the name is empty or gone.
+
+    The recognizer wants 16 kHz. A WASAPI microphone often accepts only its own
+    mix rate, so that stream is opened there and each read is brought back.
+    """
+    import sounddevice as sd
+
+    wanted = int(samplerate)
+    kwargs = {"channels": 1, "dtype": "float32", "samplerate": wanted}
     if latency is not None:
         kwargs["latency"] = latency
     _name, index = resolve_microphone(saved)
     if index is not None:
         kwargs["device"] = index
-    return sd.InputStream(**kwargs)
+    try:
+        return sd.InputStream(**kwargs)
+    except Exception as exc:
+        if not _invalid_rate(exc):
+            raise
+        native = _native_rate(index)
+        if native is None or native == wanted:
+            raise
+        kwargs["samplerate"] = native
+        return _ResampledInput(sd.InputStream(**kwargs), native, wanted)
 
 
 def _play_on(audio, rate: int, index: int | None) -> bool:
