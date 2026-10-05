@@ -1,6 +1,6 @@
 [Read in English](README.md) · [Leer en español](README.ES.md) · [Lire en français](README.FR.md)
 
-![Grok-Zeichen, darunter Assistant](docs/img/banner.jpg)
+![Grok-Zeichen und ein Mikrofon, darunter Assistant](docs/img/banner.jpg)
 
 # Grok Assistant
 

@@ -1,6 +1,6 @@
 [Read in English](README.md) · [Leer en español](README.ES.md) · [Auf Deutsch lesen](README.DE.md)
 
-![Marque Grok, avec Assistant en dessous](docs/img/banner.jpg)
+![Marque Grok et un microphone, avec Assistant en dessous](docs/img/banner.jpg)
 
 # Grok Assistant
 
