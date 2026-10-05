@@ -6,11 +6,11 @@
 
 Versión candidata 1.0.4.
 
-Para que esto funcione bien, lo primero es grabar una huella de voz con el micrófono que se va a usar: **Personas → Huellas**. Sin esa huella el programa oye la casa y deja la frase fuera, antes del modelo local y antes de cualquier orden. Sirve para que en el mismo sitio no se mezclen dos personas, la televisión ni la voz del propio asistente, que sigue hablando con el micrófono abierto. Otro micrófono pide su propia grabación. El resto está en [Huellas y oídos](docs/es/huellas.md).
-
 Llevaba años esperando que el Amazon Echo aprendiera a escuchar de verdad. Al final seguía siendo, sobre todo, un altavoz con un anillo de luz, así que decidí construir mi propio asistente para una persona mayor que ya tiene un pequeño portátil cerca.
 
 En mi caso, esa persona es mi padre. Tiene la vista limitada y pasa muchas horas solo. Quería que pudiera hablar con una voz capaz de responder, conversar y explicar cosas sin tener que buscar una pantalla ni leer letra pequeña. Ahora ya es posible. Grok, en este equipo, es también la base sobre la que iré añadiendo nuevas funciones e integraciones. Para quien tenga un poco más de experiencia técnica y prefiera no dejar un portátil abierto, el mismo asistente para una Raspberry Pi 4 de 4 GB está en el proyecto paralelo [Grok Pi Assistance](https://github.com/antonio-castellon/Grok_Pi_Assistance), para montarse un dispositivo dedicado.
+
+Para que el programa escuche de verdad hace falta una huella de voz, grabada con el micrófono que se va a usar: **Personas → Huellas**. Sin esa huella el programa oye la casa y deja la frase fuera, antes del modelo local y antes de cualquier orden. Sirve para que en el mismo sitio no se mezclen dos personas, la televisión ni la voz del propio asistente, que sigue hablando con el micrófono abierto. Otro micrófono pide su propia grabación. El resto está en [Huellas y oídos](docs/es/huellas.md).
 
 Mientras el programa está abierto, puede seguir escuchando. El audio se queda en el ordenador y se convierte en texto de forma local. Grok solo recibe texto cuando realmente se está hablando con el asistente: después de un saludo, al hacer una pregunta, al dar una orden que empieza por `comando` o al pedir una canción. La conversación cotidiana permanece en la sesión local. Si una orden se entiende mal, Grok puede ayudar a interpretarla, pero el asistente seguirá pidiendo un `sí` antes de ejecutarla.
 
