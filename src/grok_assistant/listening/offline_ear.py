@@ -104,6 +104,8 @@ class OfflineEar:
         self._model_ready = threading.Event()
         self._overflowed = False
         self._tape = None
+        self._source = None
+        self._source_lock = threading.Lock()
         self._thread: threading.Thread | None = None
         self._decode_thread: threading.Thread | None = None
 
@@ -143,9 +145,18 @@ class OfflineEar:
         """Hand back the open take when the wait runs out."""
         self._flush.set()
 
+    def _bind_source(self, source) -> None:
+        with self._source_lock:
+            self._source = source
+
     def stop(self) -> None:
         self._stop.set()
         self._wake.set()
+        with self._source_lock:
+            source = self._source
+        from grok_assistant.listening.devices import abort_input
+
+        abort_input(source)
 
     def join(self, timeout: float = 1.5) -> None:
         for thread in (self._thread, self._decode_thread):
@@ -340,16 +351,28 @@ class OfflineEar:
             self.error = f"el oído no arrancó: {exc}"
             self._report(self.error)
             return
-        self._report("el oído local está escuchando el micrófono")
-        rate = 16000
-        block = int(0.1 * rate)
-        speech: list = []
-        voiced = 0.0
-        silent = 0.0
+        self._bind_source(source)
         try:
+            if self._stop.is_set():
+                from grok_assistant.listening.devices import close_input
+
+                close_input(source)
+                return
+            self._report("el oído local está escuchando el micrófono")
+            rate = 16000
+            block = int(0.1 * rate)
+            speech: list = []
+            voiced = 0.0
+            silent = 0.0
             with source:
                 while not self._stop.is_set():
-                    samples, overflow = source.read(block)
+                    try:
+                        samples, overflow = source.read(block)
+                    except Exception:
+                        if self._stop.is_set():
+                            self._tape_finish(False)
+                            return
+                        raise
                     if overflow and not self._overflowed:
                         self._report("el micrófono llenó el búfer y se perdió un trozo")
                     self._overflowed = bool(overflow)
@@ -416,5 +439,10 @@ class OfflineEar:
                     self._tape_finish(True)
                     self._submit(audio, capturing)
         except Exception as exc:
+            self._tape_finish(False)
+            if self._stop.is_set():
+                return
             self.error = f"el oído se detuvo: {exc}"
             self._report(self.error)
+        finally:
+            self._bind_source(None)

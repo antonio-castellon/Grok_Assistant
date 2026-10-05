@@ -4,6 +4,66 @@ import threading
 from pathlib import Path
 
 
+def test_stopping_the_ear_aborts_a_blocked_microphone():
+    import grok_assistant.listening.devices as devices
+    from grok_assistant.listening.kroko_ear import KrokoEar
+    from grok_assistant.listening.offline_ear import OfflineEar
+
+    started = threading.Event()
+    released = threading.Event()
+
+    class Source:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            released.set()
+            return False
+
+        def abort(self):
+            self.aborted.set()
+
+        def read(self, _frames):
+            started.set()
+            assert self.aborted.wait(2)
+            raise RuntimeError("stream aborted")
+
+        def close(self):
+            released.set()
+
+        def __init__(self):
+            self.aborted = threading.Event()
+
+    source = Source()
+    original = devices.open_input
+    devices.open_input = lambda *_args, **_kwargs: source
+    try:
+        ear = OfflineEar("canary", lambda *_args: None)
+        ear._model_ready.set()
+        ear._recognizer_live = object()
+        worker = threading.Thread(target=ear._loop, daemon=True)
+        worker.start()
+        assert started.wait(1)
+        ear.stop()
+        worker.join(1.5)
+        assert released.is_set()
+        assert not worker.is_alive()
+        assert ear.error == ""
+    finally:
+        devices.open_input = original
+
+    calls = []
+
+    class Held:
+        def abort(self):
+            calls.append("abort")
+
+    kroko = KrokoEar(lambda *_args: None)
+    kroko._bind_source(Held())
+    kroko.stop()
+    assert calls == ["abort"]
+
+
 def test_a_busy_recognizer_keeps_the_next_phrase():
     from grok_assistant.listening.offline_ear import OfflineEar
 

@@ -222,31 +222,43 @@ class _ResampledInput:
     def stop(self):
         return self._stream.stop()
 
+    def abort(self):
+        abort = getattr(self._stream, "abort", None)
+        if callable(abort):
+            return abort()
+
     def close(self):
         return self._stream.close()
 
 
-def _wasapi(index: int | None) -> bool:
-    import sounddevice as sd
-
+def abort_input(stream) -> None:
+    """Unblock a read on the capture thread. That thread closes the device."""
+    if stream is None:
+        return
+    abort = getattr(stream, "abort", None)
+    if not callable(abort):
+        return
     try:
-        if index is None:
-            chosen = sd.default.device[0]
-            if chosen is None or int(chosen) < 0:
-                return False
-            info = sd.query_devices(int(chosen))
-        else:
-            info = sd.query_devices(int(index))
-        hosts = list(sd.query_hostapis())
-        name = str(hosts[int(info["hostapi"])]["name"])
+        abort()
     except Exception:
-        return False
-    return "WASAPI" in name.upper()
+        return
 
 
-# Shared capture on the AMD array stays near 1e-6. A real room, even a quiet
-# one, is louder than that on a working endpoint. Exclusive mode there reaches
-# about 1e-3, but the first instant of that stream is still digital silence.
+def close_input(stream) -> None:
+    """Close a stream that never started. An active read stays on the capture thread."""
+    if stream is None:
+        return
+    close = getattr(stream, "close", None)
+    if not callable(close):
+        return
+    try:
+        close()
+    except Exception:
+        return
+
+
+# A later shared opening replaces the current one only when it is clearly
+# louder. A quiet room on a working endpoint is above the smaller gate.
 _REPLACE = 1e-5
 _SETTLED = 1e-3
 _PROBE_SECONDS = 0.35
@@ -280,45 +292,35 @@ def _prefer(peak: float, best: float | None) -> bool:
     return peak >= max(best * 10.0, _REPLACE)
 
 
-def _deliver(index: int | None, rate: int, exclusive: bool, latency, wanted: int):
+def _deliver(index: int | None, rate: int, latency, wanted: int):
     import sounddevice as sd
 
-    stream = sd.InputStream(**_stream_kwargs(index, rate, latency, exclusive))
+    stream = sd.InputStream(**_stream_kwargs(index, rate, latency))
     if rate == wanted:
         return stream
     return _ResampledInput(stream, rate, wanted)
 
 
-def _stream_kwargs(index: int | None, rate: int, latency, exclusive: bool) -> dict:
-    import sounddevice as sd
-
+def _stream_kwargs(index: int | None, rate: int, latency) -> dict:
     kwargs = {"channels": 1, "dtype": "float32", "samplerate": int(rate)}
     if latency is not None:
         kwargs["latency"] = latency
     if index is not None:
         kwargs["device"] = index
-    if exclusive:
-        kwargs["extra_settings"] = sd.WasapiSettings(exclusive=True)
     return kwargs
 
 
-def _open_plans(index: int | None, wanted: int) -> list[tuple[int, bool]]:
-    """Shared at the recognizer rate, then the endpoint rate, then WASAPI exclusive.
+def _open_plans(index: int | None, wanted: int) -> list[int]:
+    """Shared at the recognizer rate, then the endpoint's own rate.
 
-    The AMD array's shared WASAPI stream stays near digital silence.
-    Exclusive mode on that same endpoint delivers the microphone.
+    The microphone stays shared. Another program can open it, and a restart
+    does not find this process still holding it.
     """
-    plans = [(wanted, False)]
+    plans = [wanted]
     native = _native_rate(index)
     if native and native != wanted:
-        plans.append((native, False))
-    if _wasapi(index):
-        plans.append((native or wanted, True))
-    unique = []
-    for plan in plans:
-        if plan not in unique:
-            unique.append(plan)
-    return unique
+        plans.append(native)
+    return plans
 
 
 def _indexes_for(name: str, index: int | None) -> list[int | None]:
@@ -353,23 +355,22 @@ def _indexes_for(name: str, index: int | None) -> list[int | None]:
 
 
 def open_input(saved: str, samplerate: int = 16000, latency: float | None = None):
-    """Open the chosen input, or the system default when the name is empty or gone.
+    """Open the chosen input in shared mode, or the system default when the name is empty or gone.
 
     The recognizer wants 16 kHz. A WASAPI microphone often accepts only its own
     mix rate, so that stream is opened there and each read is brought back.
-    When shared capture stays near silence and exclusive mode is clearly louder,
-    the louder opening is the one that stays open.
+    A later shared opening replaces the current one only when it is clearly louder.
     """
     import sounddevice as sd
 
     wanted = int(samplerate)
     name, index = resolve_microphone(saved)
     last: BaseException | None = None
-    winner: tuple[float, int | None, int, bool] | None = None
+    winner: tuple[float, int | None, int] | None = None
     for device in _indexes_for(name, index):
-        for rate, exclusive in _open_plans(device, wanted):
+        for rate in _open_plans(device, wanted):
             try:
-                trial = sd.InputStream(**_stream_kwargs(device, rate, latency, exclusive))
+                trial = sd.InputStream(**_stream_kwargs(device, rate, latency))
             except Exception as exc:
                 last = exc
                 continue
@@ -382,24 +383,24 @@ def open_input(saved: str, samplerate: int = 16000, latency: float | None = None
             best = None if winner is None else winner[0]
             if not _prefer(peak, best):
                 continue
-            winner = (peak, device, rate, exclusive)
+            winner = (peak, device, rate)
             if peak < _SETTLED:
                 continue
             try:
-                return _deliver(device, rate, exclusive, latency, wanted)
+                return _deliver(device, rate, latency, wanted)
             except Exception as exc:
                 last = exc
                 winner = None
                 continue
         if winner is not None and winner[0] >= _REPLACE:
             try:
-                return _deliver(winner[1], winner[2], winner[3], latency, wanted)
+                return _deliver(winner[1], winner[2], latency, wanted)
             except Exception as exc:
                 last = exc
                 winner = None
     if winner is not None:
         try:
-            return _deliver(winner[1], winner[2], winner[3], latency, wanted)
+            return _deliver(winner[1], winner[2], latency, wanted)
         except Exception as exc:
             last = exc
     if last is not None:

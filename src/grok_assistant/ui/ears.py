@@ -13,6 +13,9 @@ class EarMixin:
         join = getattr(ear, "join", None)
         if callable(join):
             join(1.5)
+        thread = getattr(ear, "_thread", None)
+        if thread is not None and thread.is_alive():
+            thread.join(1.5)
 
     def _hearing_device(self) -> str:
         from grok_assistant.listening.devices import listed_inputs, resolve_microphone

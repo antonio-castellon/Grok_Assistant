@@ -123,6 +123,8 @@ class KrokoEar:
         self._flush = threading.Event()
         self._hold = False
         self._tape = None
+        self._source = None
+        self._source_lock = threading.Lock()
 
     def start(self) -> bool:
         folder = streaming_dir(self.kind)
@@ -160,8 +162,17 @@ class KrokoEar:
         """Hand back the open take when the wait runs out, words included."""
         self._flush.set()
 
+    def _bind_source(self, source) -> None:
+        with self._source_lock:
+            self._source = source
+
     def stop(self) -> None:
         self._stop.set()
+        with self._source_lock:
+            source = self._source
+        from grok_assistant.listening.devices import abort_input
+
+        abort_input(source)
 
     def join(self, timeout: float = 1.5) -> None:
         thread = self._thread
@@ -250,15 +261,27 @@ class KrokoEar:
             self.error = f"{_label(self.kind)} no arrancó: {exc}"
             self._report(self.error)
             return
-        self._report(f"{_label(self.kind)} está escuchando el micrófono")
+        self._bind_source(source)
         try:
+            if self._stop.is_set():
+                from grok_assistant.listening.devices import close_input
+
+                close_input(source)
+                return
+            self._report(f"{_label(self.kind)} está escuchando el micrófono")
             with source:
                 quiet = 0.0
                 voiced = 0.0
                 heard_audio: list = []
                 parts: list[str] = []
                 while not self._stop.is_set():
-                    samples, _overflow = source.read(block)
+                    try:
+                        samples, _overflow = source.read(block)
+                    except Exception:
+                        if self._stop.is_set():
+                            self._tape_finish(False)
+                            return
+                        raise
                     if self._paused.is_set():
                         recognizer.reset(stream)
                         quiet = 0.0
@@ -336,9 +359,13 @@ class KrokoEar:
                         self._last_partial = ""
                         self._tape_finish(False)
         except Exception as exc:
+            self._tape_finish(False)
+            if self._stop.is_set():
+                return
             self.error = f"{_label(self.kind)} se detuvo: {exc}"
             self._report(self.error)
-            self._tape_finish(False)
+        finally:
+            self._bind_source(None)
 
     def _tape_write(self, chunk) -> None:
         if self._tape is None:
