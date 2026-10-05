@@ -19,7 +19,7 @@ Hazlo una vez, en este orden.
 1. **Idioma.** Elige Español, Français, Deutsch o English. Los menús y las respuestas pasan a esa lengua.
 2. **Motor escucha (STT).** Es el programa que pasa la voz a texto. Elige uno en el menú. Si falta, abre **Voice market**, pestaña **Motor escucha (STT)**, y descárgalo. Se puede elegir cuando llega al 100 %.
 3. **Voz.** Elige una voz de la misma lengua. En **Voice market**, pestaña **Voces**, hay más. Solo salen las de la lengua activa.
-4. **Huella.** **Personas → Huellas → Nueva huella…**. Di las dieciséis frases una vez. El programa guarda el sonido, hace la huella para todos los motores y anota el acierto de cada uno, como `(92%)`. Esa lista informa. Al arrancar suma todas las huellas, deja el motor más alto y lo escribe en Depuración. El motor se cambia en **Escucha**.
+4. **Huella.** **Personas → Huellas → Nueva huella…**. Di las dieciséis frases una vez, con el micrófono que vas a usar. Otro micrófono necesita la suya. El programa guarda el sonido, hace la huella para todos los motores y anota el acierto de cada uno, como `(92%)`. Esa lista informa. Al arrancar suma todas las huellas, deja el motor más alto y lo escribe en Depuración. El motor se cambia en **Escucha**.
 5. **Contraseña.** Solo si vas a crear agentes. **Ajustes → Contraseña…**. Escríbela dos veces. El programa guarda un resumen, no la contraseña en claro.
 6. **Arranque con Windows** queda apagado hasta que lo actives en **Ajustes**.
 

@@ -180,12 +180,13 @@ class EarMixin:
         if brain.pending and brain.pending[0] == "new_name":
             return True, None
         ear = brain.settings.recognizer
-        who = brain.speakers.closest(embedding, ear) if embedding else None
+        microphone = brain.settings.microphone
+        who = brain.speakers.closest(embedding, ear, microphone=microphone) if embedding else None
         if not brain.embedder_ready:
             if self.music.loaded and not who:
                 return False, None
             return True, who
-        if not brain.speakers.has_prints(ear):
+        if not brain.speakers.has_prints(ear, microphone=microphone):
             return False, None
         if brain.speakers.locked and who != brain.speakers.locked:
             return False, None

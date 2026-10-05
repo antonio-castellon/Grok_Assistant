@@ -2,7 +2,7 @@
 
 # Huellas y oídos
 
-La huella se graba una vez. Una ventana muestra la frase y lo que oye el motor. Reintentar repite esta frase. Seguir pasa a la siguiente. Salir tira los audios de esta grabación. El programa guarda el sonido de cada frase, en crudo, junto a la persona. El motor que está escuchando no decide si la frase era la esperada. Con ese mismo sonido hace la huella de la voz, y después pasa cada motor por las frases. Como las frases se conocen, anota cuántas acierta cada motor. El usuario elige en Escucha el motor que oye bien en ese micrófono.
+Cada micrófono tiene su huella. Al elegirlo se usa la que se grabó con él. Un micrófono que aún no tiene la suya sigue con la huella anterior, y grabarla otra vez en el micrófono que vas a usar encaja mejor. Una ventana muestra la frase y lo que oye el motor. Reintentar repite esta frase. Seguir pasa a la siguiente. Salir tira los audios de esta grabación. El programa guarda el sonido de cada frase, en crudo, junto a la persona. El motor que está escuchando no decide si la frase era la esperada. Con ese mismo sonido hace la huella de la voz, y después pasa cada motor por las frases. Como las frases se conocen, anota cuántas acierta cada motor. El usuario elige en Escucha el motor que oye bien en ese micrófono.
 
 Son dieciséis frases distintas, una vez cada una. Hacen falta varias para que la huella y el porcentaje salgan finos. Una toma que no encaja se deja fuera de la huella. El sonido en crudo de las dieciséis frases se guarda igual. Si no queda una sola voz clara, no se cambia la huella de la persona.
 

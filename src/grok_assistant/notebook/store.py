@@ -218,10 +218,10 @@ class SpeakerBook:
             return {str(ear): list(rows) for ear, rows in raw.items() if isinstance(rows, list) and rows}
         return {}
 
-    def has_prints(self, ear: str | None = None) -> bool:
-        """A saved print follows the person on every listener."""
+    def has_prints(self, ear: str | None = None, *, microphone: str | None = None) -> bool:
+        """A saved print follows the person. This microphone's own print wins when it exists."""
         del ear
-        return any(self._match_vectors(person) for person in self.people.values())
+        return any(self._vectors_for(person, microphone) for person in self.people.values())
 
     def count(self, name: str, ear: str) -> int:
         found = self.resolve(name)
@@ -232,11 +232,20 @@ class SpeakerBook:
             return len(book[ear])
         return len(book.get("campplus") or [])
 
-    def take_count(self, name: str) -> int:
+    def take_count(self, name: str, microphone: str | None = None) -> int:
         found = self.resolve(name)
         if not found:
             return 0
         person = self.people[found]
+        if microphone is not None:
+            slot = self._slot(person, microphone)
+            if slot is not None:
+                raw = self._clip_rows(slot.get("raw"))
+                if raw:
+                    return len(raw)
+                dedicated = self._campplus_rows(slot.get("prints"))
+                if dedicated:
+                    return len(dedicated)
         raw = person.get("raw") or []
         if isinstance(raw, list) and raw:
             return len(raw)
@@ -255,6 +264,64 @@ class SpeakerBook:
         for items in book.values():
             rows.extend(items)
         return rows
+
+    def _vectors_for(self, person: dict, microphone: str | None) -> list:
+        """Rows for this microphone. A microphone with no print of its own uses the untagged one.
+
+        Omitting the microphone reads only the untagged print.
+        """
+        if microphone is not None:
+            slot = self._slot(person, microphone)
+            if slot is not None:
+                dedicated = self._campplus_rows(slot.get("prints"))
+                if dedicated:
+                    return dedicated
+        return list(self._match_vectors(person))
+
+    def _slot(self, person: dict, microphone: str) -> dict | None:
+        mics = person.get("mics")
+        if not isinstance(mics, dict):
+            return None
+        slot = mics.get(microphone)
+        return slot if isinstance(slot, dict) else None
+
+    def _campplus_rows(self, prints) -> list:
+        if not isinstance(prints, dict):
+            return []
+        rows = prints.get("campplus")
+        if isinstance(rows, list) and rows:
+            return list(rows)
+        return []
+
+    def _clip_rows(self, raw) -> list[dict]:
+        if not isinstance(raw, list):
+            return []
+        return [
+            item for item in raw
+            if isinstance(item, dict) and item.get("phrase") and item.get("file")
+        ]
+
+    def has_microphone_print(self, microphone: str) -> bool:
+        """True when this microphone name already has its own CampPlus print."""
+        for person in self.people.values():
+            slot = self._slot(person, microphone)
+            if slot is not None and self._campplus_rows(slot.get("prints")):
+                return True
+        return False
+
+    def _holders(self, person: dict) -> list[dict]:
+        holders = [person]
+        mics = person.get("mics")
+        if isinstance(mics, dict):
+            holders.extend(slot for slot in mics.values() if isinstance(slot, dict))
+        return holders
+
+    def _score_target(self, person: dict, microphone: str | None) -> dict:
+        if microphone is not None:
+            slot = self._slot(person, microphone)
+            if slot is not None and self._clip_rows(slot.get("raw")):
+                return slot
+        return person
 
     def resolve(self, name: str) -> str | None:
         key = " ".join(name.split()).casefold()
@@ -298,15 +365,40 @@ class SpeakerBook:
         self.save()
         return key
 
-    def store_recording(self, name: str, clips: list[dict], vectors: list, lock: bool, replace_print: bool = True) -> str:
-        """Save every raw phrase. The voice print is replaced only when asked."""
+    def store_recording(
+        self,
+        name: str,
+        clips: list[dict],
+        vectors: list,
+        lock: bool,
+        replace_print: bool = True,
+        *,
+        microphone: str | None = None,
+    ) -> str:
+        """Save every raw phrase. A microphone keeps its own print and its own wavs.
+
+        Omitting the microphone writes the untagged print, as earlier recordings did.
+        """
         from grok_assistant.listening.enroll_audio import write_wav
 
         clean = " ".join(name.split())
         found = self.resolve(clean)
         key = found or clean
         person = self.people.get(key) or {"prints": {}, "last": None}
-        self._clear_raw(person)
+        if microphone is None:
+            self._clear_raw(person)
+            holder = person
+        else:
+            mics = person.get("mics")
+            if not isinstance(mics, dict):
+                mics = {}
+                person["mics"] = mics
+            slot = mics.get(microphone)
+            if not isinstance(slot, dict):
+                slot = {}
+            self._clear_raw(slot)
+            mics[microphone] = slot
+            holder = slot
         slug = self._fresh_slug(key)
         stored = []
         for index, clip in enumerate(clips):
@@ -314,9 +406,9 @@ class SpeakerBook:
             write_wav(self.raw_root() / rel, clip["samples"])
             stored.append({"phrase": clip["phrase"], "file": rel})
         if replace_print:
-            person["prints"] = {"campplus": [list(map(float, vector)) for vector in vectors]}
-        person["raw"] = stored
-        person["scores"] = {}
+            holder["prints"] = {"campplus": [list(map(float, vector)) for vector in vectors]}
+        holder["raw"] = stored
+        holder["scores"] = {}
         person["last"] = time.time()
         self.people[key] = person
         if replace_print and lock and vectors:
@@ -324,23 +416,25 @@ class SpeakerBook:
         self.save()
         return key
 
-    def raw_clips(self, name: str) -> list[dict]:
+    def raw_clips(self, name: str, microphone: str | None = None) -> list[dict]:
         found = self.resolve(name)
         if not found:
             return []
-        raw = self.people[found].get("raw") or []
-        if not isinstance(raw, list):
-            return []
-        return [
-            item for item in raw
-            if isinstance(item, dict) and item.get("phrase") and item.get("file")
-        ]
+        person = self.people[found]
+        if microphone is not None:
+            slot = self._slot(person, microphone)
+            if slot is not None:
+                rows = self._clip_rows(slot.get("raw"))
+                if rows:
+                    return rows
+        return self._clip_rows(person.get("raw"))
 
-    def score_of(self, name: str, ear: str) -> tuple[int, int] | None:
+    def score_of(self, name: str, ear: str, microphone: str | None = None) -> tuple[int, int] | None:
         found = self.resolve(name)
         if not found:
             return None
-        row = (self.people[found].get("scores") or {}).get(ear)
+        target = self._score_target(self.people[found], microphone)
+        row = (target.get("scores") or {}).get(ear)
         if not isinstance(row, dict) or "hits" not in row or "total" not in row:
             return None
         return int(row["hits"]), int(row["total"])
@@ -386,23 +480,35 @@ class SpeakerBook:
             if total[ear] > 0
         }
 
-    def set_score(self, name: str, ear: str, hits: int, total: int) -> None:
+    def set_score(self, name: str, ear: str, hits: int, total: int, microphone: str | None = None) -> None:
         found = self.resolve(name)
         if not found:
             return
-        scores = self.people[found].setdefault("scores", {})
+        target = self._score_target(self.people[found], microphone)
+        scores = target.setdefault("scores", {})
         if not isinstance(scores, dict):
             scores = {}
-            self.people[found]["scores"] = scores
+            target["scores"] = scores
         scores[ear] = {"hits": int(hits), "total": int(total)}
         self.save()
 
-    def pending_scores(self, ears: list[str]) -> list[tuple[str, str]]:
+    def drop_score(self, name: str, ear: str, microphone: str | None = None) -> None:
+        found = self.resolve(name)
+        if not found:
+            return
+        target = self._score_target(self.people[found], microphone)
+        scores = target.get("scores")
+        if isinstance(scores, dict):
+            scores.pop(ear, None)
+            self.save()
+
+    def pending_scores(self, ears: list[str], microphone: str | None = None) -> list[tuple[str, str]]:
         pending = []
         for name, person in self.people.items():
-            if not person.get("raw"):
+            target = self._score_target(person, microphone)
+            if not self._clip_rows(target.get("raw")):
                 continue
-            have = person.get("scores") or {}
+            have = target.get("scores") or {}
             if not isinstance(have, dict):
                 have = {}
             for ear in ears:
@@ -421,7 +527,8 @@ class SpeakerBook:
         if other and other != found:
             return None
         person = self.people.pop(found)
-        self._move_raw(person, clean)
+        for holder in self._holders(person):
+            self._move_raw(holder, clean)
         self.people[clean] = person
         if self.locked == found:
             self.locked = clean
@@ -432,22 +539,35 @@ class SpeakerBook:
         found = self.resolve(name)
         if not found:
             return None
-        self._clear_raw(self.people[found])
+        for holder in self._holders(self.people[found]):
+            self._clear_raw(holder)
         del self.people[found]
         if self.locked == found:
             self.locked = None
         self.save()
         return found
 
-    def closest(self, vector: list[float] | None, ear: str | None = None, threshold: float = 0.55) -> str | None:
-        """The same person matches on every listener. One recording is one print."""
+    def closest(
+        self,
+        vector: list[float] | None,
+        ear: str | None = None,
+        threshold: float = 0.55,
+        *,
+        microphone: str | None = None,
+    ) -> str | None:
+        """Match the print recorded on this microphone. The same person matches on every listener.
+
+        A microphone that already has its own print uses only that print.
+        A microphone with none uses the untagged print. Omitting the microphone
+        reads the untagged print only.
+        """
         del ear
         if not vector:
             return None
         best_name = None
         best = threshold
         for name, person in self.people.items():
-            for print_ in self._match_vectors(person):
+            for print_ in self._vectors_for(person, microphone):
                 score = _cosine(vector, print_)
                 if score > best:
                     best = score

@@ -43,7 +43,11 @@ class PrintMixin:
             if not name:
                 return self._said(["Di otro nombre."])
             self.enroll["spoken"] = name
-            voice_match = self.speakers.closest(vector, self.settings.recognizer) if vector else None
+            voice_match = (
+                self.speakers.closest(vector, self.settings.recognizer, microphone=self.settings.microphone)
+                if vector
+                else None
+            )
             named = self.speakers.resolve(name)
             who = named or voice_match
             if who:
@@ -131,7 +135,9 @@ class PrintMixin:
         total = len(clips)
         if kept:
             kept_vectors = [vectors[index] for index in kept]
-            stored = self.speakers.store_recording(name, clips, kept_vectors, True)
+            stored = self.speakers.store_recording(
+                name, clips, kept_vectors, True, microphone=self.settings.microphone
+            )
             self.enroll = None
             detail = f" La huella usa {len(kept_vectors)} de {total}." if len(kept_vectors) < total else ""
             self.note(f"huella guardada: {total} wav. {stored}.{detail}")
@@ -139,7 +145,9 @@ class PrintMixin:
                 [f"Listo, {stored}.{detail} El sonido queda guardado y vale para todos los motores. Valoro cada uno."],
                 effects=[("score_prints", stored)],
             )
-        stored = self.speakers.store_recording(name, clips, [], False, replace_print=False)
+        stored = self.speakers.store_recording(
+            name, clips, [], False, replace_print=False, microphone=self.settings.microphone
+        )
         self.enroll = None
         self.note(f"huella: {total} wav guardados. Los vectores no son una sola voz, no cambio la huella.")
         return self._said(

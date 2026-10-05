@@ -165,6 +165,71 @@ def test_each_listener_is_scored_from_the_same_raw(tmp_path):
     assert book.pending_scores(["whisper", "kroko"]) == [("Ana", "kroko")]
 
 
+def test_each_microphone_keeps_its_own_print(tmp_path):
+    book = SpeakerBook(tmp_path / "speakers.json")
+    samples = [0.01] * 1600
+    clips = [{"phrase": phrase, "samples": samples} for phrase in PHRASES]
+    legacy = [1.0, 0.0]
+    jabra_print = [0.0, 1.0]
+    amd_print = [-1.0, 0.0]
+    default_print = [0.0, -1.0]
+    jabra = "Microphone (Jabra Link 380)"
+    amd = "Microphone Array (AMD Audio Device)"
+    dock = "Microphone (HP USB-C Dock)"
+    book.store_recording("Ana", clips, [legacy for _ in PHRASES], lock=True)
+    book.set_score("Ana", "whisper", 15, 16)
+    book.store_recording("Ana", clips, [jabra_print for _ in PHRASES], True, microphone=jabra)
+    book.store_recording("Ana", clips, [amd_print for _ in PHRASES], True, microphone=amd)
+
+    assert book.closest(jabra_print, "canary", microphone=jabra) == "Ana"
+    assert book.closest(legacy, "canary", microphone=jabra) is None
+    assert book.closest(amd_print, microphone=amd) == "Ana"
+    assert book.closest(jabra_print, microphone=amd) is None
+    assert book.closest(legacy, microphone=dock) == "Ana"
+    assert book.closest(jabra_print, microphone=dock) is None
+    assert book.closest(legacy) == "Ana"
+    assert book.closest(jabra_print) is None
+    assert book.score_of("Ana", "whisper") == (15, 16)
+    assert book.score_of("Ana", "whisper", jabra) is None
+
+    legacy_wav = book.raw_root() / book.raw_clips("Ana")[0]["file"]
+    jabra_wav = book.raw_root() / book.raw_clips("Ana", jabra)[0]["file"]
+    amd_wav = book.raw_root() / book.raw_clips("Ana", amd)[0]["file"]
+    assert legacy_wav.exists() and jabra_wav.exists() and amd_wav.exists()
+    assert len({legacy_wav, jabra_wav, amd_wav}) == 3
+
+    book.store_recording("Ana", clips, [], False, replace_print=False, microphone=jabra)
+    assert book.closest(jabra_print, microphone=jabra) == "Ana"
+    assert legacy_wav.exists() and amd_wav.exists()
+    fresh_jabra = book.raw_root() / book.raw_clips("Ana", jabra)[0]["file"]
+    assert fresh_jabra.exists()
+    assert fresh_jabra not in {legacy_wav, amd_wav}
+
+    book.store_recording("Ana", clips, [default_print for _ in PHRASES], True, microphone="")
+    assert book.closest(default_print, microphone="") == "Ana"
+    assert book.closest(legacy) == "Ana"
+    assert book.closest(default_print) is None
+    assert book.has_microphone_print(jabra)
+    assert book.has_microphone_print("")
+    assert not book.has_microphone_print(dock)
+
+    kept = [
+        book.raw_clips("Ana")[0]["file"],
+        book.raw_clips("Ana", jabra)[0]["file"],
+        book.raw_clips("Ana", amd)[0]["file"],
+        book.raw_clips("Ana", "")[0]["file"],
+    ]
+    book.rename("Ana", "Ana María")
+    for rel in kept:
+        assert not (book.raw_root() / rel).exists()
+    moved = book.raw_root() / book.raw_clips("Ana María", jabra)[0]["file"]
+    assert moved.exists()
+    assert book.closest(jabra_print, microphone=jabra) == "Ana María"
+    book.delete("Ana María")
+    assert book.names() == []
+    assert not moved.exists()
+
+
 def test_a_score_is_a_whole_percent_beside_the_library(tmp_path):
     from grok_assistant.listening.listen import eligible_ears, highest_accuracy, with_accuracy
 

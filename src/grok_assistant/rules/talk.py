@@ -27,7 +27,9 @@ class TalkMixin:
         if self.test_mode:
             return self._test(heard, norms)
         if not speaker_id and vector and self.embedder_ready:
-            speaker_id = self.speakers.closest(vector, self.settings.recognizer)
+            speaker_id = self.speakers.closest(
+                vector, self.settings.recognizer, microphone=self.settings.microphone
+            )
         self._turn_speaker = speaker_id
         if self._silent_stranger(speaker_id, vector):
             return Turn()
@@ -281,7 +283,7 @@ class TalkMixin:
             return False
         if vector is None and not speaker_id:
             return False
-        if not self.speakers.has_prints(self.settings.recognizer):
+        if not self.speakers.has_prints(self.settings.recognizer, microphone=self.settings.microphone):
             return True
         if self.speakers.locked:
             return speaker_id != self.speakers.locked

@@ -331,32 +331,30 @@ class PrintMixin:
         from grok_assistant.listening.ear_score import score_person
 
         book = self.hub.brain.speakers
+        microphone = self.hub.brain.settings.microphone
         lines: list[str] = []
         with self._score_lock:
             ears = [ear for ear in self.hub.brain.recognizers if ear != "teclado"]
             if only_ear:
-                pending = [(name, only_ear)] if book.raw_clips(name) else []
+                pending = [(name, only_ear)] if book.raw_clips(name, microphone) else []
             elif name:
                 pending = [
                     (name, ear)
                     for ear in ears
-                    if book.raw_clips(name) and book.score_of(name, ear) is None
+                    if book.raw_clips(name, microphone) and book.score_of(name, ear, microphone) is None
                 ]
             else:
-                pending = book.pending_scores(ears)
+                pending = book.pending_scores(ears, microphone)
             for person, ear in pending:
-                signature = tuple(clip["file"] for clip in book.raw_clips(person))
+                signature = tuple(clip["file"] for clip in book.raw_clips(person, microphone))
                 try:
-                    hits, total = score_person(book, person, ear)
+                    hits, total = score_person(book, person, ear, microphone=microphone)
                 except Exception as exc:
                     self._write_crash(exc)
                     continue
-                current = tuple(clip["file"] for clip in book.raw_clips(person))
+                current = tuple(clip["file"] for clip in book.raw_clips(person, microphone))
                 if current != signature:
-                    scores = book.people.get(person, {}).get("scores")
-                    if isinstance(scores, dict):
-                        scores.pop(ear, None)
-                        book.save()
+                    book.drop_score(person, ear, microphone)
                     continue
                 if not total:
                     continue

@@ -751,11 +751,12 @@ def test_a_take_without_audio_does_not_erase_the_print(world):
     for _number in range(16):
         last = hub.brain.accept_take(samples, vector)
     assert hub.brain.enroll is None
-    assert hub.brain.speakers.take_count("Ana") == 16
-    assert len(hub.brain.speakers.raw_clips("Ana")) == 16
-    assert hub.brain.speakers.closest(vector, "teclado") == "Ana"
-    assert hub.brain.speakers.closest(vector, "whisper") == "Ana"
-    assert hub.brain.speakers.closest(vector, "kroko") == "Ana"
+    mic = hub.brain.settings.microphone
+    assert hub.brain.speakers.take_count("Ana", mic) == 16
+    assert len(hub.brain.speakers.raw_clips("Ana", mic)) == 16
+    assert hub.brain.speakers.closest(vector, "teclado", microphone=mic) == "Ana"
+    assert hub.brain.speakers.closest(vector, "whisper", microphone=mic) == "Ana"
+    assert hub.brain.speakers.closest(vector, "kroko", microphone=mic) == "Ana"
     assert hub.brain.speakers.locked == "Ana"
     assert "todos los motores" in last.speak[0]
 
@@ -771,10 +772,12 @@ def test_a_split_recording_does_not_create_a_second_person(world):
         turn = hub.brain.accept_take(samples, vector)
     assert hub.brain.enroll is None
     assert "no cambio la huella" in turn.speak[0]
-    assert len(hub.brain.speakers.raw_clips("Ana")) == 16
+    mic = hub.brain.settings.microphone
+    assert len(hub.brain.speakers.raw_clips("Ana", mic)) == 16
     assert any(effect[0] == "score_prints" for effect in turn.effects)
     assert hub.brain.speakers.closest([1.0, 0.0], "canary") == "Ana"
-    assert hub.brain.speakers.closest([0.0, 1.0], "canary") is None
+    assert hub.brain.speakers.closest([1.0, 0.0], "canary", microphone=mic) == "Ana"
+    assert hub.brain.speakers.closest([0.0, 1.0], "canary", microphone=mic) is None
     assert hub.brain.speakers.locked == "Ana"
     assert any("wav guardados" in line for line in hub.brain.logs)
 
@@ -787,9 +790,10 @@ def test_outlier_takes_stay_in_the_raw_sound(world):
     for number in range(16):
         vector = [1.0, 0.0] if number < 12 else [0.0, 1.0]
         turn = hub.brain.accept_take(samples, vector)
-    assert len(hub.brain.speakers.raw_clips("Ana")) == 16
-    assert hub.brain.speakers.closest([1.0, 0.0]) == "Ana"
-    assert hub.brain.speakers.closest([0.0, 1.0]) is None
+    mic = hub.brain.settings.microphone
+    assert len(hub.brain.speakers.raw_clips("Ana", mic)) == 16
+    assert hub.brain.speakers.closest([1.0, 0.0], microphone=mic) == "Ana"
+    assert hub.brain.speakers.closest([0.0, 1.0], microphone=mic) is None
     assert "12 de 16" in turn.speak[0]
 
 
@@ -801,8 +805,9 @@ def test_a_first_recording_keeps_the_wavs_when_the_voices_split(world):
     for number in range(16):
         vector = [1.0, 0.0] if number < 8 else [0.0, 1.0]
         turn = hub.brain.accept_take(samples, vector)
-    assert len(hub.brain.speakers.raw_clips("Ana")) == 16
-    assert hub.brain.speakers.closest([1.0, 0.0]) is None
+    mic = hub.brain.settings.microphone
+    assert len(hub.brain.speakers.raw_clips("Ana", mic)) == 16
+    assert hub.brain.speakers.closest([1.0, 0.0], microphone=mic) is None
     assert hub.brain.speakers.locked is None
     assert any(effect[0] == "score_prints" for effect in turn.effects)
     assert any("wav guardados" in line for line in hub.brain.logs)

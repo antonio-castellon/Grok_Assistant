@@ -154,14 +154,15 @@ class MenuMixin:
 
     def _listener_label(self, name: str, ear: str, title: str, installed: bool) -> str:
         book = self.hub.brain.speakers
+        microphone = self.hub.brain.settings.microphone
         if not installed:
             return f"{title} · {_ui('menu.not_installed', '(no instalado)')}"
-        score = book.score_of(name, ear)
+        score = book.score_of(name, ear, microphone)
         if score and score[1]:
             return with_accuracy(title, round(100 * score[0] / score[1]))
-        if book.raw_clips(name):
+        if book.raw_clips(name, microphone):
             return f"{title} · {_ui('menu.unscored', 'sin valorar')}"
-        if book.take_count(name):
+        if book.take_count(name, microphone):
             return f"{title} · {_ui('menu.no_audio', 'sin audio')}"
         return f"{title} · {_ui('menu.no_print', '(sin huella)')}"
 
@@ -182,7 +183,7 @@ class MenuMixin:
             child.add_command(label=_ui("menu.print_rename", "Renombrar…"), command=lambda picked=name: self._rename_print(picked))
             child.add_command(label=_ui("menu.print_delete", "Borrar"), command=lambda picked=name: self._delete_print(picked))
             label = _used(name == book.locked) + name
-            takes = book.take_count(name)
+            takes = book.take_count(name, self.hub.brain.settings.microphone)
             if takes:
                 label += f"  ·  {takes} {_ui('menu.takes', 'tomas')}"
             else:
@@ -207,7 +208,7 @@ class MenuMixin:
             children.append(("cmd", _ui("menu.print_rename", "Renombrar…"), f"print-rename:{name}", False))
             children.append(("cmd", _ui("menu.print_delete", "Borrar"), f"print-delete:{name}", False))
             bare = _used(name == book.locked) + name
-            takes = book.take_count(name)
+            takes = book.take_count(name, self.hub.brain.settings.microphone)
             if takes:
                 bare += f"  ·  {takes} {_ui('menu.takes', 'tomas')}"
             else:
@@ -619,6 +620,11 @@ class MenuMixin:
         self._sync_ear()
         shown = chosen or _ui("menu.microphone_default", "Predeterminado")
         self._note(f"micrófono: {shown}")
+        book = self.hub.brain.speakers
+        if book.has_microphone_print(chosen):
+            self._note("huella: la de este micrófono")
+        elif book.has_prints(microphone=chosen):
+            self._note("huella: este micrófono usa la huella ya guardada")
         if hasattr(self, "_paint"):
             self._paint()
 

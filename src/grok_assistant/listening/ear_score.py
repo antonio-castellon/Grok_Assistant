@@ -11,11 +11,11 @@ from grok_assistant.listening.listen import dictation_script
 from grok_assistant.quiet import no_window
 
 
-def score_person(book, name: str, ear: str, transcribe=None) -> tuple[int, int]:
-    """How many saved phrases this engine heard. The result is stored on the person."""
+def score_person(book, name: str, ear: str, transcribe=None, *, microphone: str | None = None) -> tuple[int, int]:
+    """How many saved phrases this engine heard. The result stays with that microphone's recording."""
     if transcribe is None and ear == "windows":
-        return _score_windows(book, name)
-    clips = book.raw_clips(name)
+        return _score_windows(book, name, microphone)
+    clips = book.raw_clips(name, microphone)
     hear = transcribe or (lambda kind, audio: _transcribe(kind, audio))
     hits = 0
     for clip in clips:
@@ -24,7 +24,7 @@ def score_person(book, name: str, ear: str, transcribe=None) -> tuple[int, int]:
         if phrase_hit(clip["phrase"], text or ""):
             hits += 1
     total = len(clips)
-    book.set_score(name, ear, hits, total)
+    book.set_score(name, ear, hits, total, microphone)
     return hits, total
 
 
@@ -44,8 +44,8 @@ def _transcribe(ear: str, samples) -> str:
     return ""
 
 
-def _score_windows(book, name: str) -> tuple[int, int]:
-    clips = book.raw_clips(name)
+def _score_windows(book, name: str, microphone: str | None = None) -> tuple[int, int]:
+    clips = book.raw_clips(name, microphone)
     heard: dict[str, str] = {}
     if clips:
         folder = (book.raw_root() / clips[0]["file"]).parent
@@ -56,7 +56,7 @@ def _score_windows(book, name: str) -> tuple[int, int]:
         if phrase_hit(clip["phrase"], text):
             hits += 1
     total = len(clips)
-    book.set_score(name, "windows", hits, total)
+    book.set_score(name, "windows", hits, total, microphone)
     return hits, total
 
 

@@ -29,6 +29,7 @@ En Ajustes, Grok solo busca en internet. Un administrador puede permitir que Gro
 - [Guía de uso](docs/es/guia.md)
 - [Aspecto](docs/es/aspecto.md)
 - [Huellas y oídos](docs/es/huellas.md)
+- [Trucos](docs/es/trucos.md)
 - [Sesiones y agentes](docs/es/sesiones.md)
 - [Por qué Grok, y no otra ventana de chat](docs/es/grok.md)
 - [Qué está funcionando de verdad](docs/es/piezas.md)

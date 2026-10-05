@@ -29,6 +29,7 @@ In den Einstellungen sucht Grok nur im Internet. Ein Administrator kann erlauben
 - [Kurze Anleitung](docs/de/anleitung.md)
 - [Aussehen](docs/de/aussehen.md)
 - [Stimmabdrücke und Ohren](docs/de/abdruecke.md)
+- [Tipps](docs/de/tipps.md)
 - [Sitzungen und Agenten](docs/de/sitzungen.md)
 - [Warum Grok, und nicht ein weiteres Chatfenster](docs/de/grok.md)
 - [Was wirklich läuft](docs/de/teile.md)

@@ -31,6 +31,7 @@ In Settings, Grok only searches the internet. An administrator can allow Grok to
 - [How to use it](docs/en/guide.md)
 - [Look](docs/en/look.md)
 - [Voice prints and listeners](docs/en/prints.md)
+- [Tips](docs/en/tips.md)
 - [Sessions and agents](docs/en/sessions.md)
 - [Why Grok, and not another chat window](docs/en/why-grok.md)
 - [What is actually running](docs/en/pieces.md)
