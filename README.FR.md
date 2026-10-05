@@ -6,6 +6,8 @@
 
 Version candidate 1.0.4.
 
+Pour que cela marche bien, le premier geste est d'enregistrer une empreinte vocale avec le microphone qui servira : **Personnes → Empreintes**. Sans cette empreinte, le programme entend la pièce et laisse tomber la phrase, avant le modèle local et avant un ordre. L'empreinte empêche de mélanger, au même endroit, deux personnes, la télévision et la voix de l'assistant, qui continue de parler pendant que le microphone reste ouvert. Un autre microphone demande son propre enregistrement. La suite est dans [Empreintes et oreilles](docs/fr/empreintes.md).
+
 J'ai attendu pendant des années que l'Amazon Echo apprenne vraiment à mieux écouter. Il est finalement resté surtout un haut-parleur avec un anneau lumineux, alors j'ai décidé de construire mon propre assistant pour une personne âgée qui a déjà un petit ordinateur portable à proximité.
 
 Dans mon cas, cette personne est mon père. Sa vue est limitée et il passe de longues heures seul. Je voulais qu'il puisse simplement parler à une voix capable de répondre, de discuter et d'expliquer les choses, sans avoir à chercher un écran ni à lire de petits caractères. C'est désormais possible. Grok, sur cette machine, sert aussi de base aux fonctions et intégrations que j'ajouterai ensuite. Pour les familles un peu plus à l'aise techniquement et qui préfèrent ne pas laisser un ordinateur portable ouvert, le même assistant sur un Raspberry Pi 4 avec 4 Go de RAM est le projet parallèle [Grok Pi Assistance](https://github.com/antonio-castellon/Grok_Pi_Assistance), pour monter un appareil dédié.
