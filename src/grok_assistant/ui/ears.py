@@ -3,6 +3,59 @@ from __future__ import annotations
 from grok_assistant.ui.deps import *  # noqa: F401,F403
 
 
+def transcribe_take(kind: str, samples) -> str:
+    """Read one buffer with the engine already chosen. The microphone is not involved."""
+    if samples is None or kind == "teclado":
+        return ""
+    if kind == "windows":
+        return _windows_take(samples)
+    from grok_assistant.listening.kroko_ear import STREAMING_KINDS
+    from grok_assistant.listening.kroko_ear import transcribe_clip as stream_clip
+    from grok_assistant.listening.offline_ear import OFFLINE_KINDS
+    from grok_assistant.listening.offline_ear import transcribe_clip as offline_clip
+
+    if kind in STREAMING_KINDS:
+        return stream_clip(samples, kind)
+    if kind in OFFLINE_KINDS:
+        return offline_clip(kind, samples)
+    return ""
+
+
+def _windows_take(samples) -> str:
+    import tempfile
+    import wave
+    from pathlib import Path
+
+    import numpy as np
+
+    from grok_assistant.listening.ear_score import transcribe_windows
+
+    audio = np.clip(np.ascontiguousarray(samples, dtype=np.float32).reshape(-1), -1.0, 1.0)
+    if audio.size < 1600:
+        return ""
+    pcm = (audio * 32767.0).astype("<i2")
+    folder = Path(tempfile.mkdtemp(prefix="grok-take-"))
+    path = folder / "toma.wav"
+    try:
+        with wave.open(str(path), "wb") as handle:
+            handle.setnchannels(1)
+            handle.setsampwidth(2)
+            handle.setframerate(16000)
+            handle.writeframes(pcm.tobytes())
+        return transcribe_windows(folder).get(path.name, "")
+    except (OSError, ValueError):
+        return ""
+    finally:
+        try:
+            path.unlink()
+        except OSError:
+            pass
+        try:
+            folder.rmdir()
+        except OSError:
+            pass
+
+
 class EarMixin:
     """The microphone and the live line."""
 
@@ -28,9 +81,129 @@ class EarMixin:
             self.hub.brain.persist()
         return name
 
+    def _detector_closed(self) -> bool:
+        """The spotter stays quiet for the same closes as the microphone."""
+        if self.user_paused or getattr(self, "_mic_held", False) or getattr(self, "_speaking", False):
+            return True
+        music = getattr(self, "music", None)
+        if music is not None and getattr(music, "loaded", False) and not getattr(music, "user_paused", False):
+            return True
+        brain = self.hub.brain
+        if brain.in_conversation or brain.test_mode or brain.enroll is not None or brain.naming is not None:
+            return True
+        return False
+
+    def _phoneme_wanted(self) -> bool:
+        if self.user_paused:
+            return False
+        brain = self.hub.brain
+        settings = brain.settings
+        if settings.wake_gate != "fonema" or settings.recognizer == "teclado":
+            return False
+        if brain.in_conversation or brain.test_mode or brain.enroll is not None or brain.naming is not None:
+            return False
+        from grok_assistant.listening.phoneme_ear import phrase_ready
+
+        return phrase_ready(settings.wake_name)
+
+    def _settle_wake_gate(self) -> None:
+        from grok_assistant.listening.phoneme_ear import phrase_ready
+        from grok_assistant.notebook.settings import resolve_wake_gate
+
+        settings = self.hub.brain.settings
+        chosen, reason = resolve_wake_gate(
+            settings.wake_gate,
+            recognizer=settings.recognizer,
+            wake_name=settings.wake_name,
+            phrase_ready=phrase_ready(settings.wake_name),
+        )
+        if chosen == settings.wake_gate:
+            return
+        settings.wake_gate = chosen
+        self.hub.brain.persist()
+        if reason:
+            self._note(self._gate_reason(reason))
+
+    def _gate_reason(self, reason: str) -> str:
+        lines = {
+            "micro": _ui("window.gate_need_mic", "Hace falta un motor con micrófono."),
+            "frase": _ui("window.gate_need_phrase", "Falta la frase preparada."),
+            "nombre": _ui(
+                "window.gate_need_name",
+                "El inicio por fonema solo vale para un nombre cuya línea ya está escrita y probada.",
+            ),
+        }
+        return lines.get(reason, "")
+
+    def _release_phoneme(self) -> None:
+        ear = getattr(self, "phoneme", None)
+        if ear is not None:
+            self._release_ear(ear)
+        self.phoneme = None
+        self._phoneme_failed = ""
+
+    def _release_room(self) -> None:
+        if self.dictation is not None:
+            self.dictation.stop()
+            self.dictation = None
+        if self.kroko is not None:
+            self._release_ear(self.kroko)
+            self.kroko = None
+        if self.offline is not None:
+            self._release_ear(self.offline)
+            self.offline = None
+
+    def _ensure_phoneme(self, device: str) -> None:
+        current = getattr(self, "phoneme", None)
+        if current is not None and getattr(current, "device", None) == device and not getattr(current, "stopped", False):
+            return
+        if current is not None:
+            self._release_ear(current)
+            self.phoneme = None
+        if getattr(self, "_phoneme_failed", "") == device:
+            return
+        from grok_assistant.listening.phoneme_ear import PhonemeEar
+
+        status = getattr(self, "_kroko_status", None) or (lambda _text: None)
+        ear = PhonemeEar(self._on_phoneme_phrase, status, device=device, closed=self._detector_closed)
+        if ear.start():
+            self.phoneme = ear
+            self._phoneme_failed = ""
+            self._note("escucho la frase de inicio")
+        else:
+            self.phoneme = None
+            self._phoneme_failed = device
+            self._note(ear.error or "falta la frase preparada")
+
+    def _on_phoneme_phrase(self, keyword_audio, phrase_audio) -> bool:
+        """Voiceprint first. A refusal leaves the detector running and the chat closed."""
+        embedding = None
+        if keyword_audio is not None:
+            try:
+                embedding = self.voiceprint.embed(keyword_audio)
+            except Exception as exc:
+                self._write_crash(exc)
+        allowed, who = self._mic_voice(embedding)
+        if not allowed or not self.hub.brain._voice_allowed(who):
+            return False
+        self.jobs.put(("phoneme", phrase_audio, embedding, who))
+        return True
+
     def _sync_ear(self) -> None:
         if self._ears_suspended:
             return
+        if not hasattr(self, "phoneme"):
+            self.phoneme = None
+        self._settle_wake_gate()
+        device = self._hearing_device()
+        if self._phoneme_wanted():
+            self._release_room()
+            self._ensure_phoneme(device)
+            return
+        self._release_phoneme()
+        self._sync_room()
+
+    def _sync_room(self) -> None:
         kind = self.hub.brain.settings.recognizer
         device = self._hearing_device()
         want_windows = kind == "windows" and not self.user_paused

@@ -85,6 +85,19 @@ class Hub:
         finally:
             self.brain.mark_idle()
 
+    def hear_phoneme(self, text: str, speaker=None, speaker_id: str | None = None) -> Result:
+        """One take after the phoneme gate. A refused voiceprint speaks nothing."""
+        self.skip_ear_note = False
+        self.brain.identifier_ready = self._identifier_ready()
+        self.brain.mark_busy()
+        try:
+            turn = self.brain.hear_phoneme(text, speaker_id=speaker_id)
+            if turn is None:
+                return Result()
+            return self._play(turn, speaker)
+        finally:
+            self.brain.mark_idle()
+
     def set_grok_files(self, allow: bool, speaker=None) -> Result:
         self.brain.mark_busy()
         try:

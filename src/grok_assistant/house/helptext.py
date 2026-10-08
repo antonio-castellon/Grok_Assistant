@@ -27,7 +27,9 @@ HELP_TOPICS = (
         "Si la pregunta va en la misma frase que el nombre, sale en ese momento. "
         "En la pestaña Simple eliges cómo quieres hablar: la pregunta en el mismo aliento, primero el saludo, o la charla abierta. "
         "De fábrica se llama grok. El nombre se cambia en Escucha, Cambiar nombre. Si el oído lo deforma, puedes repetirlo seis veces: "
-        "cada repetición enseña lo que se oyó, y esas formas también sirven para despertarlo.",
+        "cada repetición enseña lo que se oyó, y esas formas también sirven para despertarlo. "
+        "En Simple, Inicio de la charla, Texto es el de ahora. Fonema, con la charla cerrada, escucha solo el sonido de una frase preparada y no transcribe la habitación. "
+        "Hace falta un motor con micrófono, el nombre grok y el archivo hola_grok.txt junto al modelo. Si falta algo, se sigue en texto.",
         "hola grok",
     ),
     (

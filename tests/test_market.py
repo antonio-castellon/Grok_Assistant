@@ -35,9 +35,9 @@ def test_the_footer_shows_the_release_numbers():
 
     previous = code()
     try:
-        assert __version__ == "1.0.4"
-        assert __release__ == "v1.0.4-rc"
-        line = f"v1.0.4-rc ({build_line()})"
+        assert __version__ == "1.0.5"
+        assert __release__ == "v1.0.5-rc"
+        line = f"v1.0.5-rc ({build_line()})"
         for language in ("es", "en", "fr", "de"):
             activate(language)
             assert _version_line() == line
@@ -147,7 +147,11 @@ def test_voice_market_lists_only_the_selected_language():
 
 def test_catalog_covers_voices_ears_and_the_local_model():
     kinds = {item.kind for item in offers()}
-    assert kinds == {"voice", "stt", "llm"}
+    assert kinds == {"voice", "stt", "llm", "kws"}
+    kws = next(item for item in offers() if item.id == "kws-hola")
+    assert kws.files[0][0].endswith("/sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20.tar.bz2")
+    assert kws.files[0][1] == "models/sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20.tar.bz2"
+    assert "kws-models" in kws.files[0][0]
     assert "kroko" in {item.id for item in offers()}
     assert all(item.title and item.size and item.detail for item in offers())
 

@@ -44,8 +44,10 @@ class WorkerMixin:
             self._refresh()
             return
         if kind == "tick":
+            was_open = self.hub.brain.in_conversation
             result = self.hub.tick(speaker=self.say)
             self._apply(result)
+            self._listen_changed(was_open)
             self._refresh()
             return
         if kind == "rename":
@@ -53,6 +55,9 @@ class WorkerMixin:
             for line in turn.speak:
                 self.say(line)
             self._note(f"nombre: {self.hub.brain.settings.wake_name}")
+            sync = getattr(self, "_sync_ear", None)
+            if callable(sync):
+                sync()
             self._refresh()
             return
         if kind == "capture":
@@ -86,7 +91,23 @@ class WorkerMixin:
                 self._apply(follow)
             self._refresh()
             return
+        if kind == "phoneme":
+            from grok_assistant.ui.ears import transcribe_take
+
+            text = ""
+            try:
+                text = transcribe_take(self.hub.brain.settings.recognizer, payload)
+            except Exception as exc:
+                self._write_crash(exc)
+            result = self.hub.hear_phoneme(text, speaker=self.say, speaker_id=speaker_id)
+            self._apply(result)
+            sync = getattr(self, "_sync_ear", None)
+            if callable(sync):
+                sync()
+            self._refresh()
+            return
         if kind == "phrase":
+            was_open = self.hub.brain.in_conversation
             result = self.hub.run(payload, speaker=self.say, vector=embedding, speaker_id=speaker_id)
             self._apply(result)
             if any(item[0] == "ask_password" for item in result.effects):
@@ -95,11 +116,23 @@ class WorkerMixin:
                 self._apply(follow)
             if heard_by and not self.hub.skip_ear_note:
                 self.hub.brain._step(heard_by)
+            self._listen_changed(was_open)
             self._refresh()
+
+    def _listen_changed(self, was_open: bool) -> None:
+        if was_open == bool(self.hub.brain.in_conversation):
+            return
+        sync = getattr(self, "_sync_ear", None)
+        if callable(sync):
+            sync()
 
     def say(self, text: str) -> None:
         if not text:
             return
+        self._speaking = True
+        phoneme = getattr(self, "phoneme", None)
+        if phoneme is not None:
+            phoneme.set_paused(True)
         self.music.hold_for_speech()
         try:
             voice = self._voice_name()
@@ -109,6 +142,14 @@ class WorkerMixin:
                 self._note(f"no pude decir: {text}")
         finally:
             self.music.release_after_speech()
+            self._speaking = False
+            phoneme = getattr(self, "phoneme", None)
+            if phoneme is not None:
+                push = getattr(self, "_push_mic_pause", None)
+                if callable(push):
+                    push()
+                else:
+                    phoneme.set_paused(self.user_paused)
 
     def _play_song(self, title: str) -> None:
         def status(message: str) -> None:

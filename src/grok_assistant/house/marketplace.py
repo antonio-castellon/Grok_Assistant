@@ -11,6 +11,7 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from grok_assistant.listening.phoneme_ear import KWS_URL
 from grok_assistant.paths import default_data_dir
 
 PIPER = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0"
@@ -164,6 +165,17 @@ def offers() -> list[Offer]:
                 f"{SHERPA}/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01.tar.bz2",
                 "models/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01.tar.bz2",
             ),),
+        ),
+        Offer(
+            id="kws-hola",
+            kind="kws",
+            title="Fonema · hola grok",
+            detail=(
+                "Detector de la frase de inicio. No transcribe la habitación. "
+                "La línea de fonemas se guarda junto al modelo, en hola_grok.txt."
+            ),
+            size="33 MB",
+            files=((KWS_URL, "models/sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20.tar.bz2"),),
         ),
     ]
     items.extend(
