@@ -376,11 +376,12 @@ def test_renaming_away_from_grok_returns_to_texto(gate_app):
 def test_the_simple_tab_keeps_fonema_beside_the_talk_mode_and_keyboard_stays_texto(tmp_path):
     import tkinter as tk
 
+    from conftest import tk_root
     from grok_assistant.i18n import activate
     from grok_assistant.rules.hub import build
     from grok_assistant.ui.app import TrayApp
 
-    root = tk.Tk()
+    root = tk_root()
     root.geometry("1100x800+40+40")
     root.attributes("-alpha", 0)
     root.withdraw()

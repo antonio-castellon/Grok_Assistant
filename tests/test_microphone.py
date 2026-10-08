@@ -404,6 +404,7 @@ def test_open_input_still_raises_when_the_microphone_is_unavailable(monkeypatch)
 def test_settings_menu_picks_a_microphone_and_reopens_the_ear(tmp_path, monkeypatch):
     import tkinter as tk
 
+    from conftest import tk_root
     from grok_assistant.i18n import activate
     from grok_assistant.rules.hub import build
     from grok_assistant.ui.app import TrayApp
@@ -437,7 +438,7 @@ def test_settings_menu_picks_a_microphone_and_reopens_the_ear(tmp_path, monkeypa
             return None
 
     monkeypatch.setattr("grok_assistant.ui.ears.OfflineEar", Ear)
-    root = tk.Tk()
+    root = tk_root()
     root.withdraw()
     try:
         activate("es")

@@ -351,10 +351,11 @@ def test_opening_an_archive_says_it_is_opening(tmp_path):
 def test_a_closed_market_still_shows_the_download(tmp_path):
     import tkinter as tk
 
+    from conftest import tk_root
     from grok_assistant.rules.hub import build
     from grok_assistant.ui.app import TrayApp
 
-    root = tk.Tk()
+    root = tk_root()
     root.withdraw()
     try:
         app = TrayApp(root, build(tmp_path, tmp_path / "agents"))

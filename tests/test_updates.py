@@ -1,5 +1,4 @@
-import tkinter as tk
-
+from conftest import tk_root
 from grok_assistant.house.updates import apply_update, asset_url, choose_update, find_update, parse_build
 from grok_assistant.paths import resource_root
 
@@ -102,7 +101,7 @@ def test_the_update_button_appears_only_when_there_is_one(tmp_path):
     from grok_assistant.ui.app import TrayApp
 
     activate("es")
-    root = tk.Tk()
+    root = tk_root()
     root.withdraw()
     app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
     try:
