@@ -303,7 +303,7 @@ class PrintMixin:
 
     def _suspend_ears(self) -> None:
         self._ears_suspended = True
-        ears = [self.dictation, self.kroko, self.offline]
+        ears = [self.dictation, self.kroko, self.offline, getattr(self, "phoneme", None)]
         for ear in ears:
             if ear is not None:
                 ear.stop()
@@ -314,6 +314,7 @@ class PrintMixin:
         self.dictation = None
         self.kroko = None
         self.offline = None
+        self.phoneme = None
 
     def _resume_ears(self) -> None:
         if not self._ears_suspended:
@@ -379,3 +380,8 @@ class PrintMixin:
             self.kroko.set_paused(paused)
         if self.offline is not None:
             self.offline.set_paused(paused)
+        phoneme = getattr(self, "phoneme", None)
+        if phoneme is not None:
+            closed = getattr(self, "_detector_closed", None)
+            extra = closed() if callable(closed) else False
+            phoneme.set_paused(paused or extra)

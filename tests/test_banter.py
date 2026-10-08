@@ -42,10 +42,11 @@ def test_an_old_config_starts_with_every_kind_and_theme(tmp_path):
 def test_the_greeting_menu_uses_checkboxes(tmp_path):
     import tkinter as tk
 
+    from conftest import tk_root
     from grok_assistant.rules.hub import build
     from grok_assistant.ui.app import TrayApp
 
-    root = tk.Tk()
+    root = tk_root()
     root.withdraw()
     try:
         app = TrayApp(root, build(tmp_path, tmp_path / "agents"))

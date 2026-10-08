@@ -1,5 +1,4 @@
-import tkinter as tk
-
+from conftest import tk_root
 from grok_assistant.paths import bundle_root, license_text
 
 
@@ -17,7 +16,7 @@ def test_about_shows_the_license_on_its_own_tab(tmp_path):
     from grok_assistant.ui.app import TrayApp
 
     activate("es")
-    root = tk.Tk()
+    root = tk_root()
     root.withdraw()
     try:
         app = TrayApp(root, build(tmp_path, tmp_path / "agents"))

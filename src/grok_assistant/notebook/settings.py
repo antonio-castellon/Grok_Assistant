@@ -12,11 +12,37 @@ from grok_assistant.speaking.waits import STYLES
 from grok_assistant.house.personality import blank_personality, normalize_personality
 
 TALK_MODES = ("seguida", "saludo", "abierta")
+WAKE_GATES = ("texto", "fonema")
 
 
 def normalize_talk_mode(value) -> str:
     key = str(value or "").strip().lower()
     return key if key in TALK_MODES else "seguida"
+
+
+def normalize_wake_gate(value) -> str:
+    key = str(value or "").strip().lower()
+    return key if key in WAKE_GATES else "texto"
+
+
+def wake_name_is_grok(name: str) -> bool:
+    from grok_assistant.rules.match import normalize
+
+    return normalize(name or "") == "grok"
+
+
+def resolve_wake_gate(value, *, recognizer: str, wake_name: str, phrase_ready: bool) -> tuple[str, str]:
+    """The gate that can actually run. The second value says why fonema was refused."""
+    gate = normalize_wake_gate(value)
+    if gate != "fonema":
+        return "texto", ""
+    if str(recognizer or "") == "teclado":
+        return "texto", "micro"
+    if not wake_name_is_grok(wake_name):
+        return "texto", "nombre"
+    if not phrase_ready:
+        return "texto", "frase"
+    return "fonema", ""
 
 
 def normalize_shared_days(value) -> int:
@@ -88,6 +114,7 @@ class Settings:
     line_themes: list = field(default_factory=lambda: list(THEMES))
     wait_styles: list = field(default_factory=lambda: list(STYLES))
     talk_mode: str = "seguida"
+    wake_gate: str = "texto"
     shared_days: int = 1
     quiet_minutes: float = 1.0
     theme: str = "noche"
@@ -119,6 +146,7 @@ class Settings:
         item.line_themes = normalize_choice(item.line_themes, THEMES)
         item.wait_styles = normalize_choice(item.wait_styles, STYLES)
         item.talk_mode = normalize_talk_mode(item.talk_mode)
+        item.wake_gate = normalize_wake_gate(item.wake_gate)
         item.shared_days = normalize_shared_days(item.shared_days)
         item.quiet_minutes = normalize_quiet_minutes(item.quiet_minutes)
         item.theme = normalize_theme(item.theme)

@@ -318,6 +318,31 @@ class TalkMixin:
         norms = [norm for _, norm in tokenize(heard)]
         return self._wake(heard, norms, speaker_id, logged=False)
 
+    def hear_phoneme(self, text: str, speaker_id: str | None = None) -> Turn | None:
+        """The keyword already matched. None keeps the chat closed.
+
+        A tail after the name, or real words the engine kept, goes to ``_cloud``.
+        A greeting, an empty reading, or a thin phrase uses ``_wake``.
+        """
+        if not self._voice_allowed(speaker_id):
+            return None
+        heard = " ".join((text or "").split())
+        self._turn_speaker = speaker_id
+        pairs = tokenize(heard) if heard else []
+        norms = [norm for _, norm in pairs]
+        if norms:
+            woken = self._wake_question(heard, norms, pairs, speaker_id)
+            if woken is not None:
+                return woken
+        if not heard or thin_phrase(heard):
+            return self._wake(heard, norms, speaker_id)
+        self.in_conversation = True
+        self.detail_used = False
+        self.last_heard = heard
+        self._touch()
+        self.opener = speaker_id
+        return self._cloud(heard)
+
     def _wake_question(self, heard: str, norms: list[str], pairs: list[tuple[str, str]], speaker_id: str | None) -> Turn | None:
         from grok_assistant.rules.match import wake_split
 

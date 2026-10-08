@@ -90,10 +90,11 @@ def test_the_status_line_names_each_setting():
 def test_changing_theme_repaints_the_window(tmp_path):
     import tkinter as tk
 
+    from conftest import tk_root
     from grok_assistant.rules.hub import build
     from grok_assistant.ui.app import TrayApp
 
-    root = tk.Tk()
+    root = tk_root()
     root.withdraw()
     try:
         app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
@@ -177,12 +178,13 @@ def _box_fill(app, title: str) -> str:
 def test_open_chat_shows_a_direct_path_to_grok(tmp_path):
     import tkinter as tk
 
+    from conftest import tk_root
     from grok_assistant.i18n import activate
     from grok_assistant.rules.hub import build
     from grok_assistant.ui.app import TrayApp
 
     activate("es")
-    root = tk.Tk()
+    root = tk_root()
     root.withdraw()
     try:
         app = TrayApp(root, build(tmp_path, tmp_path / "agents"))

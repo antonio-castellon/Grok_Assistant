@@ -633,6 +633,8 @@ class ActionMixin:
             self.kroko.stop()
         if self.offline is not None:
             self.offline.stop()
+        if getattr(self, "phoneme", None) is not None:
+            self.phoneme.stop()
         self.music.stop()
         if self.tray is not None:
             self.tray.stop()

@@ -51,10 +51,11 @@ def test_the_zip_holds_the_wav_the_model_text_and_the_decision(tmp_path):
 def test_the_trace_button_sits_with_pause_and_clear(tmp_path):
     import tkinter as tk
 
+    from conftest import tk_root
     from grok_assistant.rules.hub import build
     from grok_assistant.ui.app import TrayApp
 
-    root = tk.Tk()
+    root = tk_root()
     root.withdraw()
     try:
         app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
@@ -71,10 +72,11 @@ def test_the_trace_button_sits_with_pause_and_clear(tmp_path):
 def test_clear_empties_the_debug_window(tmp_path):
     import tkinter as tk
 
+    from conftest import tk_root
     from grok_assistant.rules.hub import build
     from grok_assistant.ui.app import TrayApp
 
-    root = tk.Tk()
+    root = tk_root()
     root.withdraw()
     try:
         app = TrayApp(root, build(tmp_path, tmp_path / "agents"))

@@ -21,6 +21,8 @@ class MarketMixin:
                 return False
             filename = offer.files[0][1].rsplit("/", 1)[-1]
             return filename == settings.llm_file
+        if offer.kind == "kws":
+            return settings.wake_gate == "fonema" and offer.ready()
         return False
 
     def _offer_title(self, offer: Offer) -> str:
@@ -142,7 +144,7 @@ class MarketMixin:
             book.add(page, text=title)
             canvas, inner = self._scroll_page(page)
             canvases[str(page)] = canvas
-            rows = [offer for offer in catalog if offer.kind == kind]
+            rows = [offer for offer in catalog if offer.kind == kind or (kind == "stt" and offer.kind == "kws")]
             rows.sort(key=lambda offer: (not self._offer_used(offer), offer.title.lower()))
             if kind == "voice":
                 self._market_voice_inner = inner
@@ -401,6 +403,12 @@ class MarketMixin:
             self.hub.brain.persist()
             self._sync_ear()
             self._note(f"oído activo: {offer.title}")
+        elif offer.kind == "kws":
+            self.hub.brain.settings.wake_gate = "fonema"
+            self.hub.brain.persist()
+            self._sync_ear()
+            if hasattr(self, "_paint_simple"):
+                self._paint_simple()
         elif offer.kind == "llm":
             filename = offer.files[0][1].rsplit("/", 1)[-1] if offer.files else ""
             self.hub.brain.settings.local_llm = True

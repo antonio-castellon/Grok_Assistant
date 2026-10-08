@@ -33,6 +33,9 @@ class WindowMixin:
         self.dictation: Dictation | None = None
         self.kroko: KrokoEar | None = None
         self.offline: OfflineEar | None = None
+        self.phoneme = None
+        self._phoneme_failed = None
+        self._speaking = False
         self._ears_suspended = False
         self._take_box: queue.Queue = queue.Queue()
         self._take_open = False
@@ -337,15 +340,33 @@ class WindowMixin:
         simple.pack(expand=True)
         mode_row = tk.Frame(simple, bg=look.bg)
         mode_row.pack(pady=(0, 10))
+        talk_col = tk.Frame(mode_row, bg=look.bg)
+        talk_col.pack(side="left", anchor="n", padx=22)
+        gate_col = tk.Frame(mode_row, bg=look.bg)
+        gate_col.pack(side="left", anchor="n", padx=22)
         self.talk_label = tk.Label(
-            mode_row, text="", bg=look.bg, fg=look.muted, font=("Segoe UI", 14),
+            talk_col, text="", bg=look.bg, fg=look.muted, font=("Segoe UI", 14),
         )
         self.talk_label.pack(anchor="center")
         self.talk_mode_box = ttk.Combobox(
-            mode_row, state="readonly", width=26, style="Simple.TCombobox", font=("Segoe UI", 16),
+            talk_col, state="readonly", width=26, style="Simple.TCombobox", font=("Segoe UI", 16),
         )
         self.talk_mode_box.pack(pady=(8, 0))
         self.talk_mode_box.bind("<<ComboboxSelected>>", self._pick_talk_mode)
+        self.gate_label = tk.Label(
+            gate_col, text="", bg=look.bg, fg=look.muted, font=("Segoe UI", 14),
+        )
+        self.gate_label.pack(anchor="center")
+        self.gate_box = ttk.Combobox(
+            gate_col, state="readonly", width=18, style="Simple.TCombobox", font=("Segoe UI", 16),
+        )
+        self.gate_box.pack(pady=(8, 0))
+        self.gate_box.bind("<<ComboboxSelected>>", self._pick_wake_gate)
+        self.gate_hint = tk.Label(
+            gate_col, text="", wraplength=320, justify="center",
+            bg=look.bg, fg=look.muted, font=("Segoe UI", 12),
+        )
+        self.gate_hint.pack(pady=(8, 0))
         row = tk.Frame(simple, bg=look.bg)
         row.pack()
         big = {"font": ("Segoe UI", 28, "bold"), "padx": 48, "pady": 28}
@@ -474,6 +495,12 @@ class WindowMixin:
             ("abierta", _ui("window.mode_abierta", "Charla abierta")),
         ]
 
+    def _gate_choices(self) -> list[tuple[str, str]]:
+        return [
+            ("texto", _ui("window.gate_texto", "Texto")),
+            ("fonema", _ui("window.gate_fonema", "Fonema")),
+        ]
+
     def _paint_simple(self) -> None:
         if not hasattr(self, "talk_mode_box"):
             return
@@ -481,13 +508,30 @@ class WindowMixin:
         self._talk_ids = {label: mode for mode, label in choices}
         self.talk_label.configure(text=_ui("window.talk_label", "Forma de hablar"))
         self.talk_mode_box.configure(values=[label for _mode, label in choices])
+        gates = self._gate_choices()
+        self._gate_ids = {label: gate for gate, label in gates}
+        self.gate_label.configure(text=_ui("window.gate_label", "Inicio de la charla"))
+        self.gate_box.configure(values=[label for _gate, label in gates])
         current = self.hub.brain.settings.talk_mode
         shown = next((label for mode, label in choices if mode == current), choices[0][1])
+        gate = self.hub.brain.settings.wake_gate if self.hub.brain.settings.wake_gate in {"texto", "fonema"} else "texto"
+        shown_gate = next((label for key, label in gates if key == gate), gates[0][1])
         self._painting_simple = True
         try:
             self.talk_mode_box.set(shown)
+            self.gate_box.set(shown_gate)
         finally:
             self._painting_simple = False
+        gate_hint = {
+            "fonema": (
+                "window.hint_gate_fonema",
+                "Con la charla cerrada solo se escucha el sonido de «hola grok». Lo que va detrás entra al motor ya elegido.",
+            ),
+        }.get(gate, (
+            "window.hint_gate_texto",
+            "El motor escribe la frase y se busca el nombre. Es lo de ahora.",
+        ))
+        self.gate_hint.configure(text=_ui(gate_hint[0], gate_hint[1]))
         name = " ".join(str(self.hub.brain.settings.wake_name or "Grok").split()) or "Grok"
         banner = _ui("status.banner_talk", "EN CONVERSACIÓN")
         hint_key = {
@@ -539,6 +583,30 @@ class WindowMixin:
             self.hub.brain.persist()
         self._paint_simple()
         self._draw_flow(None)
+
+    def _pick_wake_gate(self, _event=None) -> None:
+        if getattr(self, "_painting_simple", False):
+            return
+        from grok_assistant.listening.phoneme_ear import phrase_ready
+        from grok_assistant.notebook.settings import resolve_wake_gate
+
+        settings = self.hub.brain.settings
+        asked = self._gate_ids.get(self.gate_box.get(), "texto")
+        chosen, reason = resolve_wake_gate(
+            asked,
+            recognizer=settings.recognizer,
+            wake_name=settings.wake_name,
+            phrase_ready=phrase_ready(settings.wake_name),
+        )
+        if settings.wake_gate != chosen:
+            settings.wake_gate = chosen
+            self.hub.brain.persist()
+        self._paint_simple()
+        self._sync_ear()
+        if reason:
+            line = self._gate_reason(reason)
+            self._note(line)
+            self.jobs.put(("speak", line))
 
     def _phrase_silence(self) -> float:
         from grok_assistant.rules.match import GREETING_QUIET, PHRASE_QUIET

@@ -1190,11 +1190,12 @@ def test_one_loose_recognizer_character(world):
 def test_simple_tab_chooses_how_to_talk_and_how_many_days(tmp_path):
     import tkinter as tk
 
+    from conftest import tk_root
     from grok_assistant.rules.hub import build
     from grok_assistant.i18n import activate
     from grok_assistant.ui.app import TrayApp
 
-    root = tk.Tk()
+    root = tk_root()
     root.geometry("1000x800+40+40")
     root.attributes("-alpha", 0)
     root.withdraw()

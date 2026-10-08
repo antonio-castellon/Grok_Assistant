@@ -63,10 +63,11 @@ def test_settings_roundtrip_keeps_a_custom_person(tmp_path):
 def test_personality_window_saves_a_free_behavior(tmp_path):
     import tkinter as tk
 
+    from conftest import tk_root
     from grok_assistant.rules.hub import build
     from grok_assistant.ui.app import TrayApp
 
-    root = tk.Tk()
+    root = tk_root()
     root.withdraw()
     app = TrayApp(root, build(tmp_path, tmp_path / "agents"))
     try:
@@ -104,6 +105,7 @@ def test_personality_window_saves_a_free_behavior(tmp_path):
 def test_windows_follow_the_selected_language(tmp_path, monkeypatch):
     import tkinter as tk
 
+    from conftest import tk_root
     from grok_assistant.house.marketplace import Offer
     from grok_assistant.rules.hub import build
     from grok_assistant.i18n import activate
@@ -119,7 +121,7 @@ def test_windows_follow_the_selected_language(tmp_path, monkeypatch):
 
     monkeypatch.setattr(Offer, "ready", kroko_ready)
 
-    root = tk.Tk()
+    root = tk_root()
     root.withdraw()
     try:
         hub = build(tmp_path, tmp_path / "agents")
