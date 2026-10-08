@@ -140,7 +140,7 @@ class EarMixin:
         if ear is not None:
             self._release_ear(ear)
         self.phoneme = None
-        self._phoneme_failed = ""
+        self._phoneme_failed = None
 
     def _release_room(self) -> None:
         if self.dictation is not None:
@@ -160,7 +160,7 @@ class EarMixin:
         if current is not None:
             self._release_ear(current)
             self.phoneme = None
-        if getattr(self, "_phoneme_failed", "") == device:
+        if getattr(self, "_phoneme_failed", None) == device:
             return
         from grok_assistant.listening.phoneme_ear import PhonemeEar
 
@@ -168,7 +168,7 @@ class EarMixin:
         ear = PhonemeEar(self._on_phoneme_phrase, status, device=device, closed=self._detector_closed)
         if ear.start():
             self.phoneme = ear
-            self._phoneme_failed = ""
+            self._phoneme_failed = None
             self._note("escucho la frase de inicio")
         else:
             self.phoneme = None

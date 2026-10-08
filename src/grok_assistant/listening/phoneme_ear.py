@@ -144,16 +144,16 @@ class Ring:
         if self.data is None:
             self.data = np.zeros(self.samples, dtype=np.float32)
         if audio.size >= self.samples:
-            self.data[:] = audio[-self.samples :]
+            self.data[:] = audio[-self.samples:]
             self.pos = 0
             self.count = self.samples
             return
         end = self.pos + int(audio.size)
         if end <= self.samples:
-            self.data[self.pos : end] = audio
+            self.data[self.pos:end] = audio
         else:
             first = self.samples - self.pos
-            self.data[self.pos :] = audio[:first]
+            self.data[self.pos:] = audio[:first]
             self.data[: audio.size - first] = audio[first:]
         self.pos = (self.pos + int(audio.size)) % self.samples
         self.count = min(self.samples, self.count + int(audio.size))
@@ -165,7 +165,7 @@ class Ring:
             return np.zeros(0, dtype=np.float32)
         if self.count < self.samples:
             return self.data[: self.count].copy()
-        return np.concatenate((self.data[self.pos :], self.data[: self.pos]))
+        return np.concatenate((self.data[self.pos:], self.data[: self.pos]))
 
 
 class _SherpaSpotter:
@@ -358,8 +358,8 @@ class PhonemeEar:
         def index(sample: int) -> int:
             return max(0, min(int(snap.size), int(sample) - origin))
 
-        phrase = snap[index(start_phrase) : index(end)].copy()
-        keyword = snap[index(start_kw) : index(end)].copy()
+        phrase = snap[index(start_phrase):index(end)].copy()
+        keyword = snap[index(start_kw):index(end)].copy()
         if keyword.size == 0:
             keyword = phrase
         self._keyword_audio = keyword

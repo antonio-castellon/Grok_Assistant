@@ -34,7 +34,7 @@ class WindowMixin:
         self.kroko: KrokoEar | None = None
         self.offline: OfflineEar | None = None
         self.phoneme = None
-        self._phoneme_failed = ""
+        self._phoneme_failed = None
         self._speaking = False
         self._ears_suspended = False
         self._take_box: queue.Queue = queue.Queue()
@@ -341,9 +341,9 @@ class WindowMixin:
         mode_row = tk.Frame(simple, bg=look.bg)
         mode_row.pack(pady=(0, 10))
         talk_col = tk.Frame(mode_row, bg=look.bg)
-        talk_col.pack(side="left", padx=22)
+        talk_col.pack(side="left", anchor="n", padx=22)
         gate_col = tk.Frame(mode_row, bg=look.bg)
-        gate_col.pack(side="left", padx=22)
+        gate_col.pack(side="left", anchor="n", padx=22)
         self.talk_label = tk.Label(
             talk_col, text="", bg=look.bg, fg=look.muted, font=("Segoe UI", 14),
         )

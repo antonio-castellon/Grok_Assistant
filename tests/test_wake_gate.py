@@ -7,6 +7,40 @@ import numpy as np
 import pytest
 
 from grok_assistant.notebook.settings import Settings, resolve_wake_gate
+from grok_assistant.rules.hub import build
+
+
+class Clock:
+    def __init__(self):
+        self.t = 5000.0
+
+    def __call__(self):
+        return self.t
+
+    def wall(self):
+        return 1_700_000_000.0
+
+
+class FakeCLI:
+    def __init__(self):
+        self.calls = []
+        self.answer = "Son las tres."
+
+    def classify(self, text, model):
+        self.calls.append(("classify", text))
+        return {"accion": "ignorar", "orden": "", "texto": ""}
+
+    def converse(self, text, *, model, effort, session_id, first, agent_path, system=None, files=False):
+        self.calls.append(("converse", text, effort, agent_path))
+        return self.answer
+
+
+@pytest.fixture
+def world(tmp_path):
+    clock = Clock()
+    cli = FakeCLI()
+    hub = build(tmp_path / "data", tmp_path / "agents", cli, clock=clock, wall=clock.wall, account_dir=tmp_path / "account")
+    return hub, cli, clock
 
 
 def test_old_settings_load_texto(tmp_path):
@@ -241,7 +275,7 @@ def gate_app(world, monkeypatch):
             self._mic_held = False
             self._speaking = False
             self.phoneme = None
-            self._phoneme_failed = ""
+            self._phoneme_failed = None
             self.dictation = None
             self.kroko = None
             self.offline = None
@@ -293,7 +327,7 @@ def test_open_chat_feeds_the_detector_nothing_and_quiet_brings_it_back(gate_app)
     assert live.stopped
     assert live.feed(chunk) is False
     clock.t += float(hub.brain.settings.quiet_minutes) * 60.0 + 1.0
-    app._job("tick", "")
+    app._job("tick", "", None)
     assert not hub.brain.in_conversation
     assert app.spoken == []
     assert app.phoneme is not None
@@ -332,7 +366,7 @@ def test_renaming_away_from_grok_returns_to_texto(gate_app):
     app, hub, _cli, _clock, _made = gate_app
     app._sync_ear()
     assert app.phoneme is not None
-    app._job("rename", "Miguel")
+    app._job("rename", "Miguel", None)
     assert hub.brain.settings.wake_name == "Miguel"
     assert hub.brain.settings.wake_gate == "texto"
     assert app.phoneme is None
