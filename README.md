@@ -40,3 +40,13 @@ In Settings, Grok only searches the internet. An administrator can allow Grok to
 - [What you can say](docs/en/saying.md)
 - [Run the executable](docs/en/run.md)
 - [Run it from the source tree](docs/en/source.md)
+
+## Notice and Disclaimer
+
+NOTICE AND DISCLAIMER: This software automatically retrieves, accesses or interacts with external materials. Those retrieved materials are not distributed with this software and are governed solely by separate terms, conditions and licenses. You are solely responsible for finding, reviewing and complying with all applicable terms, conditions, and licenses, and for verifying the security, integrity and suitability of any retrieved materials for your specific use case. This software is provided "AS IS", without warranty of any kind. The author makes no representations or warranties regarding any retrieved materials, and assumes no liability for any losses, damages, liabilities or legal consequences from your use or inability to use this software or any retrieved materials. Use this software and the retrieved materials at your own risk.
+
+External materials Grok_Assistant interacts with at run time:
+
+- Grok (grok.com) through your own account, under xAI's terms.
+- Speech, voice and language models downloaded from Hugging Face (huggingface.co), such as Whisper, Piper voices and GGUF models (Qwen2.5, SmolLM2, Llama-3.2), each under its own model license.
+- GitHub (api.github.com, github.com), under GitHub's terms.
